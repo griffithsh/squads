@@ -126,6 +126,29 @@ func run() {
 			return
 		}
 
+		if win.JustPressed(pixelgl.MouseButtonLeft) {
+			p := win.MousePosition()
+			p = camera.View().Unproject(p)
+
+			// faiface/pixel inverts the Y coordinate
+			p.Y = -p.Y
+
+			// Add a wolf!
+			e := mgr.NewEntity()
+			mgr.AddComponent(e, &game.Sprite{
+				Texture: "Untitled.png",
+				X:       97,
+				Y:       171,
+				W:       34,
+				H:       29,
+			})
+			mgr.AddComponent(e, &game.Position{
+				X:     p.X,
+				Y:     p.Y,
+				Layer: 10,
+			})
+		}
+
 		elapsed := time.Since(last)
 		last = time.Now()
 
