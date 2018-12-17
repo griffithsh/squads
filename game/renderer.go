@@ -99,7 +99,7 @@ func (r *Renderer) Render(win pixel.Target, cam pixel.Matrix, mgr *ecs.World) er
 				Y: height - float64(e.s.Y),
 			},
 			Max: pixel.Vec{
-				X: float64(e.s.W + e.s.X),
+				X: float64(e.s.X + e.s.W),
 				Y: height - float64(e.s.H+e.s.Y),
 			},
 		})
@@ -107,10 +107,11 @@ func (r *Renderer) Render(win pixel.Target, cam pixel.Matrix, mgr *ecs.World) er
 		// faiface/pixel inverts the Y coordinate
 		y := -e.p.Y
 
+		move := pixel.Vec{X: e.p.X, Y: y}
 		if e.s.Color != nil {
-			sprite.DrawColorMask(batch, pixel.IM.Moved(pixel.Vec{X: e.p.X, Y: y}), e.s.Color)
+			sprite.DrawColorMask(batch, pixel.IM.Moved(move), e.s.Color)
 		} else {
-			sprite.Draw(batch, pixel.IM.Moved(pixel.Vec{X: e.p.X, Y: y}))
+			sprite.Draw(batch, pixel.IM.Moved(move))
 		}
 
 		lastTexture = e.s.Texture

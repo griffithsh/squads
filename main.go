@@ -120,6 +120,16 @@ func run() {
 		second = time.Tick(time.Second)
 	)
 	last := time.Now()
+
+	cursor := mgr.NewEntity()
+	mgr.AddComponent(cursor, &game.Sprite{
+		Texture: "texture.png",
+		X:       24,
+		Y:       0,
+		W:       24,
+		H:       16,
+	})
+	lastMouse := win.MousePosition()
 	for !win.Closed() {
 		if win.JustReleased(pixelgl.KeyEscape) || win.Pressed(pixelgl.KeyEscape) {
 			win.SetClosed(true)
@@ -147,6 +157,25 @@ func run() {
 				Y:     p.Y,
 				Layer: 10,
 			})
+		}
+
+		// A Cursor that follows the mouse...
+		p := win.MousePosition()
+		if p != lastMouse {
+			c, ok := mgr.Component(cursor, "Position").(*game.Position)
+			if ok {
+				mgr.RemoveComponent(cursor, c)
+			}
+			p = camera.View().Unproject(p)
+			p.Y = -p.Y
+			if h := s.board.At(int(p.X), int(p.Y)); h != nil {
+				mgr.AddComponent(cursor, &game.Position{
+					X:     h.X(),
+					Y:     h.Y(),
+					Layer: 10,
+				})
+			}
+			lastMouse = win.MousePosition()
 		}
 
 		elapsed := time.Since(last)
