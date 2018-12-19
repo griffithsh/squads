@@ -46,6 +46,7 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 			M: i % w,
 			N: i / w,
 		}
+		mgr.AddComponent(e, &arr[i])
 		mgr.AddComponent(e, &Sprite{
 			Texture: "texture.png",
 			X:       0,
