@@ -43,8 +43,8 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 			return entities[i].p.Layer < entities[j].p.Layer
 		}
 
-		iExtent := entities[i].p.Center.Y + float64(entities[i].s.H)
-		jExtent := entities[j].p.Center.Y + float64(entities[j].s.H)
+		iExtent := entities[i].p.Center.Y + float64(entities[i].s.H/2)
+		jExtent := entities[j].p.Center.Y + float64(entities[j].s.H/2)
 		if iExtent != jExtent {
 			return iExtent < jExtent
 		}
