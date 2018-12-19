@@ -10,6 +10,7 @@ import (
 
 	"github.com/griffithsh/squads/game"
 
+	"image/color"
 	_ "image/png"
 
 	"github.com/faiface/pixel"
@@ -124,10 +125,11 @@ func run() {
 	cursor := mgr.NewEntity()
 	mgr.AddComponent(cursor, &game.Sprite{
 		Texture: "texture.png",
-		X:       24,
+		X:       0,
 		Y:       0,
 		W:       24,
 		H:       16,
+		Color:   &color.RGBA{150, 150, 150, 63},
 	})
 	lastMouse := win.MousePosition()
 	for !win.Closed() {
@@ -176,7 +178,7 @@ func run() {
 						X: h.X(),
 						Y: h.Y(),
 					},
-					Layer: 10,
+					Layer: 2,
 				})
 			}
 			lastMouse = win.MousePosition()

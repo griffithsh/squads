@@ -2,7 +2,6 @@ package game
 
 import (
 	"fmt"
-	"image/color"
 
 	"github.com/griffithsh/squads/ecs"
 )
@@ -49,11 +48,10 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 		mgr.AddComponent(e, &arr[i])
 		mgr.AddComponent(e, &Sprite{
 			Texture: "texture.png",
-			X:       0,
+			X:       24,
 			Y:       0,
 			W:       24,
 			H:       16,
-			Color:   &color.RGBA{150, 150, 150, 63},
 		})
 
 		mgr.AddComponent(e, &Position{
@@ -61,10 +59,10 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 				X: arr[i].X(),
 				Y: arr[i].Y(),
 			},
-			Layer: 0,
+			Layer: 1,
 		})
 
-		if i%11 == 1 || i%17 == 1 || i%13 == 1 {
+		if i == 1 || i%11 == 1 || i%17 == 1 || i%13 == 1 {
 			e := mgr.NewEntity()
 			mgr.AddComponent(e, &Sprite{
 				Texture: "Untitled.png",
@@ -78,7 +76,7 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 					X: arr[i].X(),
 					Y: arr[i].Y() - 16,
 				},
-				Layer: 1,
+				Layer: 10,
 			})
 		} else if i == 0 {
 			e := mgr.NewEntity()
@@ -94,7 +92,7 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 					X: arr[i].X(),
 					Y: arr[i].Y() - 16,
 				},
-				Layer: 1,
+				Layer: 10,
 			})
 		}
 	}
