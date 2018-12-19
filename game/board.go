@@ -57,8 +57,10 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 		})
 
 		mgr.AddComponent(e, &Position{
-			X:     arr[i].X(),
-			Y:     arr[i].Y(),
+			Center: Center{
+				X: arr[i].X(),
+				Y: arr[i].Y(),
+			},
 			Layer: 0,
 		})
 
@@ -72,8 +74,10 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 				H:       48,
 			})
 			mgr.AddComponent(e, &Position{
-				X:     arr[i].X(),
-				Y:     arr[i].Y(),
+				Center: Center{
+					X: arr[i].X(),
+					Y: arr[i].Y() - 16,
+				},
 				Layer: 1,
 			})
 		} else if i == 0 {
@@ -86,8 +90,10 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 				H:       48,
 			})
 			mgr.AddComponent(e, &Position{
-				X:     arr[i].X(),
-				Y:     arr[i].Y(),
+				Center: Center{
+					X: arr[i].X(),
+					Y: arr[i].Y() - 16,
+				},
 				Layer: 1,
 			})
 		}

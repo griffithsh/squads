@@ -1,8 +1,11 @@
 package game
 
+type Center struct {
+	X, Y float64
+}
 type Position struct {
-	X, Y  float64
-	Layer int
+	Center Center
+	Layer  int
 }
 
 // Type of this component.

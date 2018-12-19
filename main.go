@@ -153,8 +153,10 @@ func run() {
 				H:       29,
 			})
 			mgr.AddComponent(e, &game.Position{
-				X:     p.X,
-				Y:     p.Y,
+				Center: game.Center{
+					X: p.X,
+					Y: p.Y,
+				},
 				Layer: 10,
 			})
 		}
@@ -170,8 +172,10 @@ func run() {
 			p.Y = -p.Y
 			if h := s.board.At(int(p.X), int(p.Y)); h != nil {
 				mgr.AddComponent(cursor, &game.Position{
-					X:     h.X(),
-					Y:     h.Y(),
+					Center: game.Center{
+						X: h.X(),
+						Y: h.Y(),
+					},
 					Layer: 10,
 				})
 			}

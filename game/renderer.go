@@ -43,8 +43,8 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 			return entities[i].p.Layer < entities[j].p.Layer
 		}
 
-		iExtent := entities[i].p.Y + float64(entities[i].s.H)
-		jExtent := entities[j].p.Y + float64(entities[j].s.H)
+		iExtent := entities[i].p.Center.Y + float64(entities[i].s.H)
+		jExtent := entities[j].p.Center.Y + float64(entities[j].s.H)
 		if iExtent != jExtent {
 			return iExtent < jExtent
 		}
@@ -105,9 +105,10 @@ func (r *Renderer) Render(win pixel.Target, cam pixel.Matrix, mgr *ecs.World) er
 		})
 
 		// faiface/pixel inverts the Y coordinate
-		y := -e.p.Y
+		y := -e.p.Center.Y
 
-		move := pixel.Vec{X: e.p.X, Y: y}
+		move := pixel.Vec{X: e.p.Center.X, Y: y}
+
 		if e.s.Color != nil {
 			sprite.DrawColorMask(batch, pixel.IM.Moved(move), e.s.Color)
 		} else {
