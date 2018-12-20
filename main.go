@@ -2,20 +2,17 @@ package main
 
 import (
 	"fmt"
+	"image/color"
 	"log"
 	"math/rand"
 	"os"
 	"runtime/pprof"
 	"time"
 
-	"github.com/griffithsh/squads/game"
-
-	"image/color"
-	_ "image/png"
-
 	"github.com/faiface/pixel"
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/griffithsh/squads/ecs"
+	"github.com/griffithsh/squads/game"
 	"golang.org/x/image/colornames"
 )
 
@@ -69,7 +66,7 @@ func controls(win *pixelgl.Window) Controls {
 	}
 }
 
-func controlCamera(c *Camera, t time.Duration, ctrl Controls) {
+func controlCamera(c *Camera, hud *game.HUD, t time.Duration, ctrl Controls) {
 	camSpeed := 500.0 / c.zoom
 	dt := t.Seconds()
 
@@ -87,8 +84,10 @@ func controlCamera(c *Camera, t time.Duration, ctrl Controls) {
 
 	if ctrl.A {
 		c.SetZoom(c.GetZoom() * 1.05)
+		hud.SetZoom(c.GetZoom() * 1.05)
 	} else if ctrl.B {
 		c.SetZoom(c.GetZoom() * 0.95)
+		hud.SetZoom(c.GetZoom() * 0.95)
 	}
 }
 
@@ -98,6 +97,7 @@ func run() {
 	if err != nil {
 		panic(err)
 	}
+	hud := game.NewHUD(1024, 768)
 	s := system{
 		render: game.NewRenderer(),
 		board:  board,
@@ -188,18 +188,17 @@ func run() {
 		last = time.Now()
 
 		ctrl := controls(win)
-		controlCamera(camera, elapsed, ctrl)
+		controlCamera(camera, hud, elapsed, ctrl)
 
-		// Rendering
 		win.Clear(colornames.Cadetblue)
 
-		// Render all entities
+		// Render all entities.
 		if err := s.render.Render(win, camera.View(), mgr); err != nil {
 			panic(err)
 		}
 
-		// TODO: render a hud
-		// ...
+		// Render a hud.
+		hud.Render(win)
 
 		win.Update()
 		frames++

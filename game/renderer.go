@@ -2,12 +2,11 @@ package game
 
 import (
 	"fmt"
-	"image"
-	"os"
 	"sort"
 
 	"github.com/faiface/pixel"
 	"github.com/griffithsh/squads/ecs"
+	"github.com/griffithsh/squads/pixelutil"
 )
 
 // Renderer is a System that draws positioned Sprites to the screen.
@@ -37,7 +36,7 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 		}
 	}
 
-	// sort by position layer, position Z, position.Y - sprite.Y/2
+	// sort by position layer, position.Y - sprite.Y/2
 	sort.Slice(entities, func(i, j int) bool {
 		if entities[i].p.Layer != entities[j].p.Layer {
 			return entities[i].p.Layer < entities[j].p.Layer
@@ -60,7 +59,7 @@ func (r *Renderer) picForTexture(tex string) (pixel.Picture, error) {
 		return pic, nil
 	}
 
-	pic, err := loadPicture(tex)
+	pic, err := pixelutil.LoadPicture(tex)
 	if err != nil {
 		return nil, fmt.Errorf("loadPicture: %v", err)
 	}
@@ -92,17 +91,7 @@ func (r *Renderer) Render(win pixel.Target, cam pixel.Matrix, mgr *ecs.World) er
 			pic = p
 		}
 
-		height := pic.Bounds().H()
-		sprite := pixel.NewSprite(pic, pixel.Rect{
-			Min: pixel.Vec{
-				X: float64(e.s.X),
-				Y: height - float64(e.s.Y),
-			},
-			Max: pixel.Vec{
-				X: float64(e.s.X + e.s.W),
-				Y: height - float64(e.s.H+e.s.Y),
-			},
-		})
+		sprite := pixelutil.NewSprite(pic, e.s.X, e.s.Y, e.s.W, e.s.H)
 
 		// faiface/pixel inverts the Y coordinate
 		y := -e.p.Center.Y
@@ -122,17 +111,4 @@ func (r *Renderer) Render(win pixel.Target, cam pixel.Matrix, mgr *ecs.World) er
 	}
 
 	return nil
-}
-
-func loadPicture(path string) (pixel.Picture, error) {
-	file, err := os.Open(path)
-	if err != nil {
-		return nil, err
-	}
-	defer file.Close()
-	img, _, err := image.Decode(file)
-	if err != nil {
-		return nil, err
-	}
-	return pixel.PictureDataFromImage(img), nil
 }

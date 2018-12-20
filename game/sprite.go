@@ -8,7 +8,6 @@ type Sprite struct {
 	Texture    string
 	X, Y, W, H int
 
-	// color+alpha?
 	Color *color.RGBA
 }
 
