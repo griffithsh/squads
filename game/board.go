@@ -13,7 +13,9 @@ const (
 
 // Hex is a hexagon tile that an Actor can occupy.
 type Hex struct {
-	M, N int
+	M, N       int
+	neighbors  []*Hex
+	Impassable bool
 }
 
 func (h *Hex) Type() string {
@@ -31,21 +33,33 @@ func (h *Hex) Y() float64 {
 	return 8 + float64(yStride*h.N)
 }
 
+// Neighbors of this Hex.
+func (h *Hex) Neighbors() []*Hex {
+	return h.neighbors
+}
+
+type key struct {
+	M, N int
+}
+
 // Board to play out encounters on. Collection of Hexes.
 type Board struct {
 	stride int // how many hexes are in a row
-	hexes  []Hex
+	hexes  map[key]*Hex
 }
 
+// NewBoard creates a new game board.
 func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
-	arr := make([]Hex, w*h)
+	m := make(map[key]*Hex, w)
+
 	for i := 0; i < w*h; i++ {
 		e := mgr.NewEntity()
-		arr[i] = Hex{
+		h := Hex{
 			M: i % w,
 			N: i / w,
 		}
-		mgr.AddComponent(e, &arr[i])
+		m[key{i % w, i / w}] = &h
+		mgr.AddComponent(e, &h)
 		mgr.AddComponent(e, &Sprite{
 			Texture: "texture.png",
 			X:       24,
@@ -56,13 +70,14 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 
 		mgr.AddComponent(e, &Position{
 			Center: Center{
-				X: arr[i].X(),
-				Y: arr[i].Y(),
+				X: h.X(),
+				Y: h.Y(),
 			},
 			Layer: 1,
 		})
 
 		if i == 1 || i%11 == 1 || i%17 == 1 || i%13 == 1 {
+			// Scatter trees about
 			e := mgr.NewEntity()
 			mgr.AddComponent(e, &Sprite{
 				Texture: "Untitled.png",
@@ -73,12 +88,14 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 			})
 			mgr.AddComponent(e, &Position{
 				Center: Center{
-					X: arr[i].X(),
-					Y: arr[i].Y() - 16,
+					X: h.X(),
+					Y: h.Y() - 16,
 				},
 				Layer: 10,
 			})
+			h.Impassable = true
 		} else if i == 0 {
+			// Add Actor sprite to 0,0 Hex
 			e := mgr.NewEntity()
 			mgr.AddComponent(e, &Sprite{
 				Texture: "Untitled.png",
@@ -89,18 +106,57 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 			})
 			mgr.AddComponent(e, &Position{
 				Center: Center{
-					X: arr[i].X(),
-					Y: arr[i].Y() - 16,
+					X: h.X(),
+					Y: h.Y() - 16,
 				},
 				Layer: 10,
 			})
 		}
 	}
 
-	return &Board{
+	board := Board{
 		stride: w,
-		hexes:  arr,
-	}, nil
+		hexes:  m,
+	}
+	for _, hex := range board.hexes {
+		m, n := hex.M, hex.N
+		// Find neighbor candidates.
+		candidates := []struct{ m, n int }{
+			{m, n - 2}, // N
+			{m, n + 2}, // S
+		}
+		if n%2 == 0 {
+			// then the E ones have the same M, and the W ones are -1 M
+			candidates = append(candidates, []struct{ m, n int }{
+				{m - 1, n - 1}, // NW
+				{m - 1, n + 1}, // SW
+				{m, n + 1},     // SE
+				{m, n - 1},     // NE
+			}...)
+		} else {
+			// then the E ones are +1 M, and the W ones have the same M
+			candidates = append(candidates, []struct{ m, n int }{
+				{m, n - 1},     // NW
+				{m, n + 1},     // SW
+				{m + 1, n + 1}, // SE
+				{m + 1, n - 1}, // NE
+			}...)
+		}
+
+		// Attach as neighbors only the ones that appear in the board.
+		for _, candidate := range candidates {
+			neighbor := board.Get(candidate.m, candidate.n)
+			if neighbor == nil {
+				continue
+			}
+			if neighbor.Impassable {
+				continue
+			}
+			hex.neighbors = append(hex.neighbors, neighbor)
+		}
+	}
+
+	return &board, nil
 }
 
 // Width of the Board in pixels.
@@ -140,6 +196,16 @@ func relative(x, y int) (int, int) {
 	return rx, ry
 }
 
+// Get accepts M,N coordinates and returns the Hex with those coordinates if it
+// exists in the board.
+func (b *Board) Get(m, n int) *Hex {
+	hex, ok := b.hexes[key{m, n}]
+	if !ok {
+		return nil
+	}
+	return hex
+}
+
 // At accepts world coordinates and returns the Hex there if there is one.
 func (b *Board) At(x, y int) *Hex {
 	rx, ry := relative(x, y)
@@ -147,17 +213,7 @@ func (b *Board) At(x, y int) *Hex {
 
 	m, n = xyToMN(rx, ry, m, n)
 
-	// Check if the m,n coords are outside the board
-	if m < 0 || n < 0 || m >= b.stride || n >= len(b.hexes)/b.stride {
-		return nil
-	}
-	ind := m + n*b.stride
-
-	if ind >= 0 && ind < len(b.hexes) {
-		return &b.hexes[ind]
-	}
-
-	return nil
+	return b.Get(m, n)
 }
 
 // isOddN determines whether the N coordinate will be odd or not.
