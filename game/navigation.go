@@ -61,6 +61,9 @@ func Navigate(start, goal *Hex) ([]*Hex, error) {
 				continue
 			}
 
+			// TODO(griffithsh):
+			// Here we probably need to continue if this hex is "occupied".
+
 			tentative := costs[current] + 1
 
 			if _, ok := open[n]; !ok {
@@ -74,5 +77,5 @@ func Navigate(start, goal *Hex) ([]*Hex, error) {
 			fScore[n] = costs[n] + heuristic(n, goal)
 		}
 	}
-	return nil, fmt.Errorf("no path available from %v to %v", start, goal)
+	return nil, fmt.Errorf("no path available from %d,%d to %d,%d", start.M, start.N, goal.M, goal.N)
 }

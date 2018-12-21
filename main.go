@@ -17,8 +17,9 @@ import (
 )
 
 type system struct {
-	render *game.Renderer
-	board  *game.Board
+	render        *game.Renderer
+	board         *game.Board
+	choreographer *game.Choreographer
 }
 
 func main() {
@@ -99,8 +100,9 @@ func run() {
 	}
 	hud := game.NewHUD(1024, 768)
 	s := system{
-		render: game.NewRenderer(),
-		board:  board,
+		render:        game.NewRenderer(),
+		board:         board,
+		choreographer: &game.Choreographer{},
 	}
 
 	cfg := pixelgl.WindowConfig{
@@ -132,6 +134,25 @@ func run() {
 		Color:   &color.RGBA{150, 150, 150, 63},
 	})
 	lastMouse := win.MousePosition()
+
+	actor := mgr.NewEntity()
+	h := board.Get(0, 0)
+	mgr.AddComponent(actor, &game.Actor{})
+	mgr.AddComponent(actor, &game.Sprite{
+		Texture: "Untitled.png",
+		X:       24,
+		Y:       0,
+		W:       24,
+		H:       48,
+	})
+	mgr.AddComponent(actor, &game.Position{
+		Center: game.Center{
+			X: h.X(),
+			Y: h.Y() - 16,
+		},
+		Layer: 10,
+	})
+
 	for !win.Closed() {
 		if win.JustReleased(pixelgl.KeyEscape) || win.Pressed(pixelgl.KeyEscape) {
 			win.SetClosed(true)
@@ -145,22 +166,13 @@ func run() {
 			// faiface/pixel inverts the Y coordinate
 			p.Y = -p.Y
 
-			// Add a wolf!
-			e := mgr.NewEntity()
-			mgr.AddComponent(e, &game.Sprite{
-				Texture: "Untitled.png",
-				X:       97,
-				Y:       171,
-				W:       34,
-				H:       29,
-			})
-			mgr.AddComponent(e, &game.Position{
-				Center: game.Center{
-					X: p.X,
-					Y: p.Y,
-				},
-				Layer: 10,
-			})
+			a := mgr.Component(actor, "Actor").(*game.Actor)
+			steps, err := game.Navigate(board.Get(a.M, a.N), board.At(int(p.X), int(p.Y)))
+			if err != nil {
+				fmt.Printf("no path there: %v\n", err)
+			} else {
+				a.Move(steps)
+			}
 		}
 
 		// A Cursor that follows the mouse...
@@ -189,6 +201,8 @@ func run() {
 
 		ctrl := controls(win)
 		controlCamera(camera, hud, elapsed, ctrl)
+
+		s.choreographer.Update(mgr, elapsed)
 
 		win.Clear(colornames.Cadetblue)
 

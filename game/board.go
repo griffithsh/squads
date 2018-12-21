@@ -18,6 +18,7 @@ type Hex struct {
 	Impassable bool
 }
 
+// Type of this Component.
 func (h *Hex) Type() string {
 	return "Hex"
 }
@@ -94,23 +95,6 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 				Layer: 10,
 			})
 			h.Impassable = true
-		} else if i == 0 {
-			// Add Actor sprite to 0,0 Hex
-			e := mgr.NewEntity()
-			mgr.AddComponent(e, &Sprite{
-				Texture: "Untitled.png",
-				X:       24,
-				Y:       0,
-				W:       24,
-				H:       48,
-			})
-			mgr.AddComponent(e, &Position{
-				Center: Center{
-					X: h.X(),
-					Y: h.Y() - 16,
-				},
-				Layer: 10,
-			})
 		}
 	}
 
