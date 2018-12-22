@@ -40,7 +40,7 @@ func Navigate(start, goal *Hex) ([]*Hex, error) {
 	costs := map[*Hex]float64{
 		start: 0,
 	}
-	fScore := map[*Hex]float64{
+	guesses := map[*Hex]float64{
 		start: heuristic(start, goal),
 	}
 
@@ -48,9 +48,9 @@ func Navigate(start, goal *Hex) ([]*Hex, error) {
 		var current *Hex
 		low := math.MaxFloat64
 		for k := range open {
-			if fScore[k] < low {
+			if guesses[k] < low {
 				current = k
-				low = fScore[k]
+				low = guesses[k]
 			}
 		}
 		if current == goal {
@@ -77,7 +77,7 @@ func Navigate(start, goal *Hex) ([]*Hex, error) {
 
 			cameFrom[n] = current
 			costs[n] = tentative
-			fScore[n] = costs[n] + heuristic(n, goal)
+			guesses[n] = costs[n] + heuristic(n, goal)
 		}
 	}
 	return nil, fmt.Errorf("no path available from %d,%d to %d,%d", start.M, start.N, goal.M, goal.N)
