@@ -30,6 +30,8 @@ func heuristic(a, b *Hex) float64 {
 
 // Navigate a path from start to the goal, avoiding Impassable Hexes.
 func Navigate(start, goal *Hex) ([]*Hex, error) {
+	oneStep := heuristic(&Hex{M: 0, N: 0}, &Hex{M: 0, N: 1})
+
 	closed := map[*Hex]interface{}{}
 	open := map[*Hex]interface{}{
 		start: struct{}{},
@@ -65,7 +67,7 @@ func Navigate(start, goal *Hex) ([]*Hex, error) {
 			// TODO(griffithsh):
 			// Here we probably need to continue if this hex is "occupied".
 
-			tentative := costs[current] + 1
+			tentative := costs[current] + oneStep
 
 			if _, ok := open[n]; !ok {
 				open[n] = struct{}{}
