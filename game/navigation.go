@@ -48,6 +48,7 @@ func Navigate(start, goal *Hex) ([]*Hex, error) {
 		for k := range open {
 			if fScore[k] < low {
 				current = k
+				low = fScore[k]
 			}
 		}
 		if current == goal {
