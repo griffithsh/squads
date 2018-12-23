@@ -13,7 +13,7 @@ func TestNavigate(t *testing.T) {
 
 	start := board.Get(0, 0)
 	goal := board.Get(0, 58)
-	steps, err := Navigate(start, goal)
+	steps, err := Navigate(start, goal, []ContextualObstacle{})
 	if err != nil {
 		t.Fatal(err)
 	}

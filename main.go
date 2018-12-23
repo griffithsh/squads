@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image/color"
 	"log"
+	"math"
 	"math/rand"
 	"os"
 	"runtime/pprof"
@@ -167,7 +168,21 @@ func run() {
 			p.Y = -p.Y
 
 			a := mgr.Component(actor, "Actor").(*game.Actor)
-			steps, err := game.Navigate(board.Get(a.M, a.N), board.At(int(p.X), int(p.Y)))
+			oe := mgr.Get([]string{"Obstacle"})
+			var obstacles []game.ContextualObstacle
+			for _, e := range oe {
+				obstacle := mgr.Component(e, "Obstacle").(*game.Obstacle)
+				hex := s.board.Get(obstacle.M, obstacle.N)
+				if hex == nil {
+					continue
+				}
+				obstacles = append(obstacles, game.ContextualObstacle{
+					Obstacle: *obstacle,
+					Cost:     math.Inf(0), // just pretend these all are total obstacles for now
+				})
+			}
+
+			steps, err := game.Navigate(board.Get(a.M, a.N), board.At(int(p.X), int(p.Y)), obstacles)
 			if err != nil {
 				fmt.Printf("no path there: %v\n", err)
 			} else {

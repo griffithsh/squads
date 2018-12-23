@@ -13,9 +13,8 @@ const (
 
 // Hex is a hexagon tile that an Actor can occupy.
 type Hex struct {
-	M, N       int
-	neighbors  []*Hex
-	Impassable bool
+	M, N      int
+	neighbors []*Hex
 }
 
 // Type of this Component.
@@ -94,7 +93,10 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 				},
 				Layer: 10,
 			})
-			h.Impassable = true
+			mgr.AddComponent(e, &Obstacle{
+				M: h.M,
+				N: h.N,
+			})
 		}
 	}
 
@@ -131,9 +133,6 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 		for _, candidate := range candidates {
 			neighbor := board.Get(candidate.m, candidate.n)
 			if neighbor == nil {
-				continue
-			}
-			if neighbor.Impassable {
 				continue
 			}
 			hex.neighbors = append(hex.neighbors, neighbor)
