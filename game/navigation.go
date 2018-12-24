@@ -80,6 +80,7 @@ func Navigate(start, goal *Hex, obstacles []ContextualObstacle) ([]*Hex, error) 
 					} else {
 						tentative *= o.Cost
 					}
+					break
 				}
 			}
 
