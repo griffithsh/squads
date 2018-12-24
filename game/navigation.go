@@ -32,7 +32,7 @@ func heuristic(a, b *Hex) float64 {
 func Navigate(start, goal *Hex, obstacles []ContextualObstacle) ([]*Hex, error) {
 	oneStep := heuristic(&Hex{M: 0, N: 0}, &Hex{M: 0, N: 1})
 
-	closed := map[*Hex]interface{}{}
+	closed := map[key]interface{}{}
 	open := map[*Hex]interface{}{
 		start: struct{}{},
 	}
@@ -56,11 +56,16 @@ func Navigate(start, goal *Hex, obstacles []ContextualObstacle) ([]*Hex, error) 
 		if current == goal {
 			return reconstruct(cameFrom, current)
 		}
+
+		if current == nil {
+			break
+		}
+
 		delete(open, current)
-		closed[current] = struct{}{}
+		closed[key{M: current.M, N: current.N}] = struct{}{}
 
 		for _, n := range current.Neighbors() {
-			if _, ok := closed[n]; ok {
+			if _, ok := closed[key{M: n.M, N: n.N}]; ok {
 				continue
 			}
 

@@ -153,6 +153,11 @@ func run() {
 		},
 		Layer: 10,
 	})
+	mgr.AddComponent(actor, &game.Obstacle{
+		M:            0,
+		N:            0,
+		ObstacleType: game.ACTOR,
+	})
 
 	for !win.Closed() {
 		if win.JustReleased(pixelgl.KeyEscape) || win.Pressed(pixelgl.KeyEscape) {
