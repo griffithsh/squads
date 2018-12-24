@@ -9,7 +9,7 @@ import (
 	"github.com/griffithsh/squads/pixelutil"
 )
 
-// Renderer is a System that draws positioned Sprites to the screen.
+// Renderer is a System that draws world-positioned Sprites to the screen.
 type Renderer struct {
 	textures map[string]pixel.Picture
 }
