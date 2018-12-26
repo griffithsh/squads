@@ -104,7 +104,13 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 		stride: w,
 		hexes:  m,
 	}
-	for _, hex := range board.hexes {
+	board.calcNeighbors()
+
+	return &board, nil
+}
+func (b *Board) calcNeighbors() {
+	for _, hex := range b.hexes {
+		hex.neighbors = []*Hex{}
 		m, n := hex.M, hex.N
 		// Find neighbor candidates.
 		candidates := []struct{ m, n int }{
@@ -131,15 +137,13 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 
 		// Attach as neighbors only the ones that appear in the board.
 		for _, candidate := range candidates {
-			neighbor := board.Get(candidate.m, candidate.n)
+			neighbor := b.Get(candidate.m, candidate.n)
 			if neighbor == nil {
 				continue
 			}
 			hex.neighbors = append(hex.neighbors, neighbor)
 		}
 	}
-
-	return &board, nil
 }
 
 // Width of the Board in pixels.
