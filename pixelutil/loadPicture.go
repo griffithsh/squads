@@ -4,6 +4,7 @@ import (
 	"image"
 	"os"
 
+	// This is where the pngs are being decoded ...?
 	_ "image/png"
 
 	"github.com/faiface/pixel"

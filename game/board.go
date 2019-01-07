@@ -59,6 +59,8 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 			N: i / w,
 		}
 		m[key{i % w, i / w}] = &h
+
+		// Grass texture for the Hex
 		mgr.AddComponent(e, &h)
 		mgr.AddComponent(e, &Sprite{
 			Texture: "texture.png",
@@ -76,8 +78,8 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 			Layer: 1,
 		})
 
+		// Scatter trees about
 		if i == 1 || i%11 == 1 || i%17 == 1 || i%13 == 1 {
-			// Scatter trees about
 			e := mgr.NewEntity()
 			mgr.AddComponent(e, &Sprite{
 				Texture: "Untitled.png",
@@ -224,7 +226,6 @@ func isOddN(x int) bool {
 // bottom left. This is only a rough guess as to the final M,N coordinates, and
 // needs to be processed further before it's an accurate determination.
 func roughMN(x, y int) (int, int) {
-
 	var m, n int
 	if x < 0 {
 		m = x/34 - 1
