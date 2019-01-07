@@ -22,8 +22,9 @@ func NewRenderer() *Renderer {
 }
 
 type entity struct {
-	s *Sprite
-	p *Position
+	s      *Sprite
+	p      *Position
+	offset *SpriteOffset
 }
 
 func (r *Renderer) getEntities(mgr *ecs.World) []entity {
@@ -33,6 +34,9 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 		entities[i] = entity{
 			s: mgr.Component(e, "Sprite").(*Sprite),
 			p: mgr.Component(e, "Position").(*Position),
+		}
+		if offset, ok := mgr.Component(e, "SpriteOffset").(*SpriteOffset); ok {
+			entities[i].offset = offset
 		}
 	}
 
@@ -44,6 +48,12 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 
 		iExtent := entities[i].p.Center.Y + float64(entities[i].s.H/2)
 		jExtent := entities[j].p.Center.Y + float64(entities[j].s.H/2)
+		if entities[i].offset != nil {
+			iExtent += float64(entities[i].offset.Y)
+		}
+		if entities[j].offset != nil {
+			jExtent += float64(entities[j].offset.Y)
+		}
 		if iExtent != jExtent {
 			return iExtent < jExtent
 		}
@@ -97,6 +107,12 @@ func (r *Renderer) Render(win pixel.Target, cam pixel.Matrix, mgr *ecs.World) er
 		y := -e.p.Center.Y
 
 		move := pixel.Vec{X: e.p.Center.X, Y: y}
+
+		if e.offset != nil {
+			move.X += float64(e.offset.X)
+			// faiface/pixel inverts the Y coordinate
+			move.Y -= float64(e.offset.Y)
+		}
 
 		if e.s.Color != nil {
 			sprite.DrawColorMask(batch, pixel.IM.Moved(move), e.s.Color)

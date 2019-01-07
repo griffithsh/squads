@@ -88,10 +88,13 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 				W:       24,
 				H:       48,
 			})
+			mgr.AddComponent(e, &SpriteOffset{
+				Y: -16,
+			})
 			mgr.AddComponent(e, &Position{
 				Center: Center{
 					X: h.X(),
-					Y: h.Y() - 16,
+					Y: h.Y(),
 				},
 				Layer: 10,
 			})

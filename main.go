@@ -149,9 +149,12 @@ func run() {
 	mgr.AddComponent(actor, &game.Position{
 		Center: game.Center{
 			X: h.X(),
-			Y: h.Y() - 16,
+			Y: h.Y(),
 		},
 		Layer: 10,
+	})
+	mgr.AddComponent(actor, &game.SpriteOffset{
+		Y: -16,
 	})
 	mgr.AddComponent(actor, &game.Obstacle{
 		M:            0,

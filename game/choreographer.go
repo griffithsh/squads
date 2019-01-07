@@ -43,7 +43,7 @@ func (c *Choreographer) Update(mgr *ecs.World, elapsed time.Duration) {
 		pos := mgr.Component(e, "Position").(*Position)
 
 		pos.Center.X = actor.Moves[0].X()
-		pos.Center.Y = actor.Moves[0].Y() - 16
+		pos.Center.Y = actor.Moves[0].Y()
 
 		// Take the Actor's Obstacle with them as they move.
 		obstacle := mgr.Component(e, "Obstacle").(*Obstacle)
