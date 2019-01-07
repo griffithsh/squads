@@ -46,6 +46,7 @@ type key struct {
 type Board struct {
 	stride int // how many hexes are in a row
 	hexes  map[key]*Hex
+	m, n   int
 }
 
 // NewBoard creates a new game board.
@@ -77,37 +78,13 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 			},
 			Layer: 1,
 		})
-
-		// Scatter trees about
-		if i == 1 || i%11 == 1 || i%17 == 1 || i%13 == 1 {
-			e := mgr.NewEntity()
-			mgr.AddComponent(e, &Sprite{
-				Texture: "Untitled.png",
-				X:       0,
-				Y:       0,
-				W:       24,
-				H:       48,
-			})
-			mgr.AddComponent(e, &SpriteOffset{
-				Y: -16,
-			})
-			mgr.AddComponent(e, &Position{
-				Center: Center{
-					X: h.X(),
-					Y: h.Y(),
-				},
-				Layer: 10,
-			})
-			mgr.AddComponent(e, &Obstacle{
-				M: h.M,
-				N: h.N,
-			})
-		}
 	}
 
 	board := Board{
 		stride: w,
 		hexes:  m,
+		m:      w,
+		n:      h,
 	}
 	board.calcNeighbors()
 
@@ -206,6 +183,11 @@ func (b *Board) At(x, y int) *Hex {
 	m, n = xyToMN(rx, ry, m, n)
 
 	return b.Get(m, n)
+}
+
+// Dimensions returns the maximum extent of the board in M and N dimensions.
+func (b *Board) Dimensions() (M, N int) {
+	return b.m, b.n
 }
 
 // isOddN determines whether the N coordinate will be odd or not.
@@ -310,5 +292,4 @@ func xyToMN(x, y, m, n int) (int, int) {
 	default:
 		panic("lookup table contained a value other than -1, 0, or 1: incoherant state not handled")
 	}
-
 }

@@ -93,12 +93,48 @@ func controlCamera(c *Camera, hud *game.HUD, t time.Duration, ctrl Controls) {
 	}
 }
 
+func addTrees(mgr *ecs.World, b *game.Board) {
+	M, N := b.Dimensions()
+	for n := 0; n < N; n++ {
+		for m := 0; m < M; m++ {
+			i := m + n*M
+			h := b.Get(m, n)
+			if i == 1 || i%11 == 1 || i%17 == 1 || i%13 == 1 {
+				e := mgr.NewEntity()
+				mgr.AddComponent(e, &game.Sprite{
+					Texture: "Untitled.png",
+					X:       0,
+					Y:       0,
+					W:       24,
+					H:       48,
+				})
+				mgr.AddComponent(e, &game.SpriteOffset{
+					Y: -16,
+				})
+				mgr.AddComponent(e, &game.Position{
+					Center: game.Center{
+						X: h.X(),
+						Y: h.Y(),
+					},
+					Layer: 10,
+				})
+				mgr.AddComponent(e, &game.Obstacle{
+					M: h.M,
+					N: h.N,
+				})
+			}
+		}
+	}
+}
+
 func run() {
 	mgr := ecs.NewWorld()
 	board, err := game.NewBoard(mgr, 8, 24)
 	if err != nil {
 		panic(err)
 	}
+	addTrees(mgr, board)
+
 	hud := game.NewHUD(1024, 768)
 	s := system{
 		render:        game.NewRenderer(),
