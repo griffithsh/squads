@@ -22,6 +22,11 @@ func (h *Hex) Type() string {
 	return "Hex"
 }
 
+// String to implement Stringer.
+func (h *Hex) String() string {
+	return fmt.Sprintf("%d,%d (%f,%f)", h.M, h.N, h.X(), h.Y())
+}
+
 // X coordinate of the center of this hexagon.
 func (h *Hex) X() float64 {
 	oddXOffset := 17
@@ -46,12 +51,11 @@ type key struct {
 type Board struct {
 	stride int // how many hexes are in a row
 	hexes  map[key]*Hex
-	m, n   int
 }
 
 // NewBoard creates a new game board.
 func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
-	m := make(map[key]*Hex, w)
+	hexes := make(map[key]*Hex, w*h)
 
 	for i := 0; i < w*h; i++ {
 		e := mgr.NewEntity()
@@ -59,10 +63,10 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 			M: i % w,
 			N: i / w,
 		}
-		m[key{i % w, i / w}] = &h
+		hexes[key{i % w, i / w}] = &h
+		mgr.AddComponent(e, &h)
 
 		// Grass texture for the Hex
-		mgr.AddComponent(e, &h)
 		mgr.AddComponent(e, &Sprite{
 			Texture: "texture.png",
 			X:       24,
@@ -82,9 +86,7 @@ func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
 
 	board := Board{
 		stride: w,
-		hexes:  m,
-		m:      w,
-		n:      h,
+		hexes:  hexes,
 	}
 	board.calcNeighbors()
 
@@ -187,7 +189,7 @@ func (b *Board) At(x, y int) *Hex {
 
 // Dimensions returns the maximum extent of the board in M and N dimensions.
 func (b *Board) Dimensions() (M, N int) {
-	return b.m, b.n
+	return b.stride, len(b.hexes) / b.stride
 }
 
 // isOddN determines whether the N coordinate will be odd or not.

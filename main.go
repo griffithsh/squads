@@ -18,9 +18,9 @@ import (
 )
 
 type system struct {
-	render        *game.Renderer
-	board         *game.Board
-	choreographer *game.Choreographer
+	render *game.Renderer
+	board  *game.Board
+	nav    *game.Navigator
 }
 
 func main() {
@@ -137,9 +137,9 @@ func run() {
 
 	hud := game.NewHUD(1024, 768)
 	s := system{
-		render:        game.NewRenderer(),
-		board:         board,
-		choreographer: &game.Choreographer{},
+		render: game.NewRenderer(),
+		board:  board,
+		nav:    &game.Navigator{},
 	}
 
 	cfg := pixelgl.WindowConfig{
@@ -212,14 +212,17 @@ func run() {
 			p.Y = -p.Y
 
 			a := mgr.Component(actor, "Actor").(*game.Actor)
-			oe := mgr.Get([]string{"Obstacle"})
+
 			var obstacles []game.ContextualObstacle
-			for _, e := range oe {
+			for _, e := range mgr.Get([]string{"Obstacle"}) {
 				obstacle := mgr.Component(e, "Obstacle").(*game.Obstacle)
 				hex := s.board.Get(obstacle.M, obstacle.N)
 				if hex == nil {
 					continue
 				}
+
+				// Translate the Obstacles into ContextualObstacles based on
+				// how much of an Obstacle this is to the Mover in this context.
 				obstacles = append(obstacles, game.ContextualObstacle{
 					Obstacle: *obstacle,
 					Cost:     math.Inf(0), // just pretend these all are total obstacles for now
@@ -230,7 +233,10 @@ func run() {
 			if err != nil {
 				fmt.Printf("no path there: %v\n", err)
 			} else {
-				a.Move(steps)
+				fmt.Println("path", steps)
+				mgr.AddComponent(actor, &game.Mover{
+					Moves: steps,
+				})
 			}
 		}
 
@@ -261,7 +267,7 @@ func run() {
 		ctrl := controls(win)
 		controlCamera(camera, hud, elapsed, ctrl)
 
-		s.choreographer.Update(mgr, elapsed)
+		s.nav.Update(mgr, elapsed)
 
 		win.Clear(colornames.Cadetblue)
 
