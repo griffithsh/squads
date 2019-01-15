@@ -35,6 +35,9 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			mover.dy = mover.Moves[0].Y() - pos.Center.Y
 			mover.x = pos.Center.X
 			mover.y = pos.Center.Y
+			if facer, ok := mgr.Component(e, "Facer").(*Facer); ok {
+				facer.Face = direction(actor.M, actor.N, mover.Moves[0].M, mover.Moves[0].N)
+			}
 
 		} else if mover.Elapsed >= mover.Duration {
 			// End-of-move tasks...
@@ -74,6 +77,9 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			mover.dy = mover.Moves[0].Y() - pos.Center.Y
 			mover.x = pos.Center.X
 			mover.y = pos.Center.Y
+			if facer, ok := mgr.Component(e, "Facer").(*Facer); ok {
+				facer.Face = direction(actor.M, actor.N, mover.Moves[0].M, mover.Moves[0].N)
+			}
 
 		} else {
 			// Traversing ....

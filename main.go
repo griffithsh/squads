@@ -176,6 +176,7 @@ func run() {
 	start := board.Get(0, 0)
 	actor := mgr.NewEntity()
 	mgr.AddComponent(actor, &game.Actor{})
+	mgr.AddComponent(actor, &game.Facer{Face: game.S})
 	mgr.AddComponent(actor, &game.Sprite{
 		Texture: "Untitled.png",
 		X:       24,
