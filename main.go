@@ -172,8 +172,9 @@ func run() {
 	})
 	lastMouse := win.MousePosition()
 
+	// Create an Actor that is controlled by mouse clicks
+	start := board.Get(0, 0)
 	actor := mgr.NewEntity()
-	h := board.Get(0, 0)
 	mgr.AddComponent(actor, &game.Actor{})
 	mgr.AddComponent(actor, &game.Sprite{
 		Texture: "Untitled.png",
@@ -184,8 +185,8 @@ func run() {
 	})
 	mgr.AddComponent(actor, &game.Position{
 		Center: game.Center{
-			X: h.X(),
-			Y: h.Y(),
+			X: start.X(),
+			Y: start.Y(),
 		},
 		Layer: 10,
 	})
@@ -233,7 +234,6 @@ func run() {
 			if err != nil {
 				fmt.Printf("no path there: %v\n", err)
 			} else {
-				fmt.Println("path", steps)
 				mgr.AddComponent(actor, &game.Mover{
 					Moves: steps,
 				})

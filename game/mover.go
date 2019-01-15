@@ -6,10 +6,16 @@ import (
 
 // Mover is a component that can move.
 type Mover struct {
-	Moves   []*Hex
-	Free    time.Duration // Free is how long until this Mover is done with its movement.
-	Elapsed time.Duration // Elapsed since last step Move.
-	Speed   float64       // Speed is how fast we're moving
+	Moves    []*Hex
+	Duration time.Duration // Duration is how long this Mover will require to complete the move to the next Hex.
+	Elapsed  time.Duration // Elapsed time since started the move to the next Hex.
+	Speed    float64       // Speed is how fast we're moving
+
+	// Delta to next Hex.
+	dx, dy float64
+
+	// Position of the Hex the mover has started the latest move from.
+	x, y float64
 }
 
 // Type of this Component.

@@ -10,62 +10,77 @@ import (
 type Navigator struct {
 }
 
-// Update Actors.
+// Update Movers.
 func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
-	entities := mgr.Get([]string{"Mover", "Actor", "Position", "Obstacle"})
 
-	spd := float64(time.Millisecond * 150)
+	entities := mgr.Get([]string{"Mover", "Actor", "Position"})
+
+	speed := float64(time.Millisecond * 150)
 	for _, e := range entities {
 		mover := mgr.Component(e, "Mover").(*Mover)
 		actor := mgr.Component(e, "Actor").(*Actor)
 		pos := mgr.Component(e, "Position").(*Position)
-		obstacle := mgr.Component(e, "Obstacle").(*Obstacle)
 
-		switch {
-		// case "first move":
-		case len(mover.Moves) > 0 && mover.Moves[0].M == actor.M && mover.Moves[0].N == actor.N:
+		if len(mover.Moves) > 0 && mover.Moves[0].M == actor.M && mover.Moves[0].N == actor.N {
+			// Pop the first move, because it's the current position.
 			mover.Moves = mover.Moves[1:]
+
+			// First move is a little slow.
 			mover.Speed = 0.5
-			mover.Free = time.Duration(spd / mover.Speed)
+
+			// Start-of-move tasks...
 			mover.Elapsed = 0
+			mover.Duration = time.Duration(speed / mover.Speed)
+			mover.dx = mover.Moves[0].X() - pos.Center.X
+			mover.dy = mover.Moves[0].Y() - pos.Center.Y
+			mover.x = pos.Center.X
+			mover.y = pos.Center.Y
 
-		// case "traversing":
-		default:
-			mover.Elapsed += elapsed
+		} else if mover.Elapsed >= mover.Duration {
+			// End-of-move tasks...
+			dest := mover.Moves[0]
+			pos.Center.X = dest.X()
+			pos.Center.Y = dest.Y()
+			actor.M = dest.M
+			actor.N = dest.N
+			if obstacle, ok := mgr.Component(e, "Obstacle").(*Obstacle); ok {
+				obstacle.M = dest.M
+				obstacle.N = dest.N
+			}
 
-		// case "next move":
-		case mover.Elapsed >= mover.Free && len(mover.Moves) > 0:
-			mover.Elapsed -= mover.Free
-			mover.Free = 0
+			// Pop the move list to update the next destination.
+			mover.Moves = mover.Moves[1:]
+
+			// Are we done?
+			if len(mover.Moves) == 0 {
+				mgr.RemoveComponent(e, mover)
+				continue
+			}
+
+			// The last few moves are slower than normal.
 			switch len(mover.Moves) {
 			default:
-				mover.Speed = 0.8
+				mover.Speed = 0.75
 			case 2:
-				mover.Speed = 0.6
+				mover.Speed = 0.55
 			case 1:
-				mover.Speed = 0.4
+				mover.Speed = 0.30
 			}
-			mover.Free = time.Duration(spd / mover.Speed)
-			mover.Elapsed = 0
 
-			step := mover.Moves[0]
+			// Start-of-move tasks...
+			mover.Elapsed -= mover.Duration
+			mover.Duration = time.Duration(speed / mover.Speed)
+			mover.dx = mover.Moves[0].X() - pos.Center.X
+			mover.dy = mover.Moves[0].Y() - pos.Center.Y
+			mover.x = pos.Center.X
+			mover.y = pos.Center.Y
 
-			actor.M = step.M
-			actor.N = step.N
+		} else {
+			// Traversing ....
+			mover.Elapsed += elapsed
 
-			// Update the position of this Mover.
-			pos.Center.X = mover.Moves[0].X()
-			pos.Center.Y = mover.Moves[0].Y()
-
-			// Take the Mover's Obstacle with them as they move.
-			obstacle.M = step.M
-			obstacle.N = step.N
-
-			mover.Moves = mover.Moves[1:]
-
-		// case "all done":
-		case mover.Elapsed >= mover.Free && len(mover.Moves) == 0:
-			mgr.RemoveComponent(e, mover)
+			pos.Center.X = mover.Elapsed.Seconds()/mover.Duration.Seconds()*mover.dx + mover.x
+			pos.Center.Y = mover.Elapsed.Seconds()/mover.Duration.Seconds()*mover.dy + mover.y
 		}
 	}
 }
