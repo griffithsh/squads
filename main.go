@@ -14,7 +14,6 @@ import (
 	"github.com/faiface/pixel/pixelgl"
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/game"
-	"golang.org/x/image/colornames"
 )
 
 type system struct {
@@ -270,7 +269,7 @@ func run() {
 
 		s.nav.Update(mgr, elapsed)
 
-		win.Clear(colornames.Cadetblue)
+		win.Clear(color.RGBA{124, 168, 213, 255})
 
 		// Render all entities.
 		if err := s.render.Render(win, camera.View(), mgr); err != nil {
