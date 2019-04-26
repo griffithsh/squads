@@ -1,18 +1,15 @@
-package game
+package geom
 
 import (
 	"fmt"
 	"testing"
-
-	"github.com/griffithsh/squads/ecs"
 )
 
 func TestNavigate(t *testing.T) {
-	mgr := ecs.NewWorld()
-	board, _ := NewBoard(mgr, 20, 60)
+	field, _ := NewField(20, 60)
 
-	start := board.Get(0, 0)
-	goal := board.Get(0, 58)
+	start := field.Get(0, 0)
+	goal := field.Get(0, 58)
 	steps, err := Navigate(start, goal, []ContextualObstacle{})
 	if err != nil {
 		t.Fatal(err)

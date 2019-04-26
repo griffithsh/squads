@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/griffithsh/squads/ecs"
+	"github.com/griffithsh/squads/geom"
 )
 
 // Navigator is the System for Movers.
@@ -36,7 +37,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			mover.x = pos.Center.X
 			mover.y = pos.Center.Y
 			if facer, ok := mgr.Component(e, "Facer").(*Facer); ok {
-				facer.Face = direction(actor.M, actor.N, mover.Moves[0].M, mover.Moves[0].N)
+				facer.Face = geom.Direction(actor.M, actor.N, mover.Moves[0].M, mover.Moves[0].N)
 			}
 
 		} else if mover.Elapsed >= mover.Duration {
@@ -78,7 +79,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			mover.x = pos.Center.X
 			mover.y = pos.Center.Y
 			if facer, ok := mgr.Component(e, "Facer").(*Facer); ok {
-				facer.Face = direction(actor.M, actor.N, mover.Moves[0].M, mover.Moves[0].N)
+				facer.Face = geom.Direction(actor.M, actor.N, mover.Moves[0].M, mover.Moves[0].N)
 			}
 
 		} else {

@@ -1,4 +1,6 @@
-package game
+package geom
+
+//go:generate stringer -type=DirectionType
 
 // DirectionType enumerates directions.
 type DirectionType int
@@ -13,9 +15,9 @@ const (
 	NW
 )
 
-// direction calculates the compass direction given an origin (om,on) and a
-// destination (dm,dn).
-func direction(om, on, dm, dn int) DirectionType {
+// Direction calculates the compass direction given an origin (om,on) and a
+// destination (dm,dn). This function only works with adjacent Hexes.
+func Direction(om, on, dm, dn int) DirectionType {
 	switch {
 	case on+2 == dn:
 		return S

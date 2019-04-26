@@ -1,9 +1,20 @@
-package game
+package geom
 
 import (
 	"fmt"
 	"math"
 )
+
+// ContextualObstacle captures how much of an obstacle this is to the navigator.
+// A bird can fly right over a tree, a snake is not impeded by a swamp. A horse
+// runs fastest when the ground is level and clear. The Cost multiplies the
+// normal traversal time. A Cost of 2 implies that taking this path is twice as
+// long as it normally would be. A cost of Infinity marks something that is completely impassable.
+type ContextualObstacle struct {
+	M, N int
+
+	Cost float64
+}
 
 func reconstruct(prevs map[*Hex]*Hex, current *Hex) ([]*Hex, error) {
 	result := []*Hex{current}
@@ -32,7 +43,7 @@ func heuristic(a, b *Hex) float64 {
 func Navigate(start, goal *Hex, obstacles []ContextualObstacle) ([]*Hex, error) {
 	oneStep := heuristic(&Hex{M: 0, N: 0}, &Hex{M: 0, N: 1})
 
-	closed := map[key]interface{}{}
+	closed := map[Key]interface{}{}
 	open := map[*Hex]interface{}{
 		start: struct{}{},
 	}
@@ -62,10 +73,10 @@ func Navigate(start, goal *Hex, obstacles []ContextualObstacle) ([]*Hex, error) 
 		}
 
 		delete(open, current)
-		closed[key{M: current.M, N: current.N}] = struct{}{}
+		closed[Key{M: current.M, N: current.N}] = struct{}{}
 
 		for _, n := range current.Neighbors() {
-			if _, ok := closed[key{M: n.M, N: n.N}]; ok {
+			if _, ok := closed[Key{M: n.M, N: n.N}]; ok {
 				continue
 			}
 

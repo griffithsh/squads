@@ -1,99 +1,71 @@
-package game
+package geom
 
 import (
 	"fmt"
-
-	"github.com/griffithsh/squads/ecs"
 )
 
+/*
+ A Hexagon that has N, S, NE, SE, NW, and SW faces could be comprised of a
+ triangular section and a rectangular section, and then another triangular section
+ going left to right.
+    _________
+   /|       |\
+  / |       | \
+ /  |       |  \
+ \  |       |  /
+  \ |       | /
+   \|_______|/
+
+The width of this hexagon would be the 2*the width of the triangular section
+plus the width of the rectangular section.
+
+Stride here is used for dividing a hexagonal field into rectangular areas that
+are composed of the first triangular area of a hexagon, and the rectangular
+area.
+*/
 const (
-	xStride = 34
-	yStride = 8
+	hexTriWidth    = 7
+	hexSquareWidth = 10
+	hexWidth       = hexTriWidth + hexSquareWidth + hexTriWidth
+	hexHeight      = 16
+	xStride        = (hexTriWidth + hexSquareWidth) * 2
+	yStride        = hexHeight / 2
 )
 
-// Hex is a hexagon tile that an Actor can occupy.
-type Hex struct {
-	M, N      int
-	neighbors []*Hex
-}
-
-// Type of this Component.
-func (h *Hex) Type() string {
-	return "Hex"
-}
-
-// String to implement Stringer.
-func (h *Hex) String() string {
-	return fmt.Sprintf("%d,%d (%f,%f)", h.M, h.N, h.X(), h.Y())
-}
-
-// X coordinate of the center of this hexagon.
-func (h *Hex) X() float64 {
-	oddXOffset := 17
-	return 12 + float64((xStride*h.M)+(h.N%2*oddXOffset))
-}
-
-// Y coordinate of the center of this hexagon.
-func (h *Hex) Y() float64 {
-	return 8 + float64(yStride*h.N)
-}
-
-// Neighbors of this Hex.
-func (h *Hex) Neighbors() []*Hex {
-	return h.neighbors
-}
-
-type key struct {
+// Key is a way of referencing a Hex in a Field.
+type Key struct {
 	M, N int
 }
 
-// Board to play out encounters on. Collection of Hexes.
-type Board struct {
+// Field to play out encounters on. A collection of Hexes.
+type Field struct {
 	stride int // how many hexes are in a row
-	hexes  map[key]*Hex
+	hexes  map[Key]*Hex
 }
 
-// NewBoard creates a new game board.
-func NewBoard(mgr *ecs.World, w, h int) (*Board, error) {
-	hexes := make(map[key]*Hex, w*h)
+// NewField creates a new game field.
+func NewField(w, h int) (*Field, error) {
+	hexes := make(map[Key]*Hex, w*h)
 
 	for i := 0; i < w*h; i++ {
-		e := mgr.NewEntity()
 		h := Hex{
 			M: i % w,
 			N: i / w,
 		}
-		hexes[key{i % w, i / w}] = &h
-		mgr.AddComponent(e, &h)
-
-		// Grass texture for the Hex
-		mgr.AddComponent(e, &Sprite{
-			Texture: "texture.png",
-			X:       24,
-			Y:       0,
-			W:       24,
-			H:       16,
-		})
-
-		mgr.AddComponent(e, &Position{
-			Center: Center{
-				X: h.X(),
-				Y: h.Y(),
-			},
-			Layer: 1,
-		})
+		hexes[Key{i % w, i / w}] = &h
 	}
 
-	board := Board{
+	field := Field{
 		stride: w,
 		hexes:  hexes,
 	}
-	board.calcNeighbors()
+	field.calcNeighbors()
 
-	return &board, nil
+	return &field, nil
 }
-func (b *Board) calcNeighbors() {
-	for _, hex := range b.hexes {
+
+func (f *Field) calcNeighbors() {
+	for _, hex := range f.hexes {
 		hex.neighbors = []*Hex{}
 		m, n := hex.M, hex.N
 		// Find neighbor candidates.
@@ -119,9 +91,9 @@ func (b *Board) calcNeighbors() {
 			}...)
 		}
 
-		// Attach as neighbors only the ones that appear in the board.
+		// Attach as neighbors only the ones that appear in the field.
 		for _, candidate := range candidates {
-			neighbor := b.Get(candidate.m, candidate.n)
+			neighbor := f.Get(candidate.m, candidate.n)
 			if neighbor == nil {
 				continue
 			}
@@ -130,14 +102,14 @@ func (b *Board) calcNeighbors() {
 	}
 }
 
-// Width of the Board in pixels.
-func (b *Board) Width() float64 {
-	return float64(b.stride * xStride)
+// Width of the Field in pixels.
+func (f *Field) Width() float64 {
+	return float64(f.stride * xStride)
 }
 
-// Height of the Board in pixels.
-func (b *Board) Height() float64 {
-	return float64(len(b.hexes) / b.stride * yStride)
+// Height of the Field in pixels.
+func (f *Field) Height() float64 {
+	return float64(len(f.hexes) / f.stride * yStride)
 }
 
 // relative coordinates are global x,y coordinates translated to the roughMN
@@ -168,9 +140,9 @@ func relative(x, y int) (int, int) {
 }
 
 // Get accepts M,N coordinates and returns the Hex with those coordinates if it
-// exists in the board.
-func (b *Board) Get(m, n int) *Hex {
-	hex, ok := b.hexes[key{m, n}]
+// exists in the field.
+func (f *Field) Get(m, n int) *Hex {
+	hex, ok := f.hexes[Key{m, n}]
 	if !ok {
 		return nil
 	}
@@ -178,18 +150,18 @@ func (b *Board) Get(m, n int) *Hex {
 }
 
 // At accepts world coordinates and returns the Hex there if there is one.
-func (b *Board) At(x, y int) *Hex {
+func (f *Field) At(x, y int) *Hex {
 	rx, ry := relative(x, y)
 	m, n := roughMN(x, y)
 
 	m, n = xyToMN(rx, ry, m, n)
 
-	return b.Get(m, n)
+	return f.Get(m, n)
 }
 
-// Dimensions returns the maximum extent of the board in M and N dimensions.
-func (b *Board) Dimensions() (M, N int) {
-	return b.stride, len(b.hexes) / b.stride
+// Dimensions returns the maximum extent of the field in M and N dimensions.
+func (f *Field) Dimensions() (M, N int) {
+	return f.stride, len(f.hexes) / f.stride
 }
 
 // isOddN determines whether the N coordinate will be odd or not.

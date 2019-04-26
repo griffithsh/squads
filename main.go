@@ -13,12 +13,13 @@ import (
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/geom"
 	"github.com/hajimehoshi/ebiten"
 )
 
 type system struct {
 	render    *game.Renderer
-	board     *game.Board
+	board     *geom.Field
 	nav       *game.Navigator
 	mgr       *ecs.World
 	camera    *Camera
@@ -97,7 +98,33 @@ func controlCamera(c *Camera, hud *game.HUD, t time.Duration, ctrl Controls) {
 	}
 }
 
-func addTrees(mgr *ecs.World, b *game.Board) {
+func addGrass(mgr *ecs.World, b *geom.Field) {
+	M, N := b.Dimensions()
+	for n := 0; n < N; n++ {
+		for m := 0; m < M; m++ {
+			h := b.Get(m, n)
+			e := mgr.NewEntity()
+
+			mgr.AddComponent(e, &game.Sprite{
+				Texture: "texture.png",
+				X:       24,
+				Y:       0,
+				W:       24,
+				H:       16,
+			})
+
+			mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: h.X(),
+					Y: h.Y(),
+				},
+				Layer: 1,
+			})
+		}
+	}
+}
+
+func addTrees(mgr *ecs.World, b *geom.Field) {
 	M, N := b.Dimensions()
 	for n := 0; n < N; n++ {
 		for m := 0; m < M; m++ {
@@ -136,10 +163,11 @@ var last time.Time
 // setup the game Entities.
 func setup(w, h int) (*system, error) {
 	mgr := ecs.NewWorld()
-	board, err := game.NewBoard(mgr, 8, 24)
+	board, err := geom.NewField(8, 24)
 	if err != nil {
 		return nil, fmt.Errorf("game.NewBoard: %v", err)
 	}
+	addGrass(mgr, board)
 	addTrees(mgr, board)
 
 	hud := game.NewHUD(w, h)
@@ -167,7 +195,7 @@ func setup(w, h int) (*system, error) {
 	start := board.Get(0, 0)
 	s.actor = mgr.NewEntity()
 	mgr.AddComponent(s.actor, &game.Actor{})
-	mgr.AddComponent(s.actor, &game.Facer{Face: game.S})
+	mgr.AddComponent(s.actor, &game.Facer{Face: geom.S})
 	mgr.AddComponent(s.actor, &game.Sprite{
 		Texture: "Untitled.png",
 		X:       24,
@@ -233,7 +261,7 @@ func (s *system) run(screen *ebiten.Image) error {
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		a := s.mgr.Component(s.actor, "Actor").(*game.Actor)
 
-		var obstacles []game.ContextualObstacle
+		var obstacles []geom.ContextualObstacle
 		for _, e := range s.mgr.Get([]string{"Obstacle"}) {
 			obstacle := s.mgr.Component(e, "Obstacle").(*game.Obstacle)
 			hex := s.board.Get(obstacle.M, obstacle.N)
@@ -243,13 +271,14 @@ func (s *system) run(screen *ebiten.Image) error {
 
 			// Translate the Obstacles into ContextualObstacles based on
 			// how much of an Obstacle this is to the Mover in this context.
-			obstacles = append(obstacles, game.ContextualObstacle{
-				Obstacle: *obstacle,
-				Cost:     math.Inf(0), // just pretend these all are total obstacles for now
+			obstacles = append(obstacles, geom.ContextualObstacle{
+				M:    obstacle.M,
+				N:    obstacle.N,
+				Cost: math.Inf(0), // just pretend these all are total obstacles for now
 			})
 		}
 
-		steps, err := game.Navigate(s.board.Get(a.M, a.N), s.board.At(x, y), obstacles)
+		steps, err := geom.Navigate(s.board.Get(a.M, a.N), s.board.At(x, y), obstacles)
 		if err != nil {
 			fmt.Printf("no path there: %v\n", err)
 		} else {

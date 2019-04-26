@@ -1,15 +1,12 @@
-package game
+package geom
 
 import (
 	"fmt"
 	"testing"
-
-	"github.com/griffithsh/squads/ecs"
 )
 
 func TestAt(t *testing.T) {
-	mgr := ecs.NewWorld()
-	b, _ := NewBoard(mgr, 1, 1)
+	b, _ := NewField(1, 1)
 
 	tests := []struct {
 		x, y    int
@@ -48,8 +45,7 @@ func TestAt(t *testing.T) {
 }
 
 func TestAtMN(t *testing.T) {
-	mgr := ecs.NewWorld()
-	b, _ := NewBoard(mgr, 2, 6)
+	b, _ := NewField(2, 6)
 
 	tests := []struct {
 		x, y  int
@@ -78,35 +74,6 @@ func TestAtMN(t *testing.T) {
 
 			if h.M != tc.wantM || h.N != tc.wantN {
 				t.Errorf("\nwant %d,%d\ngot  %d,%d\n", tc.wantM, tc.wantN, h.M, h.N)
-			}
-		})
-	}
-}
-
-func TestHex(t *testing.T) {
-
-	tests := []struct {
-		m, n int
-		x, y float64
-	}{
-		{0, 0, 12, 8},
-		{0, 1, 29, 16},
-		{0, 5, 29, 48},
-		{1, 3, 63, 32},
-	}
-	for _, tc := range tests {
-		t.Run(fmt.Sprintf("%d-%d_%f-%f", tc.m, tc.n, tc.x, tc.y), func(t *testing.T) {
-			h := Hex{
-				M: tc.m,
-				N: tc.n,
-			}
-
-			if h.X() != tc.x {
-				t.Errorf("want %f got %f", tc.x, h.X())
-			}
-
-			if h.Y() != tc.y {
-				t.Errorf("want %f got %f", tc.y, h.Y())
 			}
 		})
 	}
