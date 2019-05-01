@@ -1,38 +1,30 @@
 package main
 
-import (
-	"math"
+type Vec struct {
+	X, Y float64
+}
+type Rect struct {
+	Min, Max Vec
+}
 
-	"github.com/faiface/pixel"
-)
-
-// Camera is a class that composes View Matrices for rendering with faiface/pixel.
+// Camera is a class that stores focus and zoom values
 type Camera struct {
-	pos        pixel.Vec
+	pos        Vec
 	zoom       float64
-	viewBounds pixel.Rect
+	viewBounds Rect
 }
 
 // NewCamera creates a new camera for a view of the requested width and height
 func NewCamera(width, height float64) *Camera {
 	return &Camera{
-		pos:        pixel.Vec{X: 0, Y: 0},
+		pos:        Vec{X: 0, Y: 0},
 		zoom:       3.0,
-		viewBounds: pixel.Rect{Max: pixel.Vec{X: width, Y: height}},
+		viewBounds: Rect{Max: Vec{X: width, Y: height}},
 	}
 }
 
-// View composes the camera's projection matrix.
-func (c *Camera) View() pixel.Matrix {
-	// faiface/pixel inverts the Y coordinate
-	vFlip := c.pos
-	vFlip.Y *= -1
-
-	return pixel.IM.Scaled(vFlip, math.Round(c.zoom)).Moved(c.viewBounds.Center().Sub(vFlip))
-}
-
 // Center the view on a point.
-func (c *Camera) Center(p pixel.Vec) {
+func (c *Camera) Center(p Vec) {
 	c.pos = p
 }
 

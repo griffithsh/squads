@@ -1,8 +1,9 @@
 package main
 
 import (
+	"errors"
 	"fmt"
-	"image/color"
+	"image"
 	"log"
 	"math"
 	"math/rand"
@@ -10,16 +11,21 @@ import (
 	"runtime/pprof"
 	"time"
 
-	"github.com/faiface/pixel"
-	"github.com/faiface/pixel/pixelgl"
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/game"
+	"github.com/hajimehoshi/ebiten"
 )
 
 type system struct {
-	render *game.Renderer
-	board  *game.Board
-	nav    *game.Navigator
+	render    *game.Renderer
+	board     *game.Board
+	nav       *game.Navigator
+	mgr       *ecs.World
+	camera    *Camera
+	hud       *game.HUD
+	cursor    ecs.Entity
+	lastMouse image.Point
+	actor     ecs.Entity
 }
 
 func main() {
@@ -42,7 +48,8 @@ func main() {
 	defer pprof.StopCPUProfile()
 
 	rand.Seed(time.Now().Unix())
-	pixelgl.Run(run)
+	s, _ := setup(1024, 768)
+	ebiten.Run(s.run, 1024, 768, 1, "Squads")
 }
 
 type Controls struct {
@@ -51,19 +58,19 @@ type Controls struct {
 	Start bool
 }
 
-func controls(win *pixelgl.Window) Controls {
+func controls() Controls {
 	return Controls{
-		Up:    win.Pressed(pixelgl.KeyUp),
-		Down:  win.Pressed(pixelgl.KeyDown),
-		Left:  win.Pressed(pixelgl.KeyLeft),
-		Right: win.Pressed(pixelgl.KeyRight),
+		Up:    ebiten.IsKeyPressed(ebiten.KeyUp),
+		Down:  ebiten.IsKeyPressed(ebiten.KeyDown),
+		Left:  ebiten.IsKeyPressed(ebiten.KeyLeft),
+		Right: ebiten.IsKeyPressed(ebiten.KeyRight),
 
-		A: win.Pressed(pixelgl.KeyZ),
-		B: win.Pressed(pixelgl.KeyX),
-		C: win.Pressed(pixelgl.KeyC),
-		D: win.Pressed(pixelgl.KeyV),
+		A: ebiten.IsKeyPressed(ebiten.KeyZ),
+		B: ebiten.IsKeyPressed(ebiten.KeyX),
+		C: ebiten.IsKeyPressed(ebiten.KeyC),
+		D: ebiten.IsKeyPressed(ebiten.KeyV),
 
-		Start: win.Pressed(pixelgl.KeyEnter),
+		Start: ebiten.IsKeyPressed(ebiten.KeyEnter),
 	}
 }
 
@@ -84,11 +91,9 @@ func controlCamera(c *Camera, hud *game.HUD, t time.Duration, ctrl Controls) {
 	}
 
 	if ctrl.A {
-		c.SetZoom(c.GetZoom() * 1.05)
-		hud.SetZoom(c.GetZoom() * 1.05)
+		c.SetZoom(c.GetZoom() * 1.02)
 	} else if ctrl.B {
-		c.SetZoom(c.GetZoom() * 0.95)
-		hud.SetZoom(c.GetZoom() * 0.95)
+		c.SetZoom(c.GetZoom() * 0.98)
 	}
 }
 
@@ -126,166 +131,175 @@ func addTrees(mgr *ecs.World, b *game.Board) {
 	}
 }
 
-func run() {
+var last time.Time
+
+// setup the game Entities.
+func setup(w, h int) (*system, error) {
 	mgr := ecs.NewWorld()
 	board, err := game.NewBoard(mgr, 8, 24)
 	if err != nil {
-		panic(err)
+		return nil, fmt.Errorf("game.NewBoard: %v", err)
 	}
 	addTrees(mgr, board)
 
-	hud := game.NewHUD(1024, 768)
+	hud := game.NewHUD(w, h)
 	s := system{
 		render: game.NewRenderer(),
 		board:  board,
 		nav:    &game.Navigator{},
+		mgr:    mgr,
+		hud:    hud,
 	}
 
-	cfg := pixelgl.WindowConfig{
-		Title:  "Hexagons, Strategy, Entities, Components, and Systems, Oh my!",
-		Bounds: pixel.R(0, 0, 1024, 768),
-		VSync:  false,
-	}
-	camera := NewCamera(cfg.Bounds.Size().X, cfg.Bounds.Size().Y)
-	camera.Center(pixel.Vec{X: s.board.Width() / 2, Y: s.board.Height() / 2})
+	s.camera = NewCamera(float64(w), float64(h))
+	s.camera.Center(Vec{X: s.board.Width() / 2, Y: s.board.Height() / 2})
 
-	win, err := pixelgl.NewWindow(cfg)
-	if err != nil {
-		panic(err)
-	}
-
-	var (
-		frames = 0
-		second = time.Tick(time.Second)
-	)
-	last := time.Now()
-
-	cursor := mgr.NewEntity()
-	mgr.AddComponent(cursor, &game.Sprite{
+	s.cursor = mgr.NewEntity()
+	mgr.AddComponent(s.cursor, &game.Sprite{
 		Texture: "texture.png",
 		X:       0,
 		Y:       0,
 		W:       24,
 		H:       16,
-		Color:   &color.RGBA{150, 150, 150, 63},
 	})
-	lastMouse := win.MousePosition()
 
 	// Create an Actor that is controlled by mouse clicks
 	start := board.Get(0, 0)
-	actor := mgr.NewEntity()
-	mgr.AddComponent(actor, &game.Actor{})
-	mgr.AddComponent(actor, &game.Facer{Face: game.S})
-	mgr.AddComponent(actor, &game.Sprite{
+	s.actor = mgr.NewEntity()
+	mgr.AddComponent(s.actor, &game.Actor{})
+	mgr.AddComponent(s.actor, &game.Facer{Face: game.S})
+	mgr.AddComponent(s.actor, &game.Sprite{
 		Texture: "Untitled.png",
 		X:       24,
 		Y:       0,
 		W:       24,
 		H:       48,
 	})
-	mgr.AddComponent(actor, &game.Position{
+	mgr.AddComponent(s.actor, &game.Position{
 		Center: game.Center{
 			X: start.X(),
 			Y: start.Y(),
 		},
 		Layer: 10,
 	})
-	mgr.AddComponent(actor, &game.SpriteOffset{
+	mgr.AddComponent(s.actor, &game.SpriteOffset{
 		Y: -16,
 	})
-	mgr.AddComponent(actor, &game.Obstacle{
+	mgr.AddComponent(s.actor, &game.Obstacle{
 		M:            0,
 		N:            0,
 		ObstacleType: game.ACTOR,
 	})
 
-	for !win.Closed() {
-		if win.JustReleased(pixelgl.KeyEscape) || win.Pressed(pixelgl.KeyEscape) {
-			win.SetClosed(true)
-			return
-		}
+	last = time.Now()
 
-		if win.JustPressed(pixelgl.MouseButtonLeft) {
-			p := win.MousePosition()
-			p = camera.View().Unproject(p)
+	return &s, nil
+}
 
-			// faiface/pixel inverts the Y coordinate
-			p.Y = -p.Y
+var errExitGame = errors.New("game has completed")
 
-			a := mgr.Component(actor, "Actor").(*game.Actor)
+var (
+	frames                    = 0
+	accumulated time.Duration = time.Second * 0
+	second                    = time.Tick(time.Second)
+)
 
-			var obstacles []game.ContextualObstacle
-			for _, e := range mgr.Get([]string{"Obstacle"}) {
-				obstacle := mgr.Component(e, "Obstacle").(*game.Obstacle)
-				hex := s.board.Get(obstacle.M, obstacle.N)
-				if hex == nil {
-					continue
-				}
-
-				// Translate the Obstacles into ContextualObstacles based on
-				// how much of an Obstacle this is to the Mover in this context.
-				obstacles = append(obstacles, game.ContextualObstacle{
-					Obstacle: *obstacle,
-					Cost:     math.Inf(0), // just pretend these all are total obstacles for now
-				})
-			}
-
-			steps, err := game.Navigate(board.Get(a.M, a.N), board.At(int(p.X), int(p.Y)), obstacles)
-			if err != nil {
-				fmt.Printf("no path there: %v\n", err)
-			} else {
-				mgr.AddComponent(actor, &game.Mover{
-					Moves: steps,
-				})
-			}
-		}
-
-		// A Cursor that follows the mouse...
-		p := win.MousePosition()
-		if p != lastMouse {
-			c, ok := mgr.Component(cursor, "Position").(*game.Position)
-			if ok {
-				mgr.RemoveComponent(cursor, c)
-			}
-			p = camera.View().Unproject(p)
-			p.Y = -p.Y
-			if h := s.board.At(int(p.X), int(p.Y)); h != nil {
-				mgr.AddComponent(cursor, &game.Position{
-					Center: game.Center{
-						X: h.X(),
-						Y: h.Y(),
-					},
-					Layer: 2,
-				})
-			}
-			lastMouse = win.MousePosition()
-		}
-
-		elapsed := time.Since(last)
-		last = time.Now()
-
-		ctrl := controls(win)
-		controlCamera(camera, hud, elapsed, ctrl)
-
-		s.nav.Update(mgr, elapsed)
-
-		win.Clear(color.RGBA{124, 168, 213, 255})
-
-		// Render all entities.
-		if err := s.render.Render(win, camera.View(), mgr); err != nil {
-			panic(err)
-		}
-
-		// Render a hud.
-		hud.Render(win)
-
-		win.Update()
+func (s *system) run(screen *ebiten.Image) error {
+	start := time.Now()
+	defer func() {
+		d := time.Since(start)
+		// fmt.Println(d)
 		frames++
-		select {
-		case <-second:
-			win.SetTitle(fmt.Sprintf("%s | FPS: %d", cfg.Title, frames))
-			frames = 0
-		default:
+		accumulated += d
+	}()
+
+	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
+		return errExitGame
+	}
+
+	// Get x and y as screen coordinates.
+	x, y := ebiten.CursorPosition()
+
+	// Correct for current zoom.
+	zoom := s.camera.GetZoom()
+	x, y = int(float64(x)/zoom), int(float64(y)/zoom)
+
+	// Correct for camera focus.
+	x, y = x+int(s.camera.GetX()), y+int(s.camera.GetY())
+
+	// Correct for size of screen (!?).
+	x, y = int(float64(x)-1024/2/zoom), int(float64(y)-768/2/zoom)
+
+	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		a := s.mgr.Component(s.actor, "Actor").(*game.Actor)
+
+		var obstacles []game.ContextualObstacle
+		for _, e := range s.mgr.Get([]string{"Obstacle"}) {
+			obstacle := s.mgr.Component(e, "Obstacle").(*game.Obstacle)
+			hex := s.board.Get(obstacle.M, obstacle.N)
+			if hex == nil {
+				continue
+			}
+
+			// Translate the Obstacles into ContextualObstacles based on
+			// how much of an Obstacle this is to the Mover in this context.
+			obstacles = append(obstacles, game.ContextualObstacle{
+				Obstacle: *obstacle,
+				Cost:     math.Inf(0), // just pretend these all are total obstacles for now
+			})
+		}
+
+		steps, err := game.Navigate(s.board.Get(a.M, a.N), s.board.At(x, y), obstacles)
+		if err != nil {
+			fmt.Printf("no path there: %v\n", err)
+		} else {
+			s.mgr.AddComponent(s.actor, &game.Mover{
+				Moves: steps,
+			})
 		}
 	}
+
+	// A Cursor that follows the mouse...
+	if s.lastMouse.X != x || s.lastMouse.Y != y {
+		c, ok := s.mgr.Component(s.cursor, "Position").(*game.Position)
+		if ok {
+			s.mgr.RemoveComponent(s.cursor, c)
+		}
+
+		if h := s.board.At(x, y); h != nil {
+			s.mgr.AddComponent(s.cursor, &game.Position{
+				Center: game.Center{
+					X: h.X(),
+					Y: h.Y(),
+				},
+				Layer: 2,
+			})
+		}
+		s.lastMouse.X, s.lastMouse.Y = ebiten.CursorPosition()
+	}
+
+	elapsed := time.Since(last)
+	last = time.Now()
+
+	ctrl := controls()
+	controlCamera(s.camera, s.hud, elapsed, ctrl)
+
+	s.nav.Update(s.mgr, elapsed)
+
+	// Render all entities.
+	if err := s.render.Render(screen, s.camera.GetX(), s.camera.GetY(), s.camera.GetZoom(), 1024, 768, s.mgr); err != nil {
+		panic(err)
+	}
+
+	// Render a hud separately because the hud is not composed of ECS Entities.
+	s.hud.Render(screen, s.camera.GetZoom(), 1024, 768)
+
+	select {
+	case <-second:
+		fps := time.Second / (accumulated / time.Duration(frames))
+		ebiten.SetWindowTitle(fmt.Sprintf("%s | FPS: %d", "Hexagons, Strategy, Entities, Components, and Systems, Oh my!", fps))
+	default:
+	}
+
+	return nil
 }
