@@ -4,8 +4,7 @@ This is an experiment/game involving turns-based strategy, and the Entity
 Component System paradigm.
 
 ```bash
-go get github.com/faiface/pixel
-go install github.com/griffithsh/squads
+go install github.com/griffithsh/squads/...
 $GOPATH/bin/squads
 ```
 

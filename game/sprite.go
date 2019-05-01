@@ -1,15 +1,12 @@
 package game
 
-import (
-	"image/color"
-)
-
 // Sprite is a renderable slice of a texture.
 type Sprite struct {
 	Texture    string
 	X, Y, W, H int
 
-	Color *color.RGBA
+	// This could include a color, but does not for now, as there are no uses for it.
+	// Color *color.RGBA
 }
 
 // Type of this Component.
