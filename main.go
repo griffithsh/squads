@@ -13,12 +13,13 @@ import (
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/geom"
 	"github.com/hajimehoshi/ebiten"
 )
 
 type system struct {
 	render    *game.Renderer
-	board     *game.Board
+	board     *geom.Field
 	nav       *game.Navigator
 	mgr       *ecs.World
 	camera    *Camera
@@ -97,13 +98,39 @@ func controlCamera(c *Camera, hud *game.HUD, t time.Duration, ctrl Controls) {
 	}
 }
 
-func addTrees(mgr *ecs.World, b *game.Board) {
+func addGrass(mgr *ecs.World, b *geom.Field) {
+	M, N := b.Dimensions()
+	for n := 0; n < N; n++ {
+		for m := 0; m < M; m++ {
+			h := b.Get(m, n)
+			e := mgr.NewEntity()
+
+			mgr.AddComponent(e, &game.Sprite{
+				Texture: "texture.png",
+				X:       24,
+				Y:       0,
+				W:       24,
+				H:       16,
+			})
+
+			mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: h.X(),
+					Y: h.Y(),
+				},
+				Layer: 1,
+			})
+		}
+	}
+}
+
+func addTrees(mgr *ecs.World, b *geom.Field) {
 	M, N := b.Dimensions()
 	for n := 0; n < N; n++ {
 		for m := 0; m < M; m++ {
 			i := m + n*M
 			h := b.Get(m, n)
-			if i == 1 || i%11 == 1 || i%17 == 1 || i%13 == 1 {
+			if i == 1 || i%17 == 1 || i%13 == 1 {
 				e := mgr.NewEntity()
 				mgr.AddComponent(e, &game.Sprite{
 					Texture: "Untitled.png",
@@ -136,10 +163,11 @@ var last time.Time
 // setup the game Entities.
 func setup(w, h int) (*system, error) {
 	mgr := ecs.NewWorld()
-	board, err := game.NewBoard(mgr, 8, 24)
+	board, err := geom.NewField(8, 24)
 	if err != nil {
 		return nil, fmt.Errorf("game.NewBoard: %v", err)
 	}
+	addGrass(mgr, board)
 	addTrees(mgr, board)
 
 	hud := game.NewHUD(w, h)
@@ -164,10 +192,12 @@ func setup(w, h int) (*system, error) {
 	})
 
 	// Create an Actor that is controlled by mouse clicks
-	start := board.Get(0, 0)
+	start := board.Get(3, 8)
 	s.actor = mgr.NewEntity()
-	mgr.AddComponent(s.actor, &game.Actor{})
-	mgr.AddComponent(s.actor, &game.Facer{Face: game.S})
+	mgr.AddComponent(s.actor, &game.Actor{
+		Size: game.SMALL,
+	})
+	mgr.AddComponent(s.actor, &game.Facer{Face: geom.S})
 	mgr.AddComponent(s.actor, &game.Sprite{
 		Texture: "Untitled.png",
 		X:       24,
@@ -185,11 +215,13 @@ func setup(w, h int) (*system, error) {
 	mgr.AddComponent(s.actor, &game.SpriteOffset{
 		Y: -16,
 	})
-	mgr.AddComponent(s.actor, &game.Obstacle{
-		M:            0,
-		N:            0,
-		ObstacleType: game.ACTOR,
-	})
+
+	// FIXME: actor construction should create one or more obstacles to match the Size of the actor.
+	// mgr.AddComponent(s.actor, &game.Obstacle{
+	// 	M:            3,
+	// 	N:            8,
+	// 	ObstacleType: game.ACTOR,
+	// })
 
 	last = time.Now()
 
@@ -231,31 +263,52 @@ func (s *system) run(screen *ebiten.Image) error {
 	x, y = int(float64(x)-1024/2/zoom), int(float64(y)-768/2/zoom)
 
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		a := s.mgr.Component(s.actor, "Actor").(*game.Actor)
 
-		var obstacles []game.ContextualObstacle
+		var obstacles []geom.ContextualObstacle
 		for _, e := range s.mgr.Get([]string{"Obstacle"}) {
+			// An Actor is not an obstacle to itself.
+			if e == s.actor {
+				continue
+			}
 			obstacle := s.mgr.Component(e, "Obstacle").(*game.Obstacle)
 			hex := s.board.Get(obstacle.M, obstacle.N)
+
 			if hex == nil {
 				continue
 			}
 
 			// Translate the Obstacles into ContextualObstacles based on
 			// how much of an Obstacle this is to the Mover in this context.
-			obstacles = append(obstacles, game.ContextualObstacle{
-				Obstacle: *obstacle,
-				Cost:     math.Inf(0), // just pretend these all are total obstacles for now
+			obstacles = append(obstacles, geom.ContextualObstacle{
+				M:    obstacle.M,
+				N:    obstacle.N,
+				Cost: math.Inf(0), // just pretend these all are total obstacles for now
 			})
 		}
 
-		steps, err := game.Navigate(s.board.Get(a.M, a.N), s.board.At(x, y), obstacles)
+		a := s.mgr.Component(s.actor, "Actor").(*game.Actor)
+		pos := s.mgr.Component(s.actor, "Position").(*game.Position)
+		var steps []geom.Positioned
+		var err error
+		switch a.Size {
+		case game.SMALL:
+			steps, err = geom.Navigate(s.board.At(int(pos.Center.X), int(pos.Center.Y)), s.board.At(int(x), int(y)), obstacles)
+		case game.MEDIUM:
+			steps, err = geom.Navigate4(s.board.At4(int(pos.Center.X), int(pos.Center.Y)), s.board.At4(int(x), int(y)), obstacles)
+		case game.LARGE:
+			steps, err = geom.Navigate7(s.board.At7(int(pos.Center.X), int(pos.Center.Y)), s.board.At7(int(x), int(y)), obstacles)
+		}
 		if err != nil {
 			fmt.Printf("no path there: %v\n", err)
 		} else {
-			s.mgr.AddComponent(s.actor, &game.Mover{
-				Moves: steps,
-			})
+			m := game.Mover{}
+
+			for _, step := range steps {
+				m.Moves = append(m.Moves, game.Waypoint{X: step.X(), Y: step.Y()})
+			}
+
+			s.mgr.AddComponent(s.actor, &m)
+
 		}
 	}
 

@@ -23,14 +23,3 @@ type Obstacle struct {
 func (o *Obstacle) Type() string {
 	return "Obstacle"
 }
-
-// ContextualObstacle captures how much of an obstacle this is to the navigator.
-// A bird can fly right over a tree, a snake is not impeded by a swamp. A horse
-// runs fastest when the ground is level and clear. The Cost multiplies the
-// normal traversal time. A Cost of 2 implies that taking this path is twice as
-// long as it normally would be.
-type ContextualObstacle struct {
-	Obstacle
-
-	Cost float64
-}
