@@ -67,27 +67,37 @@ func NewField(w, h int) (*Field, error) {
 func (f *Field) calcNeighbors() {
 	for _, hex := range f.hexes {
 		hex.neighbors = []*Hex{}
+		hex.neighborsByDirection = map[DirectionType]*Hex{}
 		m, n := hex.M, hex.N
 		// Find neighbor candidates.
-		candidates := []struct{ m, n int }{
-			{m, n - 2}, // N
-			{m, n + 2}, // S
+		candidates := []struct {
+			m, n int
+			d    DirectionType
+		}{
+			{m, n - 2, N}, // N
+			{m, n + 2, S}, // S
 		}
 		if n%2 == 0 {
 			// then the E ones have the same M, and the W ones are -1 M
-			candidates = append(candidates, []struct{ m, n int }{
-				{m - 1, n - 1}, // NW
-				{m - 1, n + 1}, // SW
-				{m, n + 1},     // SE
-				{m, n - 1},     // NE
+			candidates = append(candidates, []struct {
+				m, n int
+				d    DirectionType
+			}{
+				{m - 1, n - 1, NW}, // NW
+				{m - 1, n + 1, SW}, // SW
+				{m, n + 1, SE},     // SE
+				{m, n - 1, NE},     // NE
 			}...)
 		} else {
 			// then the E ones are +1 M, and the W ones have the same M
-			candidates = append(candidates, []struct{ m, n int }{
-				{m, n - 1},     // NW
-				{m, n + 1},     // SW
-				{m + 1, n + 1}, // SE
-				{m + 1, n - 1}, // NE
+			candidates = append(candidates, []struct {
+				m, n int
+				d    DirectionType
+			}{
+				{m, n - 1, NW},     // NW
+				{m, n + 1, SW},     // SW
+				{m + 1, n + 1, SE}, // SE
+				{m + 1, n - 1, NE}, // NE
 			}...)
 		}
 
@@ -98,6 +108,7 @@ func (f *Field) calcNeighbors() {
 				continue
 			}
 			hex.neighbors = append(hex.neighbors, neighbor)
+			hex.neighborsByDirection[candidate.d] = neighbor
 		}
 	}
 }

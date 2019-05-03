@@ -263,7 +263,6 @@ func (s *system) run(screen *ebiten.Image) error {
 	x, y = int(float64(x)-1024/2/zoom), int(float64(y)-768/2/zoom)
 
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-		a := s.mgr.Component(s.actor, "Actor").(*game.Actor)
 
 		var obstacles []geom.ContextualObstacle
 		for _, e := range s.mgr.Get([]string{"Obstacle"}) {
@@ -282,13 +281,29 @@ func (s *system) run(screen *ebiten.Image) error {
 			})
 		}
 
-		steps, err := geom.Navigate(s.board.Get(a.M, a.N), s.board.At(x, y), obstacles)
+		a := s.mgr.Component(s.actor, "Actor").(*game.Actor)
+		pos := s.mgr.Component(s.actor, "Position").(*game.Position)
+		var steps []geom.Positioned
+		var err error
+		switch a.Size {
+		case game.SMALL:
+			steps, err = geom.Navigate(s.board.At(int(pos.Center.X), int(pos.Center.Y)), s.board.At(int(x), int(y)), obstacles)
+		case game.MEDIUM:
+			// TODO
+		case game.LARGE:
+			// TODO
+		}
 		if err != nil {
 			fmt.Printf("no path there: %v\n", err)
 		} else {
-			s.mgr.AddComponent(s.actor, &game.Mover{
-				Moves: steps,
-			})
+			m := game.Mover{}
+
+			for _, step := range steps {
+				m.Moves = append(m.Moves, game.Waypoint{X: step.X(), Y: step.Y()})
+			}
+
+			s.mgr.AddComponent(s.actor, &m)
+
 		}
 	}
 

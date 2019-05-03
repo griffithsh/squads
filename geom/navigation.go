@@ -1,6 +1,7 @@
 package geom
 
 import (
+	"errors"
 	"fmt"
 	"math"
 )
@@ -16,9 +17,14 @@ type ContextualObstacle struct {
 	Cost float64
 }
 
-func reconstruct(prevs map[*Hex]*Hex, current *Hex) ([]*Hex, error) {
-	result := []*Hex{current}
-	n, ok := prevs[current]
+type Positioned interface {
+	X() float64
+	Y() float64
+}
+
+func reconstruct(prevs map[Positioned]Positioned, goal Positioned) ([]Positioned, error) {
+	result := []Positioned{goal}
+	n, ok := prevs[goal]
 	for ok {
 		result = append(result, n)
 
@@ -33,14 +39,20 @@ func reconstruct(prevs map[*Hex]*Hex, current *Hex) ([]*Hex, error) {
 }
 
 // heuristic determines the comparitive "as the crow flies" distance between two
-// Hexes, ignoring obstacles.
-func heuristic(a, b *Hex) float64 {
+// Positioned things, ignoring obstacles.
+func heuristic(a, b Positioned) float64 {
 	// pythagorean theorum, minus the sqrt.
 	return math.Pow(a.X()-b.X(), 2) + math.Pow(a.Y()-b.Y(), 2)
 }
 
 // Navigate a path from start to the goal, avoiding Impassable Hexes.
-func Navigate(start, goal *Hex, obstacles []ContextualObstacle) ([]*Hex, error) {
+func Navigate(start, goal *Hex, obstacles []ContextualObstacle) ([]Positioned, error) {
+	if start == nil {
+		return nil, errors.New("no start")
+	}
+	if goal == nil {
+		return nil, errors.New("no goal")
+	}
 	oneStep := heuristic(&Hex{M: 0, N: 0}, &Hex{M: 0, N: 1})
 
 	closed := map[Key]interface{}{}
@@ -65,7 +77,11 @@ func Navigate(start, goal *Hex, obstacles []ContextualObstacle) ([]*Hex, error) 
 			}
 		}
 		if current == goal {
-			return reconstruct(cameFrom, current)
+			m := map[Positioned]Positioned{}
+			for k, v := range cameFrom {
+				m[k] = v
+			}
+			return reconstruct(m, goal)
 		}
 
 		if current == nil {

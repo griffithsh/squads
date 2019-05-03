@@ -4,8 +4,9 @@ import "fmt"
 
 // Hex is a hexagon tile that the play field is composed from.
 type Hex struct {
-	M, N      int
-	neighbors []*Hex
+	M, N                 int
+	neighbors            []*Hex
+	neighborsByDirection map[DirectionType]*Hex
 }
 
 // String to implement Stringer.

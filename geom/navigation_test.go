@@ -18,6 +18,6 @@ func TestNavigate(t *testing.T) {
 		t.Errorf("want %d steps, got %d steps", 58/2+1, len(steps))
 	}
 	for _, step := range steps {
-		fmt.Printf("To: %d,%d\n", step.M, step.N)
+		fmt.Printf("To: %f,%f\n", step.X(), step.Y())
 	}
 }

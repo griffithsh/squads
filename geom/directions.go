@@ -1,5 +1,7 @@
 package geom
 
+import "fmt"
+
 //go:generate stringer -type=DirectionType
 
 // DirectionType enumerates directions.
@@ -15,38 +17,21 @@ const (
 	NW
 )
 
-// Direction calculates the compass direction given an origin (om,on) and a
-// destination (dm,dn). This function only works with adjacent Hexes.
-func Direction(om, on, dm, dn int) DirectionType {
+// Direction calculates which hexagonal direction the vector of x,y aligns with.
+func Direction(x, y float64) (DirectionType, error) {
 	switch {
-	case on+2 == dn:
-		return S
-	case on-2 == dn:
-		return N
+	case x == 0 && y == 16:
+		return S, nil
+	case x == 0 && y == -16:
+		return N, nil
+	case x == 17 && y == 8:
+		return SE, nil
+	case x == -17 && y == 8:
+		return SW, nil
+	case x == 17 && y == -8:
+		return NE, nil
+	case x == -17 && y == -8:
+		return NW, nil
 	}
-	if on%2 == 0 {
-		switch {
-		case om-1 == dm && on-1 == dn:
-			return NW
-		case om-1 == dm && on+1 == dn:
-			return SW
-		case om == dm && on-1 == dn:
-			return NE
-		case om == dm && on+1 == dn:
-			return SE
-		}
-	} else {
-		switch {
-		case om == dm && on-1 == dn:
-			return NW
-		case om == dm && on+1 == dn:
-			return SW
-		case om+1 == dm && on-1 == dn:
-			return NE
-		case om+1 == dm && on+1 == dn:
-			return SE
-		}
-	}
-
-	return N
+	return DirectionType(0), fmt.Errorf("unhandled: %f,%f", x, y)
 }
