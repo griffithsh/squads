@@ -194,7 +194,9 @@ func setup(w, h int) (*system, error) {
 	// Create an Actor that is controlled by mouse clicks
 	start := board.Get(0, 0)
 	s.actor = mgr.NewEntity()
-	mgr.AddComponent(s.actor, &game.Actor{})
+	mgr.AddComponent(s.actor, &game.Actor{
+		Size: game.SMALL,
+	})
 	mgr.AddComponent(s.actor, &game.Facer{Face: geom.S})
 	mgr.AddComponent(s.actor, &game.Sprite{
 		Texture: "Untitled.png",
