@@ -289,9 +289,9 @@ func (s *system) run(screen *ebiten.Image) error {
 		case game.SMALL:
 			steps, err = geom.Navigate(s.board.At(int(pos.Center.X), int(pos.Center.Y)), s.board.At(int(x), int(y)), obstacles)
 		case game.MEDIUM:
-			// TODO
+			steps, err = geom.Navigate4(s.board.At4(int(pos.Center.X), int(pos.Center.Y)), s.board.At4(int(x), int(y)), obstacles)
 		case game.LARGE:
-			// TODO
+			steps, err = geom.Navigate7(s.board.At7(int(pos.Center.X), int(pos.Center.Y)), s.board.At7(int(x), int(y)), obstacles)
 		}
 		if err != nil {
 			fmt.Printf("no path there: %v\n", err)

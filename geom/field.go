@@ -41,6 +41,8 @@ type Key struct {
 type Field struct {
 	stride int // how many hexes are in a row
 	hexes  map[Key]*Hex
+	hex4s  map[Key]*Hex4
+	hex7s  map[Key]*Hex7
 }
 
 // NewField creates a new game field.
@@ -58,8 +60,14 @@ func NewField(w, h int) (*Field, error) {
 	field := Field{
 		stride: w,
 		hexes:  hexes,
+		hex4s:  map[Key]*Hex4{},
+		hex7s:  map[Key]*Hex7{},
 	}
 	field.calcNeighbors()
+	field.calcHex4()
+	field.calcNeighbors4()
+	field.calcHex7()
+	field.calcNeighbors7()
 
 	return &field, nil
 }
@@ -113,6 +121,179 @@ func (f *Field) calcNeighbors() {
 	}
 }
 
+func (f *Field) calcNeighbors4() {
+	for _, h4 := range f.hex4s {
+		h4.neighbors = []*Hex4{}
+		m, n := h4.M, h4.N
+		// Find neighbor candidates.
+		candidates := []struct {
+			m, n int
+			d    DirectionType
+		}{
+			{m, n - 2, N}, // N
+			{m, n + 2, S}, // S
+		}
+		if n%2 == 0 {
+			// then the E ones have the same M, and the W ones are -1 M
+			candidates = append(candidates, []struct {
+				m, n int
+				d    DirectionType
+			}{
+				{m - 1, n - 1, NW}, // NW
+				{m - 1, n + 1, SW}, // SW
+				{m, n + 1, SE},     // SE
+				{m, n - 1, NE},     // NE
+			}...)
+		} else {
+			// then the E ones are +1 M, and the W ones have the same M
+			candidates = append(candidates, []struct {
+				m, n int
+				d    DirectionType
+			}{
+				{m, n - 1, NW},     // NW
+				{m, n + 1, SW},     // SW
+				{m + 1, n + 1, SE}, // SE
+				{m + 1, n - 1, NE}, // NE
+			}...)
+		}
+
+		// Attach as neighbors only the ones that appear in the field.
+		for _, candidate := range candidates {
+			neighbor := f.Get4(candidate.m, candidate.n)
+			if neighbor == nil {
+				continue
+			}
+			h4.neighbors = append(h4.neighbors, neighbor)
+		}
+	}
+}
+
+func (f *Field) calcNeighbors7() {
+	for _, h7 := range f.hex7s {
+		h7.neighbors = []*Hex7{}
+		m, n := h7.M, h7.N
+		// Find neighbor candidates.
+		candidates := []struct {
+			m, n int
+			d    DirectionType
+		}{
+			{m, n - 2, N}, // N
+			{m, n + 2, S}, // S
+		}
+		if n%2 == 0 {
+			// then the E ones have the same M, and the W ones are -1 M
+			candidates = append(candidates, []struct {
+				m, n int
+				d    DirectionType
+			}{
+				{m - 1, n - 1, NW}, // NW
+				{m - 1, n + 1, SW}, // SW
+				{m, n + 1, SE},     // SE
+				{m, n - 1, NE},     // NE
+			}...)
+		} else {
+			// then the E ones are +1 M, and the W ones have the same M
+			candidates = append(candidates, []struct {
+				m, n int
+				d    DirectionType
+			}{
+				{m, n - 1, NW},     // NW
+				{m, n + 1, SW},     // SW
+				{m + 1, n + 1, SE}, // SE
+				{m + 1, n - 1, NE}, // NE
+			}...)
+		}
+
+		// Attach as neighbors only the ones that appear in the field.
+		for _, candidate := range candidates {
+			neighbor := f.Get7(candidate.m, candidate.n)
+			if neighbor == nil {
+				continue
+			}
+			h7.neighbors = append(h7.neighbors, neighbor)
+		}
+	}
+}
+
+func (f *Field) calcHex4() {
+	// For every Hex in the Field.
+	for _, hex := range f.hexes {
+		// If hex has a neighbor to the SW, S, and SE, then it's a valid Hex4.
+		h4 := Hex4{
+			M: hex.M,
+			N: hex.N,
+			hexes: map[DirectionType]*Hex{
+				N: hex,
+			},
+		}
+		if h, ok := hex.neighborsByDirection[SW]; !ok {
+			continue
+		} else {
+			h4.hexes[SW] = h
+		}
+		if h, ok := hex.neighborsByDirection[S]; !ok {
+			continue
+		} else {
+			h4.hexes[S] = h
+		}
+		if h, ok := hex.neighborsByDirection[SE]; !ok {
+			continue
+		} else {
+			h4.hexes[SE] = h
+		}
+
+		// If we passed all those continues, then we have a valid Hex4, and we can add it to the Field.
+		f.hex4s[Key{hex.M, hex.N}] = &h4
+	}
+}
+
+func (f *Field) calcHex7() {
+	// For every Hex in the Field.
+	for _, hex := range f.hexes {
+		// If hex has a neighbor to the SW, S, SE, NE, N and NW, then it's a valid Hex7.
+		h7 := Hex7{
+			M: hex.M,
+			N: hex.N,
+			hexes: map[DirectionType]*Hex{
+				CENTER: hex,
+			},
+		}
+		if h, ok := hex.neighborsByDirection[SW]; !ok {
+			continue
+		} else {
+			h7.hexes[SW] = h
+		}
+		if h, ok := hex.neighborsByDirection[S]; !ok {
+			continue
+		} else {
+			h7.hexes[S] = h
+		}
+		if h, ok := hex.neighborsByDirection[SE]; !ok {
+			continue
+		} else {
+			h7.hexes[SE] = h
+		}
+		if h, ok := hex.neighborsByDirection[NE]; !ok {
+			continue
+		} else {
+			h7.hexes[NE] = h
+		}
+		if h, ok := hex.neighborsByDirection[N]; !ok {
+			continue
+		} else {
+			h7.hexes[N] = h
+		}
+		if h, ok := hex.neighborsByDirection[NW]; !ok {
+			continue
+		} else {
+			h7.hexes[NW] = h
+		}
+
+		// If we passed all those continues, then we have a valid Hex7, and we can add it to the Field.
+		f.hex7s[Key{hex.M, hex.N}] = &h7
+	}
+}
+
 // Width of the Field in pixels.
 func (f *Field) Width() float64 {
 	return float64(f.stride * xStride)
@@ -160,6 +341,26 @@ func (f *Field) Get(m, n int) *Hex {
 	return hex
 }
 
+// Get4 accepts M,N coordinates and returns the Hex4 with those coordinates if it
+// exists in the field.
+func (f *Field) Get4(m, n int) *Hex4 {
+	hex, ok := f.hex4s[Key{m, n}]
+	if !ok {
+		return nil
+	}
+	return hex
+}
+
+// Get7 accepts M,N coordinates and returns the Hex7 with those coordinates if it
+// exists in the field.
+func (f *Field) Get7(m, n int) *Hex7 {
+	hex, ok := f.hex7s[Key{m, n}]
+	if !ok {
+		return nil
+	}
+	return hex
+}
+
 // At accepts world coordinates and returns the Hex there if there is one.
 func (f *Field) At(x, y int) *Hex {
 	rx, ry := relative(x, y)
@@ -168,6 +369,27 @@ func (f *Field) At(x, y int) *Hex {
 	m, n = xyToMN(rx, ry, m, n)
 
 	return f.Get(m, n)
+}
+
+// At4 accepts world coordinates and returns the Hex4 there if there is one.
+func (f *Field) At4(x, y int) *Hex4 {
+	// TODO: Is adding yStride to y the best solution here?
+	rx, ry := relative(x, y-yStride)
+	m, n := roughMN(x, y-yStride)
+
+	m, n = xyToMN(rx, ry, m, n)
+
+	return f.Get4(m, n)
+}
+
+// At7 accepts world coordinates and returns the Hex7 there if there is one.
+func (f *Field) At7(x, y int) *Hex7 {
+	rx, ry := relative(x, y)
+	m, n := roughMN(x, y)
+
+	m, n = xyToMN(rx, ry, m, n)
+
+	return f.Get7(m, n)
 }
 
 // Dimensions returns the maximum extent of the field in M and N dimensions.

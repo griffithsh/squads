@@ -15,6 +15,8 @@ const (
 	S
 	SW
 	NW
+
+	CENTER
 )
 
 // Direction calculates which hexagonal direction the vector of x,y aligns with.
