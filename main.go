@@ -130,7 +130,7 @@ func addTrees(mgr *ecs.World, b *geom.Field) {
 		for m := 0; m < M; m++ {
 			i := m + n*M
 			h := b.Get(m, n)
-			if i == 1 || i%11 == 1 || i%17 == 1 || i%13 == 1 {
+			if i == 1 || i%17 == 1 || i%13 == 1 {
 				e := mgr.NewEntity()
 				mgr.AddComponent(e, &game.Sprite{
 					Texture: "Untitled.png",
@@ -192,7 +192,7 @@ func setup(w, h int) (*system, error) {
 	})
 
 	// Create an Actor that is controlled by mouse clicks
-	start := board.Get(0, 0)
+	start := board.Get(3, 8)
 	s.actor = mgr.NewEntity()
 	mgr.AddComponent(s.actor, &game.Actor{
 		Size: game.SMALL,
