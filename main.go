@@ -266,8 +266,13 @@ func (s *system) run(screen *ebiten.Image) error {
 
 		var obstacles []geom.ContextualObstacle
 		for _, e := range s.mgr.Get([]string{"Obstacle"}) {
+			// An Actor is not an obstacle to itself.
+			if e == s.actor {
+				continue
+			}
 			obstacle := s.mgr.Component(e, "Obstacle").(*game.Obstacle)
 			hex := s.board.Get(obstacle.M, obstacle.N)
+
 			if hex == nil {
 				continue
 			}
