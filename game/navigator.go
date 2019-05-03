@@ -47,10 +47,11 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			pos.Center.Y = dest.Y()
 			actor.M = dest.M
 			actor.N = dest.N
-			if obstacle, ok := mgr.Component(e, "Obstacle").(*Obstacle); ok {
-				obstacle.M = dest.M
-				obstacle.N = dest.N
-			}
+			// FIXME: Obstacle movement should be handled by an "obstacle" system.
+			// if obstacle, ok := mgr.Component(e, "Obstacle").(*Obstacle); ok {
+			// 	obstacle.M = dest.M
+			// 	obstacle.N = dest.N
+			// }
 
 			// Pop the move list to update the next destination.
 			mover.Moves = mover.Moves[1:]

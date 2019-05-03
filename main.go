@@ -213,11 +213,13 @@ func setup(w, h int) (*system, error) {
 	mgr.AddComponent(s.actor, &game.SpriteOffset{
 		Y: -16,
 	})
-	mgr.AddComponent(s.actor, &game.Obstacle{
-		M:            0,
-		N:            0,
-		ObstacleType: game.ACTOR,
-	})
+
+	// FIXME: actor construction should create one or more obstacles to match the Size of the actor.
+	// mgr.AddComponent(s.actor, &game.Obstacle{
+	// 	M:            3,
+	// 	N:            8,
+	// 	ObstacleType: game.ACTOR,
+	// })
 
 	last = time.Now()
 
