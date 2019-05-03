@@ -96,7 +96,7 @@ func Navigate(start, goal *Hex, obstacles []ContextualObstacle) ([]Positioned, e
 				continue
 			}
 
-			tentative := costs[current] + oneStep
+			tentative := oneStep
 
 			// The cost of passing through this hex might be affected by any
 			// obstacles occupying the Hex.
@@ -110,6 +110,7 @@ func Navigate(start, goal *Hex, obstacles []ContextualObstacle) ([]Positioned, e
 					break
 				}
 			}
+			tentative += costs[current]
 
 			if _, ok := open[n]; !ok {
 				open[n] = struct{}{}
