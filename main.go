@@ -167,7 +167,7 @@ func setup(w, h int) (*system, error) {
 	addTrees(mgr, board)
 
 	hud := game.NewHUD(w, h)
-	camera := NewCamera(float64(w), float64(h))
+	camera := NewCamera(w, h)
 	s := system{
 		render: game.NewRenderer(),
 		combat: NewCombat(mgr, camera),

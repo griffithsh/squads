@@ -1,51 +1,47 @@
 package main
 
-type Vec struct {
-	X, Y float64
-}
-type Rect struct {
-	Min, Max Vec
-}
-
 // Camera is a class that stores focus and zoom values
 type Camera struct {
-	pos        Vec
-	zoom       float64
-	viewBounds Rect
+	focusX, focusY   float64
+	zoom             float64
+	screenW, screenH int
 }
 
 // NewCamera creates a new camera for a view of the requested width and height
-func NewCamera(width, height float64) *Camera {
+func NewCamera(width, height int) *Camera {
 	return &Camera{
-		pos:        Vec{X: 0, Y: 0},
-		zoom:       3.0,
-		viewBounds: Rect{Max: Vec{X: width, Y: height}},
+		focusX:  0,
+		focusY:  0,
+		zoom:    3.0,
+		screenW: width,
+		screenH: height,
 	}
 }
 
 // Center the view on a point.
-func (c *Camera) Center(p Vec) {
-	c.pos = p
+func (c *Camera) Center(x, y float64) {
+	c.focusX = x
+	c.focusY = y
 }
 
 // GetX coordinate of the camera.
 func (c *Camera) GetX() float64 {
-	return c.pos.X
+	return c.focusX
 }
 
 // SetX coordinate of the camera.
 func (c *Camera) SetX(x float64) {
-	c.pos.X = x
+	c.focusX = x
 }
 
 // GetY coordinate of the camera.
 func (c *Camera) GetY() float64 {
-	return c.pos.Y
+	return c.focusY
 }
 
 // SetY coordinate of the camera.
 func (c *Camera) SetY(y float64) {
-	c.pos.Y = y
+	c.focusY = y
 }
 
 // GetZoom of the camera.
@@ -61,4 +57,19 @@ func (c *Camera) SetZoom(zoom float64) {
 	}
 
 	c.zoom = zoom
+}
+
+// ScreenToWorld translates screen coordinates to world coordinates based on the
+// current zoom and focus values.
+func (c *Camera) ScreenToWorld(sx, sy int) (wx, wy float64) {
+	zoom := c.GetZoom()
+	wx, wy = float64(sx)/zoom, float64(sy)/zoom
+
+	// Correct for camera focus.
+	wx, wy = wx+c.GetX(), wy+c.GetY()
+
+	// Correct for size of screen (!?).
+	wx, wy = wx-float64(c.screenW)/2/zoom, wy-float64(c.screenH)/2/zoom
+
+	return wx, wy
 }

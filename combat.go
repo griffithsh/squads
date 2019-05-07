@@ -72,7 +72,7 @@ func (c *Combat) Begin() {
 		every actor, because a Combat should be the thing responsible for deciding
 		how to render an actor on the field.
 	*/
-	c.camera.Center(Vec{X: c.field.Width() / 2, Y: c.field.Height() / 2})
+	c.camera.Center(c.field.Width()/2, c.field.Height()/2)
 }
 
 // Run a frame of this Combat.
@@ -87,15 +87,7 @@ func (c *Combat) Interaction(x, y int) {
 	if c.state == AwaitingInputState {
 		actor := c.actorAwaitingInput()
 
-		// convert from screen coords to world coords
-		zoom := c.camera.GetZoom()
-		wx, wy := float64(x)/zoom, float64(y)/zoom
-
-		// Correct for camera focus.
-		wx, wy = wx+c.camera.GetX(), wy+c.camera.GetY()
-
-		// Correct for size of screen (!?).
-		wx, wy = wx-1024/2/zoom, wy-768/2/zoom
+		wx, wy := c.camera.ScreenToWorld(x, y)
 
 		m := game.MoveIntent{X: wx, Y: wy}
 		c.mgr.AddComponent(actor, &m)
@@ -113,18 +105,8 @@ func (c *Combat) Interaction(x, y int) {
 // MousePosition is the way to notify the Combat that the mouse has a new
 // position.
 func (c *Combat) MousePosition(x, y int) {
-	// convert from screen coords to world coords
-	zoom := c.camera.GetZoom()
-	wx, wy := float64(x)/zoom, float64(y)/zoom
-
-	// Correct for camera focus.
-	wx, wy = wx+c.camera.GetX(), wy+c.camera.GetY()
-
-	// Correct for size of screen (!?).
-	wx, wy = wx-1024/2/zoom, wy-768/2/zoom
-
+	wx, wy := c.camera.ScreenToWorld(x, y)
 	if c.state == AwaitingInputState {
-
 		// Remove any cursors
 		cursors := c.mgr.Get([]string{"Cursor"})
 		for _, e := range cursors {
