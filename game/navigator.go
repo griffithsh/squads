@@ -4,11 +4,20 @@ import (
 	"time"
 
 	"github.com/griffithsh/squads/ecs"
+	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/geom"
 )
 
 // Navigator is the System for Movers.
 type Navigator struct {
+	*event.Bus
+}
+
+// NewNavigator constructs a Navigator.
+func NewNavigator(bus *event.Bus) *Navigator {
+	return &Navigator{
+		Bus: bus,
+	}
 }
 
 // Update Movers.
@@ -58,6 +67,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			// Are we done?
 			if len(mover.Moves) == 0 {
 				mgr.RemoveComponent(e, mover)
+				nav.Publish(event.ActorMovementConcluded{Entity: e})
 				continue
 			}
 

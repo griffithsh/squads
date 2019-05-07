@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image"
 	"log"
-	"math"
 	"math/rand"
 	"os"
 	"runtime/pprof"
@@ -19,14 +18,11 @@ import (
 
 type system struct {
 	render    *game.Renderer
-	board     *geom.Field
-	nav       *game.Navigator
+	combat    *Combat
 	mgr       *ecs.World
 	camera    *Camera
 	hud       *game.HUD
-	cursor    ecs.Entity
 	lastMouse image.Point
-	actor     ecs.Entity
 }
 
 func main() {
@@ -171,53 +167,44 @@ func setup(w, h int) (*system, error) {
 	addTrees(mgr, board)
 
 	hud := game.NewHUD(w, h)
+	camera := NewCamera(float64(w), float64(h))
 	s := system{
 		render: game.NewRenderer(),
-		board:  board,
-		nav:    &game.Navigator{},
+		combat: NewCombat(mgr, camera),
+
 		mgr:    mgr,
+		camera: camera,
 		hud:    hud,
 	}
-
-	s.camera = NewCamera(float64(w), float64(h))
-	s.camera.Center(Vec{X: s.board.Width() / 2, Y: s.board.Height() / 2})
-
-	s.cursor = mgr.NewEntity()
-	mgr.AddComponent(s.cursor, &game.Sprite{
-		Texture: "texture.png",
-		X:       0,
-		Y:       0,
-		W:       24,
-		H:       16,
-	})
+	s.combat.Begin()
 
 	// Create an Actor that is controlled by mouse clicks
 	start := board.Get(3, 8)
-	s.actor = mgr.NewEntity()
-	mgr.AddComponent(s.actor, &game.Actor{
+	actor := mgr.NewEntity()
+	mgr.AddComponent(actor, &game.Actor{
 		Size: game.SMALL,
 	})
-	mgr.AddComponent(s.actor, &game.Facer{Face: geom.S})
-	mgr.AddComponent(s.actor, &game.Sprite{
+	mgr.AddComponent(actor, &game.Facer{Face: geom.S})
+	mgr.AddComponent(actor, &game.Sprite{
 		Texture: "Untitled.png",
 		X:       24,
 		Y:       0,
 		W:       24,
 		H:       48,
 	})
-	mgr.AddComponent(s.actor, &game.Position{
+	mgr.AddComponent(actor, &game.Position{
 		Center: game.Center{
 			X: start.X(),
 			Y: start.Y(),
 		},
 		Layer: 10,
 	})
-	mgr.AddComponent(s.actor, &game.SpriteOffset{
+	mgr.AddComponent(actor, &game.SpriteOffset{
 		Y: -16,
 	})
 
 	// FIXME: actor construction should create one or more obstacles to match the Size of the actor.
-	// mgr.AddComponent(s.actor, &game.Obstacle{
+	// mgr.AddComponent(actor, &game.Obstacle{
 	// 	M:            3,
 	// 	N:            8,
 	// 	ObstacleType: game.ACTOR,
@@ -231,16 +218,15 @@ func setup(w, h int) (*system, error) {
 var errExitGame = errors.New("game has completed")
 
 var (
-	frames                    = 0
-	accumulated time.Duration = time.Second * 0
-	second                    = time.Tick(time.Second)
+	frames      = 0
+	accumulated = time.Second * 0
+	second      = time.Tick(time.Second)
 )
 
 func (s *system) run(screen *ebiten.Image) error {
 	start := time.Now()
 	defer func() {
 		d := time.Since(start)
-		// fmt.Println(d)
 		frames++
 		accumulated += d
 	}()
@@ -249,86 +235,16 @@ func (s *system) run(screen *ebiten.Image) error {
 		return errExitGame
 	}
 
-	// Get x and y as screen coordinates.
 	x, y := ebiten.CursorPosition()
 
-	// Correct for current zoom.
-	zoom := s.camera.GetZoom()
-	x, y = int(float64(x)/zoom), int(float64(y)/zoom)
-
-	// Correct for camera focus.
-	x, y = x+int(s.camera.GetX()), y+int(s.camera.GetY())
-
-	// Correct for size of screen (!?).
-	x, y = int(float64(x)-1024/2/zoom), int(float64(y)-768/2/zoom)
-
-	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
-
-		var obstacles []geom.ContextualObstacle
-		for _, e := range s.mgr.Get([]string{"Obstacle"}) {
-			// An Actor is not an obstacle to itself.
-			if e == s.actor {
-				continue
-			}
-			obstacle := s.mgr.Component(e, "Obstacle").(*game.Obstacle)
-			hex := s.board.Get(obstacle.M, obstacle.N)
-
-			if hex == nil {
-				continue
-			}
-
-			// Translate the Obstacles into ContextualObstacles based on
-			// how much of an Obstacle this is to the Mover in this context.
-			obstacles = append(obstacles, geom.ContextualObstacle{
-				M:    obstacle.M,
-				N:    obstacle.N,
-				Cost: math.Inf(0), // just pretend these all are total obstacles for now
-			})
-		}
-
-		a := s.mgr.Component(s.actor, "Actor").(*game.Actor)
-		pos := s.mgr.Component(s.actor, "Position").(*game.Position)
-		var steps []geom.Positioned
-		var err error
-		switch a.Size {
-		case game.SMALL:
-			steps, err = geom.Navigate(s.board.At(int(pos.Center.X), int(pos.Center.Y)), s.board.At(int(x), int(y)), obstacles)
-		case game.MEDIUM:
-			steps, err = geom.Navigate4(s.board.At4(int(pos.Center.X), int(pos.Center.Y)), s.board.At4(int(x), int(y)), obstacles)
-		case game.LARGE:
-			steps, err = geom.Navigate7(s.board.At7(int(pos.Center.X), int(pos.Center.Y)), s.board.At7(int(x), int(y)), obstacles)
-		}
-		if err != nil {
-			fmt.Printf("no path there: %v\n", err)
-		} else {
-			m := game.Mover{}
-
-			for _, step := range steps {
-				m.Moves = append(m.Moves, game.Waypoint{X: step.X(), Y: step.Y()})
-			}
-
-			s.mgr.AddComponent(s.actor, &m)
-
-		}
+	if s.lastMouse.X != x || s.lastMouse.Y != y {
+		s.combat.MousePosition(x, y)
+		s.lastMouse.X = x
+		s.lastMouse.Y = y
 	}
 
-	// A Cursor that follows the mouse...
-	if s.lastMouse.X != x || s.lastMouse.Y != y {
-		c, ok := s.mgr.Component(s.cursor, "Position").(*game.Position)
-		if ok {
-			s.mgr.RemoveComponent(s.cursor, c)
-		}
-
-		if h := s.board.At(x, y); h != nil {
-			s.mgr.AddComponent(s.cursor, &game.Position{
-				Center: game.Center{
-					X: h.X(),
-					Y: h.Y(),
-				},
-				Layer: 2,
-			})
-		}
-		s.lastMouse.X, s.lastMouse.Y = ebiten.CursorPosition()
+	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		s.combat.Interaction(x, y)
 	}
 
 	elapsed := time.Since(last)
@@ -337,15 +253,17 @@ func (s *system) run(screen *ebiten.Image) error {
 	ctrl := controls()
 	controlCamera(s.camera, s.hud, elapsed, ctrl)
 
-	s.nav.Update(s.mgr, elapsed)
+	s.combat.Run(elapsed)
 
-	// Render all entities.
-	if err := s.render.Render(screen, s.camera.GetX(), s.camera.GetY(), s.camera.GetZoom(), 1024, 768, s.mgr); err != nil {
+	w, h := float64(screen.Bounds().Max.X-screen.Bounds().Min.X), float64(screen.Bounds().Max.Y-screen.Bounds().Min.Y)
+
+	// Render all entities in the World.
+	if err := s.render.Render(screen, s.camera.GetX(), s.camera.GetY(), s.camera.GetZoom(), w, h, s.mgr); err != nil {
 		panic(err)
 	}
 
 	// Render a hud separately because the hud is not composed of ECS Entities.
-	s.hud.Render(screen, s.camera.GetZoom(), 1024, 768)
+	s.hud.Render(screen, s.camera.GetZoom(), w, h)
 
 	select {
 	case <-second:
