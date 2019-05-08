@@ -45,6 +45,12 @@ func (mgr *World) Get(types []string) []Entity {
 	return result
 }
 
+// Exists returns whether an entity exists in this World.
+func (mgr *World) Exists(e Entity) bool {
+	_, ok := mgr.entities[e]
+	return ok
+}
+
 // Component of type for Entity.
 func (mgr *World) Component(e Entity, ty string) Component {
 	if v, ok := mgr.components[ty]; ok {
