@@ -122,28 +122,33 @@ func (c *Combat) MousePosition(x, y int) {
 				return
 			}
 			e := c.mgr.NewEntity()
-			c.mgr.AddComponent(e, &game.Cursor{})
-			c.mgr.AddComponent(e, &game.Position{
-				Center: game.Center{
-					X: h.X(),
-					Y: h.Y(),
-				},
-				Layer: 2,
-			})
-			c.mgr.AddComponent(e, &game.Sprite{
-				Texture: "texture.png",
-				X:       0,
-				Y:       0,
-				W:       24,
-				H:       16,
-			})
+			for _, component := range smallCursor(h.X(), h.Y()) {
+				c.mgr.AddComponent(e, component)
+			}
 
 		case game.MEDIUM:
-			// h := c.field.At4(int(wx), int(wy))
-			// ...
+			h := c.field.At4(int(wx), int(wy))
+			if h == nil {
+				return
+			}
+			for _, h := range h.Hexes() {
+				e := c.mgr.NewEntity()
+				for _, component := range smallCursor(h.X(), h.Y()) {
+					c.mgr.AddComponent(e, component)
+				}
+
+			}
 		case game.LARGE:
-			// h := c.field.At7(int(wx), int(wy))
-			// ...
+			h := c.field.At7(int(wx), int(wy))
+			if h == nil {
+				return
+			}
+			for _, h := range h.Hexes() {
+				e := c.mgr.NewEntity()
+				for _, component := range smallCursor(h.X(), h.Y()) {
+					c.mgr.AddComponent(e, component)
+				}
+			}
 		}
 	}
 
@@ -165,4 +170,24 @@ func (c *Combat) actorAwaitingInput() ecs.Entity {
 func (c *Combat) handleMovementConcluded(t event.Typer) {
 	c.state = AwaitingInputState
 	c.MousePosition(c.x, c.y)
+}
+
+func smallCursor(x, y float64) []ecs.Component {
+	return []ecs.Component{
+		&game.Cursor{},
+		&game.Sprite{
+			Texture: "texture.png",
+			X:       0,
+			Y:       0,
+			W:       24,
+			H:       16,
+		},
+		&game.Position{
+			Center: game.Center{
+				X: x,
+				Y: y,
+			},
+			Layer: 2,
+		},
+	}
 }

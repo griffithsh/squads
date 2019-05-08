@@ -182,7 +182,7 @@ func setup(w, h int) (*system, error) {
 	start := board.Get(3, 8)
 	actor := mgr.NewEntity()
 	mgr.AddComponent(actor, &game.Actor{
-		Size: game.SMALL,
+		Size: game.LARGE,
 	})
 	mgr.AddComponent(actor, &game.Facer{Face: geom.S})
 	mgr.AddComponent(actor, &game.Sprite{
