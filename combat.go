@@ -39,6 +39,7 @@ type Combat struct {
 	screenW, screenH float64 // most recent dimensions of the window
 
 	// actors ActorSystem...?
+	cursors *game.CursorSystem
 	intents *game.IntentSystem
 }
 
@@ -58,6 +59,7 @@ func NewCombat(mgr *ecs.World, camera *Camera /**/) *Combat {
 		nav:     game.NewNavigator(bus),
 		camera:  camera,
 		state:   AwaitingInputState,
+		cursors: game.NewCursorSystem(mgr),
 		intents: game.NewIntentSystem(mgr, bus, f),
 	}
 	c.bus.Subscribe(event.MovementConcluded, c.handleMovementConcluded)
@@ -94,11 +96,7 @@ func (c *Combat) Interaction(x, y int) {
 
 		c.state = ExecutingState
 
-		// Remove any cursors
-		cursors := c.mgr.Get([]string{"Cursor"})
-		for _, e := range cursors {
-			c.mgr.DestroyEntity(e)
-		}
+		c.cursors.Clear()
 	}
 }
 
@@ -107,11 +105,7 @@ func (c *Combat) Interaction(x, y int) {
 func (c *Combat) MousePosition(x, y int) {
 	wx, wy := c.camera.ScreenToWorld(x, y)
 	if c.state == AwaitingInputState {
-		// Remove any cursors
-		cursors := c.mgr.Get([]string{"Cursor"})
-		for _, e := range cursors {
-			c.mgr.DestroyEntity(e)
-		}
+		c.cursors.Clear()
 
 		a := c.mgr.Component(c.actorAwaitingInput(), "Actor").(*game.Actor)
 
@@ -119,36 +113,23 @@ func (c *Combat) MousePosition(x, y int) {
 		case game.SMALL:
 			h := c.field.At(int(wx), int(wy))
 			if h == nil {
-				return
+				break
 			}
-			e := c.mgr.NewEntity()
-			for _, component := range smallCursor(h.X(), h.Y()) {
-				c.mgr.AddComponent(e, component)
-			}
+			c.cursors.Add(h.X(), h.Y(), a.Size)
 
 		case game.MEDIUM:
 			h := c.field.At4(int(wx), int(wy))
 			if h == nil {
-				return
+				break
 			}
-			for _, h := range h.Hexes() {
-				e := c.mgr.NewEntity()
-				for _, component := range smallCursor(h.X(), h.Y()) {
-					c.mgr.AddComponent(e, component)
-				}
+			c.cursors.Add(h.X(), h.Y(), a.Size)
 
-			}
 		case game.LARGE:
 			h := c.field.At7(int(wx), int(wy))
 			if h == nil {
-				return
+				break
 			}
-			for _, h := range h.Hexes() {
-				e := c.mgr.NewEntity()
-				for _, component := range smallCursor(h.X(), h.Y()) {
-					c.mgr.AddComponent(e, component)
-				}
-			}
+			c.cursors.Add(h.X(), h.Y(), a.Size)
 		}
 	}
 
@@ -170,24 +151,4 @@ func (c *Combat) actorAwaitingInput() ecs.Entity {
 func (c *Combat) handleMovementConcluded(t event.Typer) {
 	c.state = AwaitingInputState
 	c.MousePosition(c.x, c.y)
-}
-
-func smallCursor(x, y float64) []ecs.Component {
-	return []ecs.Component{
-		&game.Cursor{},
-		&game.Sprite{
-			Texture: "texture.png",
-			X:       0,
-			Y:       0,
-			W:       24,
-			H:       16,
-		},
-		&game.Position{
-			Center: game.Center{
-				X: x,
-				Y: y,
-			},
-			Layer: 2,
-		},
-	}
 }
