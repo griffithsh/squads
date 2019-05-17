@@ -77,6 +77,12 @@ func (c *Combat) Begin() {
 	c.camera.Center(c.field.Width()/2, c.field.Height()/2)
 }
 
+// End should be called at the resolution of a combat encounter. It removes
+// combat-specific Components.
+func (c *Combat) End() {
+
+}
+
 // Run a frame of this Combat.
 func (c *Combat) Run(elapsed time.Duration) {
 	c.nav.Update(c.mgr, elapsed)
