@@ -5,12 +5,14 @@
 - [x] Add a HUD to prove the viability of faiface/pixel a little further
 - [x] Add pathfinding so that Actors can navigate the game-board
 - [x] Replace faiface/pixel with ebiten
-- [ ] Command Queue for Actors
+- [ ] Facing
+- [ ] Screen-relative rendering of ecs Components for a HUD
+- [ ] More construction in combat, rather than main
 - [ ] Animations
+- [ ] Command Queue for Actors
+- [ ] Add debouncing of click events to main - Interaction should be called once per click
 
 ## MAYDO
-
-- [ ] Cache sprites in the renderer
 
 ## Scratch pad & ideas
 
@@ -19,5 +21,3 @@ I think there is a concept like an _intent_ or a command. This concept would cap
 Intents would be translated to Actions like "move to the hex to the SW, then SW, then SW, then S" and "use skill Y on M,N".
 
 I guess the line is that intents can be non-specific, Actions must be concrete.
-
-Intents map to configurable pseudo-script elements in a UI that the player can set up to automate the behaviours their heroes perform.

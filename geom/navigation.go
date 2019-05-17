@@ -10,7 +10,8 @@ import (
 // A bird can fly right over a tree, a snake is not impeded by a swamp. A horse
 // runs fastest when the ground is level and clear. The Cost multiplies the
 // normal traversal time. A Cost of 2 implies that taking this path is twice as
-// long as it normally would be. A cost of Infinity marks something that is completely impassable.
+// long as it normally would be. A cost of Infinity marks something that is
+// completely impassable.
 type ContextualObstacle struct {
 	M, N int
 
@@ -218,10 +219,8 @@ func Navigate7(start, goal *Hex7, obstacles []ContextualObstacle) ([]Positioned,
 	if goal == nil {
 		return nil, errors.New("no goal")
 	}
-	fmt.Println("Navigate7 start, goal:", start.M, start.N, ",", goal.M, goal.N)
 
 	oneStep := heuristic(&Hex{M: 0, N: 0}, &Hex{M: 0, N: 1})
-	fmt.Println("oneStep:", oneStep)
 
 	closed := map[Key]interface{}{}
 	open := map[*Hex7]interface{}{
