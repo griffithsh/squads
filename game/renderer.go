@@ -7,8 +7,8 @@ import (
 	"sort"
 
 	"github.com/griffithsh/squads/ecs"
+	"github.com/griffithsh/squads/res"
 	"github.com/hajimehoshi/ebiten"
-	"github.com/hajimehoshi/ebiten/ebitenutil"
 )
 
 // Renderer is a System that draws world-positioned Sprites to the screen.
@@ -77,7 +77,7 @@ func (r *Renderer) picForTexture(filename string) (*ebiten.Image, error) {
 		return pic, nil
 	}
 
-	img, _, err := ebitenutil.NewImageFromFile(filename, ebiten.FilterNearest)
+	img, err := ebiten.NewImageFromImage(res.Images[filename], ebiten.FilterNearest)
 	if err != nil {
 		return nil, fmt.Errorf("load texture: %v", err)
 	}
