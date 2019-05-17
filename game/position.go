@@ -9,6 +9,10 @@ type Center struct {
 type Position struct {
 	Center Center
 	Layer  int
+
+	// Absolute Positioned Components use screen coordinates, not world
+	// coordinates.
+	Absolute bool
 }
 
 // Type of this component.

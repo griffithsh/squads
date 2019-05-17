@@ -94,30 +94,50 @@ func (r *Renderer) Render(screen *ebiten.Image, x, y, zoom, w, h float64, mgr *e
 	for _, e := range entities {
 		op := &ebiten.DrawImageOptions{}
 
-		// Translate for the focus values from the camera
-		op.GeoM.Translate(-x, -y)
+		if e.p.Absolute {
 
-		// Translate for the location of the Entity
-		op.GeoM.Translate(e.p.Center.X, e.p.Center.Y)
+			// Translate for the location of the Entity
+			op.GeoM.Translate(e.p.Center.X, e.p.Center.Y)
 
-		// ebiten uses top-left corner coordinates, so we need to translate
-		// from center-based coordinates by subtracting half the width/height.
-		op.GeoM.Translate(-0.5*float64(e.s.W), -0.5*float64(e.s.H))
+			// ebiten uses top-left corner coordinates, so we need to translate
+			// from center-based coordinates by subtracting half the width/height.
+			op.GeoM.Translate(-0.5*float64(e.s.W), -0.5*float64(e.s.H))
 
-		// Some sprites may need to be drawn with an offset.
-		if e.offset != nil {
-			op.GeoM.Translate(float64(e.offset.X), float64(e.offset.Y))
+			// Some sprites may need to be drawn with an offset.
+			if e.offset != nil {
+				op.GeoM.Translate(float64(e.offset.X), float64(e.offset.Y))
+			}
+
+			// Scale the rendered entities based on the zoom value
+			// NB: This needs to happen after the other translations!
+			op.GeoM.Scale(zoom, zoom)
+
+		} else {
+			// Translate for the focus values from the camera
+			op.GeoM.Translate(-x, -y)
+
+			// Translate for the location of the Entity
+			op.GeoM.Translate(e.p.Center.X, e.p.Center.Y)
+
+			// ebiten uses top-left corner coordinates, so we need to translate
+			// from center-based coordinates by subtracting half the width/height.
+			op.GeoM.Translate(-0.5*float64(e.s.W), -0.5*float64(e.s.H))
+
+			// Some sprites may need to be drawn with an offset.
+			if e.offset != nil {
+				op.GeoM.Translate(float64(e.offset.X), float64(e.offset.Y))
+			}
+
+			// Scale the rendered entities based on the zoom value
+			// NB: This needs to happen after the other translations!
+			op.GeoM.Scale(zoom, zoom)
+
+			// We also need to correct for the dimensions of the screen, or the
+			// focus will appear in the top-left corner of the screen. This comes
+			// after the scaling, because the screen size does not change based on
+			// the zoom.
+			op.GeoM.Translate(w/2, h/2)
 		}
-
-		// Scale the rendered entities based on the zoom value
-		// NB: This needs to happen after the other translations!
-		op.GeoM.Scale(zoom, zoom)
-
-		// We also need to correct for the dimensions of the screen, or the
-		// focus will appear in the top-left corner of the screen. This comes
-		// after the scaling, because the screen size does not change based on
-		// the zoom.
-		op.GeoM.Translate(w/2, h/2)
 
 		img, err := r.picForTexture(e.s.Texture)
 		if err != nil {

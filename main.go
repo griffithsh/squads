@@ -21,7 +21,6 @@ type system struct {
 	combat    *Combat
 	mgr       *ecs.World
 	camera    *Camera
-	hud       *game.HUD
 	lastMouse image.Point
 }
 
@@ -71,7 +70,7 @@ func controls() Controls {
 	}
 }
 
-func controlCamera(c *Camera, hud *game.HUD, t time.Duration, ctrl Controls) {
+func controlCamera(c *Camera, t time.Duration, ctrl Controls) {
 	camSpeed := 500.0 / c.zoom
 	dt := t.Seconds()
 
@@ -154,6 +153,28 @@ func addTrees(mgr *ecs.World, b *geom.Field) {
 	}
 }
 
+func addHud(mgr *ecs.World) {
+	for i := 0; i < 4; i++ {
+		e := mgr.NewEntity()
+		mgr.AddComponent(e, &game.Sprite{
+			Texture: "hud.png",
+			X:       0,
+			Y:       0,
+			W:       16,
+			H:       24,
+		})
+		mgr.AddComponent(e, &game.Position{
+			Center: game.Center{
+				X: float64(8 + (16+8)*i),
+				Y: 12,
+			},
+			Layer:    100,
+			Absolute: true,
+		})
+
+	}
+}
+
 var last time.Time
 
 // setup the game Entities.
@@ -165,8 +186,8 @@ func setup(w, h int) (*system, error) {
 	}
 	addGrass(mgr, board)
 	addTrees(mgr, board)
+	addHud(mgr)
 
-	hud := game.NewHUD(w, h)
 	camera := NewCamera(w, h)
 	s := system{
 		render: game.NewRenderer(),
@@ -174,7 +195,6 @@ func setup(w, h int) (*system, error) {
 
 		mgr:    mgr,
 		camera: camera,
-		hud:    hud,
 	}
 	s.combat.Begin()
 
@@ -251,7 +271,7 @@ func (s *system) run(screen *ebiten.Image) error {
 	last = time.Now()
 
 	ctrl := controls()
-	controlCamera(s.camera, s.hud, elapsed, ctrl)
+	controlCamera(s.camera, elapsed, ctrl)
 
 	s.combat.Run(elapsed)
 
@@ -261,9 +281,6 @@ func (s *system) run(screen *ebiten.Image) error {
 	if err := s.render.Render(screen, s.camera.GetX(), s.camera.GetY(), s.camera.GetZoom(), w, h, s.mgr); err != nil {
 		panic(err)
 	}
-
-	// Render a hud separately because the hud is not composed of ECS Entities.
-	s.hud.Render(screen, s.camera.GetZoom(), w, h)
 
 	select {
 	case <-second:

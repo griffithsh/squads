@@ -6,7 +6,7 @@
 - [x] Add pathfinding so that Actors can navigate the game-board
 - [x] Replace faiface/pixel with ebiten
 - [ ] Facing
-- [ ] Screen-relative rendering of ecs Components for a HUD
+- [x] Screen-relative rendering of ecs Components for a HUD
 - [ ] More construction in combat, rather than main
 - [ ] Animations
 - [ ] Command Queue for Actors
