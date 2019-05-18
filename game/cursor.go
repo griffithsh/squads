@@ -75,7 +75,7 @@ func (s *CursorSystem) Add(x, y float64, sz ActorSize) {
 		for _, c := range []ecs.Component{
 			&Cursor{},
 			&Sprite{
-				Texture: "texture.png",
+				Texture: "cursors.png",
 				X:       0,
 				Y:       0,
 				W:       24,
@@ -96,7 +96,7 @@ func (s *CursorSystem) Add(x, y float64, sz ActorSize) {
 		for _, c := range []ecs.Component{
 			&Cursor{},
 			&Sprite{
-				Texture: "texture.png",
+				Texture: "cursors.png",
 				X:       0,
 				Y:       32,
 				W:       58,
@@ -117,7 +117,7 @@ func (s *CursorSystem) Add(x, y float64, sz ActorSize) {
 		for _, c := range []ecs.Component{
 			&Cursor{},
 			&Sprite{
-				Texture: "texture.png",
+				Texture: "cursors.png",
 				X:       0,
 				Y:       64,
 				W:       58,

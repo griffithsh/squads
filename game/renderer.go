@@ -77,7 +77,11 @@ func (r *Renderer) picForTexture(filename string) (*ebiten.Image, error) {
 		return pic, nil
 	}
 
-	img, err := ebiten.NewImageFromImage(res.Images[filename], ebiten.FilterNearest)
+	inline, ok := res.Images[filename]
+	if !ok {
+		return nil, fmt.Errorf("%s missing", filename)
+	}
+	img, err := ebiten.NewImageFromImage(inline, ebiten.FilterNearest)
 	if err != nil {
 		return nil, fmt.Errorf("load texture: %v", err)
 	}

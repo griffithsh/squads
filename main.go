@@ -101,8 +101,8 @@ func addGrass(mgr *ecs.World, b *geom.Field) {
 			e := mgr.NewEntity()
 
 			mgr.AddComponent(e, &game.Sprite{
-				Texture: "texture.png",
-				X:       24,
+				Texture: "terrain.png",
+				X:       0,
 				Y:       0,
 				W:       24,
 				H:       16,
@@ -128,7 +128,7 @@ func addTrees(mgr *ecs.World, b *geom.Field) {
 			if i == 1 || i%17 == 1 || i%13 == 1 {
 				e := mgr.NewEntity()
 				mgr.AddComponent(e, &game.Sprite{
-					Texture: "Untitled.png",
+					Texture: "trees.png",
 					X:       0,
 					Y:       0,
 					W:       24,
@@ -206,8 +206,8 @@ func setup(w, h int) (*system, error) {
 	})
 	mgr.AddComponent(actor, &game.Facer{Face: geom.S})
 	mgr.AddComponent(actor, &game.Sprite{
-		Texture: "Untitled.png",
-		X:       24,
+		Texture: "figure.png",
+		X:       0,
 		Y:       0,
 		W:       24,
 		H:       48,
