@@ -55,12 +55,6 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			pos.Center.X = float64(dest.X)
 			pos.Center.Y = float64(dest.Y)
 
-			// FIXME: Obstacle movement should be handled by an "obstacle" system.
-			// if obstacle, ok := mgr.Component(e, "Obstacle").(*Obstacle); ok {
-			// 	obstacle.M = dest.M
-			// 	obstacle.N = dest.N
-			// }
-
 			// Pop the move list to update the next destination.
 			mover.Moves = mover.Moves[1:]
 

@@ -70,19 +70,55 @@ func (s *IntentSystem) obstaclesFor(actor ecs.Entity) []geom.ContextualObstacle 
 			continue
 		}
 		obstacle := s.mgr.Component(e, "Obstacle").(*Obstacle)
-		hex := s.field.Get(obstacle.M, obstacle.N)
 
-		if hex == nil {
-			continue
+		switch obstacle.ObstacleType {
+		// case SmallActor: // SmallActor handled as default
+		case MediumActor:
+			hex := s.field.Get4(obstacle.M, obstacle.N)
+
+			if hex == nil {
+				continue
+			}
+			for _, h := range hex.Hexes() {
+				// Translate the Obstacles into ContextualObstacles based on
+				// how much of an Obstacle this is to the Mover in this context.
+				obstacles = append(obstacles, geom.ContextualObstacle{
+					M:    h.M,
+					N:    h.N,
+					Cost: math.Inf(0), // just pretend these all are total obstacles for now
+				})
+			}
+
+		case LargeActor:
+			hex := s.field.Get7(obstacle.M, obstacle.N)
+
+			if hex == nil {
+				continue
+			}
+			for _, h := range hex.Hexes() {
+				// Translate the Obstacles into ContextualObstacles based on
+				// how much of an Obstacle this is to the Mover in this context.
+				obstacles = append(obstacles, geom.ContextualObstacle{
+					M:    h.M,
+					N:    h.N,
+					Cost: math.Inf(0), // just pretend these all are total obstacles for now
+				})
+			}
+
+		default:
+			hex := s.field.Get(obstacle.M, obstacle.N)
+
+			if hex == nil {
+				continue
+			}
+			// Translate the Obstacles into ContextualObstacles based on
+			// how much of an Obstacle this is to the Mover in this context.
+			obstacles = append(obstacles, geom.ContextualObstacle{
+				M:    obstacle.M,
+				N:    obstacle.N,
+				Cost: math.Inf(0), // just pretend these all are total obstacles for now
+			})
 		}
-
-		// Translate the Obstacles into ContextualObstacles based on
-		// how much of an Obstacle this is to the Mover in this context.
-		obstacles = append(obstacles, geom.ContextualObstacle{
-			M:    obstacle.M,
-			N:    obstacle.N,
-			Cost: math.Inf(0), // just pretend these all are total obstacles for now
-		})
 	}
 	return obstacles
 }

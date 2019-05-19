@@ -7,9 +7,11 @@ type ObstacleType int
 // obstacle types, like a Tree or Rock, or another Actor could be an Obstacle
 // too.
 const (
-	ACTOR ObstacleType = iota
-	CREVASSE
-	TREE
+	SmallActor ObstacleType = iota
+	MediumActor
+	LargeActor
+	Crevasse
+	Tree
 )
 
 // Obstacle is a Component that blocks a Hex.

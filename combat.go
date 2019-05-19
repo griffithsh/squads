@@ -104,6 +104,12 @@ func (c *Combat) Begin() {
 				},
 				Layer: 10,
 			})
+
+			c.mgr.AddComponent(e, &game.Obstacle{
+				M:            0,
+				N:            0,
+				ObstacleType: game.SmallActor,
+			})
 		} else if actor.Size == game.MEDIUM {
 			c.mgr.AddComponent(e, &game.Sprite{
 				Texture: "figure.png",
@@ -123,6 +129,12 @@ func (c *Combat) Begin() {
 					Y: start.Y(),
 				},
 				Layer: 10,
+			})
+
+			c.mgr.AddComponent(e, &game.Obstacle{
+				M:            0,
+				N:            7,
+				ObstacleType: game.MediumActor,
 			})
 		} else if actor.Size == game.LARGE {
 			c.mgr.AddComponent(e, &game.Sprite{
@@ -144,16 +156,15 @@ func (c *Combat) Begin() {
 				},
 				Layer: 10,
 			})
+
+			c.mgr.AddComponent(e, &game.Obstacle{
+				M:            3,
+				N:            8,
+				ObstacleType: game.LargeActor,
+			})
 		}
 
 		c.mgr.AddComponent(e, &game.Facer{Face: geom.S})
-
-		// FIXME: actor construction should create one or more obstacles to match the Size of the actor.
-		// mgr.AddComponent(actor, &game.Obstacle{
-		// 	M:            3,
-		// 	N:            8,
-		// 	ObstacleType: game.ACTOR,
-		// })
 	}
 	// Add turntoken to any actor.
 	c.mgr.AddComponent(c.mgr.Get([]string{"Actor"})[0], &game.TurnToken{})
@@ -249,7 +260,34 @@ func (c *Combat) actorAwaitingInput() ecs.Entity {
 	return entities[0]
 }
 
+// syncActorObstacle updates the an Actor's Obstacle to be synchronised with its
+// position. It should be called when an Actor has completed a move.
+func (c *Combat) syncActorObstacle(evt event.ActorMovementConcluded) {
+	actor := c.mgr.Component(evt.Entity, "Actor").(*game.Actor)
+	obstacle := c.mgr.Component(evt.Entity, "Obstacle").(*game.Obstacle)
+	position := c.mgr.Component(evt.Entity, "Position").(*game.Position)
+
+	switch actor.Size {
+	case game.MEDIUM:
+		h := c.field.At4(int(position.Center.X), int(position.Center.Y))
+		obstacle.M = h.M
+		obstacle.N = h.N
+	case game.LARGE:
+		h := c.field.At7(int(position.Center.X), int(position.Center.Y))
+		obstacle.M = h.M
+		obstacle.N = h.N
+	default:
+		h := c.field.At(int(position.Center.X), int(position.Center.Y))
+		obstacle.M = h.M
+		obstacle.N = h.N
+	}
+
+}
+
 func (c *Combat) handleMovementConcluded(t event.Typer) {
+	// FIXME: Should Obstacle movement be handled by an "obstacle" system instead?
+	c.syncActorObstacle(t.(event.ActorMovementConcluded))
+
 	c.state = AwaitingInputState
 	c.MousePosition(c.x, c.y)
 }
@@ -306,8 +344,9 @@ func (c *Combat) addTrees() {
 					Layer: 10,
 				})
 				c.mgr.AddComponent(e, &game.Obstacle{
-					M: h.M,
-					N: h.N,
+					M:            h.M,
+					N:            h.N,
+					ObstacleType: game.Tree,
 				})
 			}
 		}
