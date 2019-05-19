@@ -99,7 +99,6 @@ func (r *Renderer) Render(screen *ebiten.Image, x, y, zoom, w, h float64, mgr *e
 		op := &ebiten.DrawImageOptions{}
 
 		if e.p.Absolute {
-
 			// Translate for the location of the Entity
 			op.GeoM.Translate(e.p.Center.X, e.p.Center.Y)
 
@@ -115,7 +114,6 @@ func (r *Renderer) Render(screen *ebiten.Image, x, y, zoom, w, h float64, mgr *e
 			// Scale the rendered entities based on the zoom value
 			// NB: This needs to happen after the other translations!
 			op.GeoM.Scale(zoom, zoom)
-
 		} else {
 			// Translate for the focus values from the camera
 			op.GeoM.Translate(-x, -y)

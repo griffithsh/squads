@@ -196,39 +196,23 @@ func setup(w, h int) (*system, error) {
 		mgr:    mgr,
 		camera: camera,
 	}
-	s.combat.Begin()
 
 	// Create an Actor that is controlled by mouse clicks
-	start := board.Get(3, 8)
-	actor := mgr.NewEntity()
-	mgr.AddComponent(actor, &game.Actor{
+	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
 		Size: game.SMALL,
 	})
-	mgr.AddComponent(actor, &game.Facer{Face: geom.S})
-	mgr.AddComponent(actor, &game.Sprite{
-		Texture: "figure.png",
-		X:       0,
-		Y:       0,
-		W:       24,
-		H:       48,
+	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
+		Size: game.MEDIUM,
 	})
-	mgr.AddComponent(actor, &game.Position{
-		Center: game.Center{
-			X: start.X(),
-			Y: start.Y(),
-		},
-		Layer: 10,
-	})
-	mgr.AddComponent(actor, &game.SpriteOffset{
-		Y: -16,
+	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
+		Size: game.LARGE,
 	})
 
-	// FIXME: actor construction should create one or more obstacles to match the Size of the actor.
-	// mgr.AddComponent(actor, &game.Obstacle{
-	// 	M:            3,
-	// 	N:            8,
-	// 	ObstacleType: game.ACTOR,
-	// })
+	actor := mgr.Get([]string{"Actor"})
+	mgr.AddComponent(actor[0], &game.TurnToken{})
+
+	// Start combat!
+	s.combat.Begin()
 
 	last = time.Now()
 

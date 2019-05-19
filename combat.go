@@ -75,6 +75,85 @@ func (c *Combat) Begin() {
 		how to render an actor on the field.
 	*/
 	c.camera.Center(c.field.Width()/2, c.field.Height()/2)
+
+	// Upgrade all actors with components for visibility.
+	entities := c.mgr.Get([]string{"Actor"})
+	for _, e := range entities {
+		actor := c.mgr.Component(e, "Actor").(*game.Actor)
+
+		if actor.Size == game.SMALL {
+			c.mgr.AddComponent(e, &game.Sprite{
+				Texture: "figure.png",
+				X:       0,
+				Y:       0,
+				W:       24,
+				H:       48,
+			})
+			c.mgr.AddComponent(e, &game.SpriteOffset{
+				Y: -16,
+			})
+
+			start := c.field.Get(0, 0)
+			c.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: start.X(),
+					Y: start.Y(),
+				},
+				Layer: 10,
+			})
+		} else if actor.Size == game.MEDIUM {
+			c.mgr.AddComponent(e, &game.Sprite{
+				Texture: "figure.png",
+				X:       0,
+				Y:       0,
+				W:       24,
+				H:       48,
+			})
+			c.mgr.AddComponent(e, &game.SpriteOffset{
+				Y: -16,
+			})
+
+			start := c.field.Get4(0, 7)
+			c.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: start.X(),
+					Y: start.Y(),
+				},
+				Layer: 10,
+			})
+		} else if actor.Size == game.LARGE {
+			c.mgr.AddComponent(e, &game.Sprite{
+				Texture: "figure.png",
+				X:       0,
+				Y:       0,
+				W:       24,
+				H:       48,
+			})
+			c.mgr.AddComponent(e, &game.SpriteOffset{
+				Y: -16,
+			})
+
+			start := c.field.Get7(3, 8)
+			c.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: start.X(),
+					Y: start.Y(),
+				},
+				Layer: 10,
+			})
+		}
+
+		c.mgr.AddComponent(e, &game.Facer{Face: geom.S})
+
+		// FIXME: actor construction should create one or more obstacles to match the Size of the actor.
+		// mgr.AddComponent(actor, &game.Obstacle{
+		// 	M:            3,
+		// 	N:            8,
+		// 	ObstacleType: game.ACTOR,
+		// })
+	}
+	// Add turntoken to any actor.
+	c.mgr.AddComponent(c.mgr.Get([]string{"Actor"})[0], &game.TurnToken{})
 }
 
 // End should be called at the resolution of a combat encounter. It removes
@@ -103,6 +182,14 @@ func (c *Combat) Interaction(x, y int) {
 		c.state = ExecutingState
 
 		c.cursors.Clear()
+
+		// Remove TurnToken from all actors.
+		for _, e := range c.mgr.Get([]string{"Actor", "TurnToken"}) {
+			c.mgr.RemoveComponent(e, c.mgr.Component(e, "TurnToken"))
+		}
+
+		// Add turntoken to any actor.
+		c.mgr.AddComponent(c.mgr.Get([]string{"Actor"})[0], &game.TurnToken{})
 	}
 }
 
@@ -110,10 +197,19 @@ func (c *Combat) Interaction(x, y int) {
 // position.
 func (c *Combat) MousePosition(x, y int) {
 	wx, wy := c.camera.ScreenToWorld(x, y)
+
+	c.x = x
+	c.y = y
+	c.wx = wx
+	c.wy = wy
+
 	if c.state == AwaitingInputState {
 		c.cursors.Clear()
-
-		a := c.mgr.Component(c.actorAwaitingInput(), "Actor").(*game.Actor)
+		e := c.actorAwaitingInput()
+		if e == 0 {
+			return
+		}
+		a := c.mgr.Component(e, "Actor").(*game.Actor)
 
 		switch a.Size {
 		case game.SMALL:
@@ -139,14 +235,10 @@ func (c *Combat) MousePosition(x, y int) {
 		}
 	}
 
-	c.x = x
-	c.y = y
-	c.wx = wx
-	c.wy = wy
 }
 
 func (c *Combat) actorAwaitingInput() ecs.Entity {
-	entities := c.mgr.Get([]string{"Actor"})
+	entities := c.mgr.Get([]string{"Actor", "TurnToken"})
 	if len(entities) == 0 {
 		// FIXME: this is a flow error - there should always be an entity
 		return 0
