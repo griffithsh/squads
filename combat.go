@@ -224,6 +224,7 @@ func (c *Combat) MousePosition(x, y int) {
 			return
 		}
 		a := c.mgr.Component(e, "Actor").(*game.Actor)
+		position := c.mgr.Component(e, "Position").(*game.Position)
 
 		switch a.Size {
 		case game.SMALL:
@@ -232,6 +233,7 @@ func (c *Combat) MousePosition(x, y int) {
 				break
 			}
 			c.cursors.Add(h.X(), h.Y(), a.Size)
+			c.cursors.Add(position.Center.X, position.Center.Y, a.Size)
 
 		case game.MEDIUM:
 			h := c.field.At4(int(wx), int(wy))
@@ -239,6 +241,7 @@ func (c *Combat) MousePosition(x, y int) {
 				break
 			}
 			c.cursors.Add(h.X(), h.Y(), a.Size)
+			c.cursors.Add(position.Center.X, position.Center.Y, a.Size)
 
 		case game.LARGE:
 			h := c.field.At7(int(wx), int(wy))
@@ -246,6 +249,7 @@ func (c *Combat) MousePosition(x, y int) {
 				break
 			}
 			c.cursors.Add(h.X(), h.Y(), a.Size)
+			c.cursors.Add(position.Center.X, position.Center.Y, a.Size)
 		}
 	}
 
