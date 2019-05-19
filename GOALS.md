@@ -7,7 +7,7 @@
 - [x] Replace faiface/pixel with ebiten
 - [ ] Facing
 - [x] Screen-relative rendering of ecs Components for a HUD
-- [ ] More construction in combat, rather than main
+- [x] More construction in combat, rather than main
 - [ ] Animations
 - [ ] Command Queue for Actors
 - [ ] Add debouncing of click events to main - Interaction should be called once per click

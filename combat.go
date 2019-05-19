@@ -76,6 +76,9 @@ func (c *Combat) Begin() {
 	*/
 	c.camera.Center(c.field.Width()/2, c.field.Height()/2)
 
+	c.addGrass()
+	c.addTrees()
+
 	// Upgrade all actors with components for visibility.
 	entities := c.mgr.Get([]string{"Actor"})
 	for _, e := range entities {
@@ -249,4 +252,64 @@ func (c *Combat) actorAwaitingInput() ecs.Entity {
 func (c *Combat) handleMovementConcluded(t event.Typer) {
 	c.state = AwaitingInputState
 	c.MousePosition(c.x, c.y)
+}
+
+func (c *Combat) addGrass() {
+	M, N := c.field.Dimensions()
+	for n := 0; n < N; n++ {
+		for m := 0; m < M; m++ {
+			h := c.field.Get(m, n)
+			e := c.mgr.NewEntity()
+
+			c.mgr.AddComponent(e, &game.Sprite{
+				Texture: "terrain.png",
+				X:       0,
+				Y:       0,
+				W:       24,
+				H:       16,
+			})
+
+			c.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: h.X(),
+					Y: h.Y(),
+				},
+				Layer: 1,
+			})
+		}
+	}
+}
+
+func (c *Combat) addTrees() {
+	M, N := c.field.Dimensions()
+	for n := 0; n < N; n++ {
+		for m := 0; m < M; m++ {
+			i := m + n*M
+			h := c.field.Get(m, n)
+			if i == 1 || i%17 == 1 || i%13 == 1 {
+				e := c.mgr.NewEntity()
+				c.mgr.AddComponent(e, &game.Sprite{
+					Texture: "trees.png",
+					X:       0,
+					Y:       0,
+					W:       24,
+					H:       48,
+				})
+				c.mgr.AddComponent(e, &game.SpriteOffset{
+					Y: -16,
+				})
+				c.mgr.AddComponent(e, &game.Position{
+					Center: game.Center{
+						X: h.X(),
+						Y: h.Y(),
+					},
+					Layer: 10,
+				})
+				c.mgr.AddComponent(e, &game.Obstacle{
+					M: h.M,
+					N: h.N,
+				})
+			}
+		}
+	}
 }

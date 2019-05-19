@@ -12,7 +12,6 @@ import (
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/game"
-	"github.com/griffithsh/squads/geom"
 	"github.com/hajimehoshi/ebiten"
 )
 
@@ -93,66 +92,6 @@ func controlCamera(c *Camera, t time.Duration, ctrl Controls) {
 	}
 }
 
-func addGrass(mgr *ecs.World, b *geom.Field) {
-	M, N := b.Dimensions()
-	for n := 0; n < N; n++ {
-		for m := 0; m < M; m++ {
-			h := b.Get(m, n)
-			e := mgr.NewEntity()
-
-			mgr.AddComponent(e, &game.Sprite{
-				Texture: "terrain.png",
-				X:       0,
-				Y:       0,
-				W:       24,
-				H:       16,
-			})
-
-			mgr.AddComponent(e, &game.Position{
-				Center: game.Center{
-					X: h.X(),
-					Y: h.Y(),
-				},
-				Layer: 1,
-			})
-		}
-	}
-}
-
-func addTrees(mgr *ecs.World, b *geom.Field) {
-	M, N := b.Dimensions()
-	for n := 0; n < N; n++ {
-		for m := 0; m < M; m++ {
-			i := m + n*M
-			h := b.Get(m, n)
-			if i == 1 || i%17 == 1 || i%13 == 1 {
-				e := mgr.NewEntity()
-				mgr.AddComponent(e, &game.Sprite{
-					Texture: "trees.png",
-					X:       0,
-					Y:       0,
-					W:       24,
-					H:       48,
-				})
-				mgr.AddComponent(e, &game.SpriteOffset{
-					Y: -16,
-				})
-				mgr.AddComponent(e, &game.Position{
-					Center: game.Center{
-						X: h.X(),
-						Y: h.Y(),
-					},
-					Layer: 10,
-				})
-				mgr.AddComponent(e, &game.Obstacle{
-					M: h.M,
-					N: h.N,
-				})
-			}
-		}
-	}
-}
-
 func addHud(mgr *ecs.World) {
 	for i := 0; i < 4; i++ {
 		e := mgr.NewEntity()
@@ -180,12 +119,7 @@ var last time.Time
 // setup the game Entities.
 func setup(w, h int) (*system, error) {
 	mgr := ecs.NewWorld()
-	board, err := geom.NewField(8, 24)
-	if err != nil {
-		return nil, fmt.Errorf("game.NewBoard: %v", err)
-	}
-	addGrass(mgr, board)
-	addTrees(mgr, board)
+
 	addHud(mgr)
 
 	camera := NewCamera(w, h)
