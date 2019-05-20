@@ -5,12 +5,17 @@
 - [x] Add a HUD to prove the viability of faiface/pixel a little further
 - [x] Add pathfinding so that Actors can navigate the game-board
 - [x] Replace faiface/pixel with ebiten
-- [ ] Facing
 - [x] Screen-relative rendering of ecs Components for a HUD
 - [x] More construction in combat, rather than main
-- [ ] Animations
-- [ ] Command Queue for Actors
 - [ ] Add debouncing of click events to main - Interaction should be called once per click
+- [ ] Add an "End Turn" button to the HUD
+- [ ] A way to generate starting positions for every actor
+- [ ] Preparation, ActionPoints, and anything else needed for turns-based combat
+- [ ] Medium and Large Actor art
+- [ ] Facing
+- [ ] Animations
+- [ ] Profession and Sex for every Actor and a mapping between those and a set of animations
+- [ ] Intent Queue(?) for AI Actors
 
 ## MAYDO
 
