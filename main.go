@@ -16,11 +16,12 @@ import (
 )
 
 type system struct {
-	render    *game.Renderer
-	combat    *Combat
-	mgr       *ecs.World
-	camera    *Camera
-	lastMouse image.Point
+	render       *game.Renderer
+	combat       *Combat
+	mgr          *ecs.World
+	camera       *Camera
+	lastMouse    image.Point
+	wasMouseDown bool
 }
 
 func main() {
@@ -131,7 +132,7 @@ func setup(w, h int) (*system, error) {
 		camera: camera,
 	}
 
-	// Create an Actor that is controlled by mouse clicks
+	// Create some Actors that are controlled by mouse clicks
 	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
 		Size: game.SMALL,
 	})
@@ -141,9 +142,6 @@ func setup(w, h int) (*system, error) {
 	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
 		Size: game.LARGE,
 	})
-
-	actor := mgr.Get([]string{"Actor"})
-	mgr.AddComponent(actor[0], &game.TurnToken{})
 
 	// Start combat!
 	s.combat.Begin()
@@ -182,7 +180,10 @@ func (s *system) run(screen *ebiten.Image) error {
 	}
 
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
+		s.wasMouseDown = true
+	} else if s.wasMouseDown {
 		s.combat.Interaction(x, y)
+		s.wasMouseDown = false
 	}
 
 	elapsed := time.Since(last)

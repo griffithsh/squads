@@ -7,7 +7,7 @@
 - [x] Replace faiface/pixel with ebiten
 - [x] Screen-relative rendering of ecs Components for a HUD
 - [x] More construction in combat, rather than main
-- [ ] Add debouncing of click events to main - Interaction should be called once per click
+- [x] Add debouncing of click events to main - Interaction should be called once per click
 - [ ] Add an "End Turn" button to the HUD
 - [ ] A way to generate starting positions for every actor
 - [ ] Preparation, ActionPoints, and anything else needed for turns-based combat
