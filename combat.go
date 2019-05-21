@@ -78,6 +78,7 @@ func (c *Combat) Begin() {
 
 	c.addGrass()
 	c.addTrees()
+	c.constructHUD()
 
 	// Upgrade all actors with components for visibility.
 	entities := c.mgr.Get([]string{"Actor"})
@@ -186,6 +187,14 @@ func (c *Combat) Run(elapsed time.Duration) {
 // occurred.
 func (c *Combat) Interaction(x, y int) {
 	if c.state == AwaitingInputState {
+		// Did we click on a hud button?
+		// ...
+
+		// get every button from c.mgr
+		// if this x,y is within the bounds of any button, then execute something and return
+		// we could publish a button click event with a button id?
+		// we could have a function value on each button component that we execute?
+
 		actor := c.actorAwaitingInput()
 
 		wx, wy := c.camera.ScreenToWorld(x, y)
@@ -355,4 +364,62 @@ func (c *Combat) addTrees() {
 			}
 		}
 	}
+}
+
+func (c *Combat) constructHUD() {
+	// TODO!
+	// If this should go in the top-right corner, then we need to know the
+	// screen size. And we also need to change the position of the button when
+	// the screen size changes.
+	e := c.mgr.NewEntity()
+	c.mgr.AddComponent(e, &game.Sprite{
+		Texture: "hud.png",
+		X:       0,
+		Y:       0,
+		W:       16,
+		H:       24,
+	})
+	c.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: -20,
+			Y: 12,
+		},
+		Layer:    100,
+		Absolute: true,
+	})
+
+	// f := func() {
+	// 	// Remove TurnToken from all actors.
+	// 	for _, e := range c.mgr.Get([]string{"Actor", "TurnToken"}) {
+	// 		c.mgr.RemoveComponent(e, c.mgr.Component(e, "TurnToken"))
+	// 	}
+
+	// 	// Add turntoken to any actor.
+	// 	c.mgr.AddComponent(c.mgr.Get([]string{"Actor"})[0], &game.TurnToken{})
+	// }
+
+	// Should also look at introducing a Scale Component to render things with a different scale
+
+	// Example from main.go
+	// func addHud(mgr *ecs.World) {
+	// 	for i := 0; i < 4; i++ {
+	// 		e := mgr.NewEntity()
+	// 		mgr.AddComponent(e, &game.Sprite{
+	// 			Texture: "hud.png",
+	// 			X:       0,
+	// 			Y:       0,
+	// 			W:       16,
+	// 			H:       24,
+	// 		})
+	// 		mgr.AddComponent(e, &game.Position{
+	// 			Center: game.Center{
+	// 				X: float64(8 + (16+8)*i),
+	// 				Y: 12,
+	// 			},
+	// 			Layer:    100,
+	// 			Absolute: true,
+	// 		})
+	// 	}
+	// }
+
 }

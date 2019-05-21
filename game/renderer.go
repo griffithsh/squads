@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math"
 	"sort"
 
 	"github.com/griffithsh/squads/ecs"
@@ -99,8 +100,20 @@ func (r *Renderer) Render(screen *ebiten.Image, x, y, zoom, w, h float64, mgr *e
 		op := &ebiten.DrawImageOptions{}
 
 		if e.p.Absolute {
+			// Absolutely positioned entities wrap around, so that it is easy
+			// to specify things that are aligned with the right or bottom of
+			// the screen.
+			wrappedX := math.Mod(e.p.Center.X, w)
+			if wrappedX < 0 {
+				wrappedX = wrappedX + w
+			}
+			wrappedY := math.Mod(e.p.Center.Y, h)
+			if wrappedY < 0 {
+				wrappedY = wrappedY + h
+			}
+
 			// Translate for the location of the Entity
-			op.GeoM.Translate(e.p.Center.X, e.p.Center.Y)
+			op.GeoM.Translate(wrappedX, wrappedY)
 
 			// ebiten uses top-left corner coordinates, so we need to translate
 			// from center-based coordinates by subtracting half the width/height.
@@ -113,7 +126,7 @@ func (r *Renderer) Render(screen *ebiten.Image, x, y, zoom, w, h float64, mgr *e
 
 			// Scale the rendered entities based on the zoom value
 			// NB: This needs to happen after the other translations!
-			op.GeoM.Scale(zoom, zoom)
+			// op.GeoM.Scale(zoom, zoom)
 		} else {
 			// Translate for the focus values from the camera
 			op.GeoM.Translate(-x, -y)
