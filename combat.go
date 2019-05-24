@@ -112,14 +112,14 @@ func (c *Combat) Begin() {
 			})
 		} else if actor.Size == game.MEDIUM {
 			c.mgr.AddComponent(e, &game.Sprite{
-				Texture: "figure.png",
+				Texture: "wolf.png",
 				X:       0,
 				Y:       0,
-				W:       24,
+				W:       58,
 				H:       48,
 			})
 			c.mgr.AddComponent(e, &game.SpriteOffset{
-				Y: -16,
+				Y: -4,
 			})
 
 			start := c.field.Get4(0, 7)
