@@ -7,6 +7,7 @@ import (
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
+	"github.com/griffithsh/squads/ui"
 )
 
 // CombatState enumerates the States that a Combat could be in.
@@ -78,6 +79,7 @@ func (c *Combat) Begin() {
 
 	c.addGrass()
 	c.addTrees()
+	c.constructHUD()
 
 	// Upgrade all actors with components for visibility.
 	entities := c.mgr.Get([]string{"Actor"})
@@ -145,8 +147,9 @@ func (c *Combat) Begin() {
 				H:       48,
 			})
 			c.mgr.AddComponent(e, &game.SpriteOffset{
-				Y: -16,
+				Y: -32,
 			})
+			c.mgr.AddComponent(e, &game.Scale{X: 2, Y: 2})
 
 			start := c.field.Get7(3, 8)
 			c.mgr.AddComponent(e, &game.Position{
@@ -182,10 +185,62 @@ func (c *Combat) Run(elapsed time.Duration) {
 	c.intents.Update()
 }
 
+func (c *Combat) checkHUD(x, y int) bool {
+	for _, e := range c.mgr.Get([]string{"Interactive", "Position", "Sprite"}) {
+		position := c.mgr.Component(e, "Position").(*game.Position)
+		// Only going to handle Absolute Components for now I think
+		if !position.Absolute {
+			continue
+		}
+		interactive := c.mgr.Component(e, "Interactive").(*ui.Interactive)
+		sprite := c.mgr.Component(e, "Sprite").(*game.Sprite)
+		scale := c.mgr.Component(e, "Scale").(*game.Scale)
+
+		// Because Absolutely positioned components might have negative
+		// position, we need to modulo them.
+		px := int(position.Center.X) % c.camera.screenW
+		if px < 0 {
+			px = px + c.camera.screenW
+		}
+		py := int(position.Center.Y) % c.camera.screenH
+		if py < 0 {
+			py = py + c.camera.screenH
+		}
+
+		// Is the x,y of the interaction without the bounds of the
+		// Interactive?
+		minX := px - int(scale.X*float64(sprite.W)*0.5)
+		if x < minX {
+			continue
+		}
+		maxX := minX + int(float64(sprite.W)*scale.X)
+		if x > maxX {
+			continue
+		}
+		minY := py - int(scale.Y*float64(sprite.H)*0.5)
+		if y < minY {
+			continue
+		}
+		maxY := minY + int(float64(sprite.H)*scale.Y)
+		if y > maxY {
+			continue
+		}
+
+		// Trigger the Interactive and return to prevent other interactions from occurring.
+		interactive.Trigger()
+		return true
+	}
+	return false
+}
+
 // Interaction is the way to notify the Combat that a mouse click or touch event
 // occurred.
 func (c *Combat) Interaction(x, y int) {
 	if c.state == AwaitingInputState {
+		if handled := c.checkHUD(x, y); handled {
+			return
+		}
+
 		actor := c.actorAwaitingInput()
 
 		wx, wy := c.camera.ScreenToWorld(x, y)
@@ -196,14 +251,6 @@ func (c *Combat) Interaction(x, y int) {
 		c.state = ExecutingState
 
 		c.cursors.Clear()
-
-		// Remove TurnToken from all actors.
-		for _, e := range c.mgr.Get([]string{"Actor", "TurnToken"}) {
-			c.mgr.RemoveComponent(e, c.mgr.Component(e, "TurnToken"))
-		}
-
-		// Add turntoken to any actor.
-		c.mgr.AddComponent(c.mgr.Get([]string{"Actor"})[0], &game.TurnToken{})
 	}
 }
 
@@ -355,4 +402,39 @@ func (c *Combat) addTrees() {
 			}
 		}
 	}
+}
+
+func (c *Combat) constructHUD() {
+	e := c.mgr.NewEntity()
+	c.mgr.AddComponent(e, &game.Sprite{
+		Texture: "hud.png",
+		X:       16,
+		Y:       0,
+		W:       46,
+		H:       14,
+	})
+	c.mgr.AddComponent(e, &game.Scale{
+		X: 3,
+		Y: 3,
+	})
+	c.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: -80,
+			Y: 32,
+		},
+		Layer:    100,
+		Absolute: true,
+	})
+
+	c.mgr.AddComponent(e, &ui.Interactive{
+		Trigger: func() {
+			// Remove TurnToken from all actors.
+			for _, e := range c.mgr.Get([]string{"Actor", "TurnToken"}) {
+				c.mgr.RemoveComponent(e, c.mgr.Component(e, "TurnToken"))
+			}
+
+			// Add turntoken to any actor.
+			c.mgr.AddComponent(c.mgr.Get([]string{"Actor"})[0], &game.TurnToken{})
+		},
+	})
 }

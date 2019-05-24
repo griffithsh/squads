@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math"
 	"sort"
 
 	"github.com/griffithsh/squads/ecs"
@@ -27,6 +28,7 @@ type entity struct {
 	s      *Sprite
 	p      *Position
 	offset *SpriteOffset
+	scale  *Scale
 }
 
 // getEntities returns a sorted list of entities that have renderable
@@ -43,6 +45,9 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 		}
 		if offset, ok := mgr.Component(e, "SpriteOffset").(*SpriteOffset); ok {
 			entities[i].offset = offset
+		}
+		if scale, ok := mgr.Component(e, "Scale").(*Scale); ok {
+			entities[i].scale = scale
 		}
 	}
 
@@ -99,31 +104,50 @@ func (r *Renderer) Render(screen *ebiten.Image, x, y, zoom, w, h float64, mgr *e
 		op := &ebiten.DrawImageOptions{}
 
 		if e.p.Absolute {
-			// Translate for the location of the Entity
-			op.GeoM.Translate(e.p.Center.X, e.p.Center.Y)
-
 			// ebiten uses top-left corner coordinates, so we need to translate
 			// from center-based coordinates by subtracting half the width/height.
 			op.GeoM.Translate(-0.5*float64(e.s.W), -0.5*float64(e.s.H))
+
+			// Some Entities might have an intrinsic scale.
+			if e.scale != nil {
+				op.GeoM.Scale(e.scale.X, e.scale.Y)
+			}
+
+			// Absolutely positioned entities wrap around, so that it is easy
+			// to specify things that are aligned with the right or bottom of
+			// the screen.
+			wrappedX := math.Mod(e.p.Center.X, w)
+			if wrappedX < 0 {
+				wrappedX = wrappedX + w
+			}
+			wrappedY := math.Mod(e.p.Center.Y, h)
+			if wrappedY < 0 {
+				wrappedY = wrappedY + h
+			}
+
+			// Translate for the location of the Entity
+			op.GeoM.Translate(wrappedX, wrappedY)
 
 			// Some sprites may need to be drawn with an offset.
 			if e.offset != nil {
 				op.GeoM.Translate(float64(e.offset.X), float64(e.offset.Y))
 			}
 
-			// Scale the rendered entities based on the zoom value
-			// NB: This needs to happen after the other translations!
-			op.GeoM.Scale(zoom, zoom)
 		} else {
+			// ebiten uses top-left corner coordinates, so we need to translate
+			// from center-based coordinates by subtracting half the width/height.
+			op.GeoM.Translate(-0.5*float64(e.s.W), -0.5*float64(e.s.H))
+
+			// Some Entities might have an intrinsic scale.
+			if e.scale != nil {
+				op.GeoM.Scale(e.scale.X, e.scale.Y)
+			}
+
 			// Translate for the focus values from the camera
 			op.GeoM.Translate(-x, -y)
 
 			// Translate for the location of the Entity
 			op.GeoM.Translate(e.p.Center.X, e.p.Center.Y)
-
-			// ebiten uses top-left corner coordinates, so we need to translate
-			// from center-based coordinates by subtracting half the width/height.
-			op.GeoM.Translate(-0.5*float64(e.s.W), -0.5*float64(e.s.H))
 
 			// Some sprites may need to be drawn with an offset.
 			if e.offset != nil {

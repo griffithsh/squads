@@ -93,35 +93,11 @@ func controlCamera(c *Camera, t time.Duration, ctrl Controls) {
 	}
 }
 
-func addHud(mgr *ecs.World) {
-	for i := 0; i < 4; i++ {
-		e := mgr.NewEntity()
-		mgr.AddComponent(e, &game.Sprite{
-			Texture: "hud.png",
-			X:       0,
-			Y:       0,
-			W:       16,
-			H:       24,
-		})
-		mgr.AddComponent(e, &game.Position{
-			Center: game.Center{
-				X: float64(8 + (16+8)*i),
-				Y: 12,
-			},
-			Layer:    100,
-			Absolute: true,
-		})
-
-	}
-}
-
 var last time.Time
 
 // setup the game Entities.
 func setup(w, h int) (*system, error) {
 	mgr := ecs.NewWorld()
-
-	addHud(mgr)
 
 	camera := NewCamera(w, h)
 	s := system{
