@@ -1,6 +1,7 @@
 package main
 
 import (
+	"fmt"
 	"time"
 
 	"github.com/griffithsh/squads/ecs"
@@ -59,7 +60,7 @@ func NewCombat(mgr *ecs.World, camera *Camera /**/) *Combat {
 		field:   f,
 		nav:     game.NewNavigator(bus),
 		camera:  camera,
-		state:   AwaitingInputState,
+		state:   PreparingState,
 		cursors: game.NewCursorSystem(mgr),
 		intents: game.NewIntentSystem(mgr, bus, f),
 	}
@@ -167,21 +168,83 @@ func (c *Combat) Begin() {
 			})
 		}
 
+		c.mgr.AddComponent(e, &game.CombatStats{
+			CurrentPreparation: 0,
+		})
 		c.mgr.AddComponent(e, &game.Facer{Face: geom.S})
 	}
-	// Add turntoken to any actor.
-	c.mgr.AddComponent(c.mgr.Get([]string{"Actor"})[0], &game.TurnToken{})
 }
 
 // End should be called at the resolution of a combat encounter. It removes
 // combat-specific Components.
 func (c *Combat) End() {
-
+	removals := []string{
+		"Sprite",
+		"SpriteOffset",
+		"Scale",
+		"Position",
+		"Obstacle",
+		"CombatStats",
+		"Facer",
+		"TurnToken",
+	}
+	for _, e := range c.mgr.Get([]string{"Actor"}) {
+		for _, comp := range removals {
+			c.mgr.RemoveType(e, comp)
+		}
+	}
 }
 
 // Run a frame of this Combat.
 func (c *Combat) Run(elapsed time.Duration) {
-	c.nav.Update(c.mgr, elapsed)
+	switch c.state {
+	case PreparingState:
+		// Use the elapsed time as a base for the preparation increment.
+		increment := int(elapsed.Seconds() * 500)
+
+		// But if any Actor requires less than that, then only use that amount
+		// instead, so that no actor overshoots its PreparationThreshold.
+		for _, e := range c.mgr.Get([]string{"Actor", "CombatStats"}) {
+			s := c.mgr.Component(e, "CombatStats").(*game.CombatStats)
+			actor := c.mgr.Component(e, "Actor").(*game.Actor)
+
+			if actor.PreparationThreshold-s.CurrentPreparation < increment {
+				increment = actor.PreparationThreshold - s.CurrentPreparation
+			}
+		}
+
+		// prepared Entities are the ones
+		prepared := []ecs.Entity{}
+
+		// Now that we know the increment, we can apply it with confidence that
+		// we will not over-prepare.
+		for _, e := range c.mgr.Get([]string{"Actor", "CombatStats"}) {
+			s := c.mgr.Component(e, "CombatStats").(*game.CombatStats)
+			actor := c.mgr.Component(e, "Actor").(*game.Actor)
+
+			s.CurrentPreparation += increment
+
+			if s.CurrentPreparation >= actor.PreparationThreshold {
+				prepared = append(prepared, e)
+			}
+		}
+
+		if len(prepared) > 0 {
+			e := prepared[0]
+			s := c.mgr.Component(e, "CombatStats").(*game.CombatStats)
+			actor := c.mgr.Component(e, "Actor").(*game.Actor)
+
+			fmt.Printf("Awaiting input from %v (%d exceeds %d)\n", e, s.CurrentPreparation, actor.PreparationThreshold)
+
+			s.CurrentPreparation = 0
+			c.state = AwaitingInputState
+			c.mgr.AddComponent(e, &game.TurnToken{})
+		}
+
+	case ExecutingState:
+		c.nav.Update(c.mgr, elapsed)
+	}
+
 	c.intents.Update()
 }
 
@@ -433,8 +496,9 @@ func (c *Combat) constructHUD() {
 				c.mgr.RemoveComponent(e, c.mgr.Component(e, "TurnToken"))
 			}
 
-			// Add turntoken to any actor.
-			c.mgr.AddComponent(c.mgr.Get([]string{"Actor"})[0], &game.TurnToken{})
+			// // Add turntoken to any actor.
+			// c.mgr.AddComponent(c.mgr.Get([]string{"Actor"})[0], &game.TurnToken{})
+			c.state = PreparingState
 		},
 	})
 }

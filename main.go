@@ -31,6 +31,7 @@ func main() {
 	p := &game.Position{}
 	mgr.AddComponent(e, p)
 	mgr.RemoveComponent(e, p)
+	mgr.RemoveType(e, "BananaramaLlamaDingdong")
 	mgr.DestroyEntity(e)
 
 	// dump performance with pprof
@@ -110,13 +111,16 @@ func setup(w, h int) (*system, error) {
 
 	// Create some Actors that are controlled by mouse clicks
 	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
-		Size: game.SMALL,
+		Size:                 game.SMALL,
+		PreparationThreshold: 701,
 	})
 	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
-		Size: game.MEDIUM,
+		Size:                 game.MEDIUM,
+		PreparationThreshold: 1103,
 	})
 	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
-		Size: game.LARGE,
+		Size:                 game.LARGE,
+		PreparationThreshold: 1301,
 	})
 
 	// Start combat!

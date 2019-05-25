@@ -51,9 +51,9 @@ func (mgr *World) Exists(e Entity) bool {
 	return ok
 }
 
-// Component of type for Entity.
-func (mgr *World) Component(e Entity, ty string) Component {
-	if v, ok := mgr.components[ty]; ok {
+// Component retrieves the Component of Type t for Entity.
+func (mgr *World) Component(e Entity, t string) Component {
+	if v, ok := mgr.components[t]; ok {
 		if v, ok := v[e]; ok {
 			return v
 		}
@@ -64,9 +64,9 @@ func (mgr *World) Component(e Entity, ty string) Component {
 // NewEntity creates an Entity
 func (mgr *World) NewEntity() Entity {
 	try := Entity(rand.Int63())
-	// is the try already in use?
+	// Is the try already in use? This is hugely unlikely given there 2^63 possibilities.
 	if _, ok := mgr.entities[try]; ok {
-		// recurse to try again.
+		// Recurse to try again.
 		return mgr.NewEntity()
 	}
 	mgr.entities[try] = struct{}{}
@@ -89,7 +89,15 @@ func (mgr *World) AddComponent(e Entity, c Component) {
 	mgr.components[c.Type()][e] = c
 }
 
-// RemoveComponent from Entity.
+// RemoveType removes the Component of Type t from Entity e.
+func (mgr *World) RemoveType(e Entity, t string) {
+	delete(mgr.components[t], e)
+	if len(mgr.components[t]) == 0 {
+		delete(mgr.components, t)
+	}
+}
+
+// RemoveComponent from an Entity.
 func (mgr *World) RemoveComponent(e Entity, c Component) {
 	delete(mgr.components[c.Type()], e)
 	if len(mgr.components[c.Type()]) == 0 {
@@ -97,7 +105,7 @@ func (mgr *World) RemoveComponent(e Entity, c Component) {
 	}
 }
 
-// Clear all entities in the world.
+// Clear all Entities and their Components from the World, resetting it to an empty state.
 func (mgr *World) Clear() {
 	mgr.entities = map[Entity]struct{}{}
 	mgr.components = map[string]map[Entity]Component{}
