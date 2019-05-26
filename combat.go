@@ -493,11 +493,15 @@ func (c *Combat) constructHUD() {
 		Trigger: func() {
 			// Remove TurnToken from all actors.
 			for _, e := range c.mgr.Get([]string{"Actor", "TurnToken"}) {
+				// Reset to maximum AP.
+				actor := c.mgr.Component(e, "Actor").(*game.Actor)
+				stats := c.mgr.Component(e, "CombatStats").(*game.CombatStats)
+				stats.ActionPoints = actor.ActionPoints
+
+				// And then remove TurnToken.
 				c.mgr.RemoveComponent(e, c.mgr.Component(e, "TurnToken"))
 			}
 
-			// // Add turntoken to any actor.
-			// c.mgr.AddComponent(c.mgr.Get([]string{"Actor"})[0], &game.TurnToken{})
 			c.state = PreparingState
 		},
 	})

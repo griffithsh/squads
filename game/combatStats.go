@@ -4,6 +4,7 @@ package game
 // and are discarded afterwards.
 type CombatStats struct {
 	CurrentPreparation int
+	ActionPoints       int
 }
 
 // Type of this Component.

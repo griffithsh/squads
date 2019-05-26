@@ -113,14 +113,17 @@ func setup(w, h int) (*system, error) {
 	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
 		Size:                 game.SMALL,
 		PreparationThreshold: 701,
+		ActionPoints:         100,
 	})
 	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
 		Size:                 game.MEDIUM,
 		PreparationThreshold: 1103,
+		ActionPoints:         80,
 	})
 	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
 		Size:                 game.LARGE,
 		PreparationThreshold: 1301,
+		ActionPoints:         120,
 	})
 
 	// Start combat!

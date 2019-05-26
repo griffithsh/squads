@@ -17,6 +17,7 @@ type Actor struct {
 	Size ActorSize
 
 	PreparationThreshold int // Preparation required to take a turn
+	ActionPoints         int
 }
 
 // Type of this Component.
