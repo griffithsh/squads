@@ -6,70 +6,117 @@ import (
 	"math"
 )
 
-// ContextualObstacle captures how much of an obstacle this is to the navigator.
-// A bird can fly right over a tree, a snake is not impeded by a swamp. A horse
-// runs fastest when the ground is level and clear. The Cost multiplies the
-// normal traversal time. A Cost of 2 implies that taking this path is twice as
-// long as it normally would be. A cost of Infinity marks something that is
-// completely impassable.
-type ContextualObstacle struct {
+type NavigateStep struct {
 	M, N int
-
-	Cost float64
+	Cost float64 // Cost to travel through all previous steps to this one.
 }
 
-type Positioned interface {
-	X() float64
-	Y() float64
-}
+// Navigate from start to goal.
+// existsFunc should provide whether a Hex at M,N exists or not. costFunc should
+// provide the cost multiplier for moving into M,N. It should return Infinity
+// if M,N is not passable. The steps returned include the start and goal.
+func Navigate(start, goal Key, existsFunc func(Key) bool, costFunc func(Key) float64) ([]NavigateStep, error) {
+	oneStep := 10
 
-func reconstruct(prevs map[Positioned]Positioned, goal Positioned) ([]Positioned, error) {
-	result := []Positioned{goal}
-	n, ok := prevs[goal]
-	for ok {
-		result = append(result, n)
+	// heuristic should return a guess as to how far away the two Hex coordinates are.
+	heuristic := func(ma, na, mb, nb int) float64 {
+		a := Hex{
+			M: ma,
+			N: na,
+		}
+		b := Hex{
+			M: mb,
+			N: nb,
+		}
+		x := math.Abs(math.Abs(a.X()) - math.Abs(b.X()))
+		y := math.Abs(math.Abs(a.Y()) - math.Abs(b.Y()))
 
-		// Next!
-		n, ok = prevs[n]
+		// We can use the pythagorean theorum without the sqrt here, because we
+		// only need to use the output of this function to compare against
+		// other outputs of this function.
+		return math.Pow(x, 2) + math.Pow(y, 2)
 	}
-	for i := len(result)/2 - 1; i >= 0; i-- {
-		opp := len(result) - 1 - i
-		result[i], result[opp] = result[opp], result[i]
-	}
-	return result, nil
-}
 
-// heuristic determines the comparitive "as the crow flies" distance between two
-// Positioned things, ignoring obstacles.
-func heuristic(a, b Positioned) float64 {
-	// pythagorean theorum, minus the sqrt.
-	return math.Pow(a.X()-b.X(), 2) + math.Pow(a.Y()-b.Y(), 2)
-}
+	neighbors := func(M, N int) []Key {
+		result := []Key{
+			Key{M, N - 2}, // North
+			Key{M, N + 2}, // South
+		}
 
-// Navigate a path from start to the goal, avoiding Impassable Hexes.
-func Navigate(start, goal *Hex, obstacles []ContextualObstacle) ([]Positioned, error) {
-	if start == nil {
-		return nil, errors.New("no start")
+		if N%2 == 0 {
+			// then the E ones have the same M, and the W ones are -1 M
+			result = append(result, []Key{
+				{M - 1, N - 1}, // NW
+				{M - 1, N + 1}, // SW
+				{M, N + 1},     // SE
+				{M, N - 1},     // NE
+			}...)
+		} else {
+			// then the E ones are +1 M, and the W ones have the same M
+			result = append(result, []Key{
+				{M, N - 1},     // NW
+				{M, N + 1},     // SW
+				{M + 1, N + 1}, // SE
+				{M + 1, N - 1}, // NE
+			}...)
+		}
+
+		return result
 	}
-	if goal == nil {
+
+	reconstruct := func(origins map[Key]Key, costs map[Key]float64, goal Key) ([]NavigateStep, error) {
+		// Follow back from goal through the origins to a Key that has no origin (i.e, the start).
+		result := []NavigateStep{
+			{
+				M:    goal.M,
+				N:    goal.N,
+				Cost: costs[goal],
+			},
+		}
+
+		origin, ok := origins[goal]
+		for ok {
+			result = append(result, NavigateStep{
+				M:    origin.M,
+				N:    origin.N,
+				Cost: costs[origin],
+			})
+
+			// Continue by looking for the origin of the current origin.
+			origin, ok = origins[origin]
+		}
+
+		// Reverse the result.
+		// https://github.com/golang/go/wiki/SliceTricks#reversing
+		for i := len(result)/2 - 1; i >= 0; i-- {
+			opp := len(result) - 1 - i
+			result[i], result[opp] = result[opp], result[i]
+		}
+
+		return result, nil
+	}
+
+	if !existsFunc(start) {
+		return nil, fmt.Errorf("no start (%d,%d)", start.M, start.N)
+	}
+	if !existsFunc(goal) {
 		return nil, errors.New("no goal")
 	}
-	oneStep := heuristic(&Hex{M: 0, N: 0}, &Hex{M: 0, N: 1})
 
 	closed := map[Key]interface{}{}
-	open := map[*Hex]interface{}{
+	open := map[Key]interface{}{
 		start: struct{}{},
 	}
-	cameFrom := map[*Hex]*Hex{}
-	costs := map[*Hex]float64{
+	origins := map[Key]Key{}
+	costs := map[Key]float64{
 		start: 0,
 	}
-	guesses := map[*Hex]float64{
-		start: heuristic(start, goal),
+	guesses := map[Key]float64{
+		start: heuristic(start.M, start.N, goal.M, goal.N),
 	}
 
 	for len(open) > 0 {
-		var current *Hex
+		var current Key // NB, this used to be a pointer to Hex, but is now a value...
 		low := math.MaxFloat64
 		for k := range open {
 			if guesses[k] < low {
@@ -78,39 +125,34 @@ func Navigate(start, goal *Hex, obstacles []ContextualObstacle) ([]Positioned, e
 			}
 		}
 		if current == goal {
-			m := map[Positioned]Positioned{}
-			for k, v := range cameFrom {
+			m := map[Key]Key{}
+			for k, v := range origins {
 				m[k] = v
 			}
-			return reconstruct(m, goal)
+			return reconstruct(m, costs, goal)
 		}
 
-		if current == nil {
+		if !existsFunc(current) {
 			break
 		}
 
 		delete(open, current)
 		closed[Key{M: current.M, N: current.N}] = struct{}{}
 
-		for _, n := range current.Neighbors() {
+		for _, n := range neighbors(current.M, current.N) {
 			if _, ok := closed[Key{M: n.M, N: n.N}]; ok {
 				continue
 			}
 
-			tentative := oneStep
+			tentative := float64(oneStep)
 
-			// The cost of passing through this hex might be affected by any
-			// obstacles occupying the Hex.
-			for _, o := range obstacles {
-				if o.M == n.M && o.N == n.N {
-					if o.Cost == math.Inf(0) {
-						tentative = math.MaxFloat64
-					} else {
-						tentative *= o.Cost
-					}
-					break
-				}
+			multiplier := costFunc(n)
+			if math.IsInf(multiplier, 0) {
+				// I think this should work, because we will avoid adding this hex to open.
+				continue
 			}
+			tentative = tentative * multiplier
+
 			tentative += costs[current]
 
 			if _, ok := open[n]; !ok {
@@ -119,177 +161,9 @@ func Navigate(start, goal *Hex, obstacles []ContextualObstacle) ([]Positioned, e
 				continue
 			}
 
-			cameFrom[n] = current
+			origins[n] = current
 			costs[n] = tentative
-			guesses[n] = costs[n] + heuristic(n, goal)
-		}
-	}
-	return nil, fmt.Errorf("no path available from %d,%d to %d,%d", start.M, start.N, goal.M, goal.N)
-}
-
-// Navigate4 works like Navigate, but for medium units.
-func Navigate4(start, goal *Hex4, obstacles []ContextualObstacle) ([]Positioned, error) {
-	if start == nil {
-		return nil, errors.New("no start")
-	}
-	if goal == nil {
-		return nil, errors.New("no goal")
-	}
-	oneStep := heuristic(&Hex{M: 0, N: 0}, &Hex{M: 0, N: 1})
-
-	closed := map[Key]interface{}{}
-	open := map[*Hex4]interface{}{
-		start: struct{}{},
-	}
-	cameFrom := map[*Hex4]*Hex4{}
-	costs := map[*Hex4]float64{
-		start: 0,
-	}
-	guesses := map[*Hex4]float64{
-		start: heuristic(start.hexes[N], goal.hexes[N]),
-	}
-
-	for len(open) > 0 {
-		var current *Hex4
-		low := math.MaxFloat64
-		for k := range open {
-			if guesses[k] < low {
-				current = k
-				low = guesses[k]
-			}
-		}
-		if current == goal {
-			m := map[Positioned]Positioned{}
-			for k, v := range cameFrom {
-				m[k] = v
-			}
-			return reconstruct(m, goal)
-		}
-
-		if current == nil {
-			break
-		}
-
-		delete(open, current)
-		closed[Key{M: current.M, N: current.N}] = struct{}{}
-
-		for _, n := range current.Neighbors() {
-			if _, ok := closed[Key{M: n.M, N: n.N}]; ok {
-				continue
-			}
-
-			tentative := oneStep
-
-			for _, h := range n.hexes {
-				for _, o := range obstacles {
-					if o.M == h.M && o.N == h.N {
-						if o.Cost == math.Inf(0) {
-							tentative = math.MaxFloat64
-							break
-						} else {
-							tentative *= o.Cost
-						}
-					}
-				}
-				if tentative == math.MaxFloat64 {
-					break
-				}
-			}
-			tentative += costs[current]
-
-			if _, ok := open[n]; !ok {
-				open[n] = struct{}{}
-			} else if tentative >= costs[n] {
-				continue
-			}
-
-			cameFrom[n] = current
-			costs[n] = tentative
-			guesses[n] = costs[n] + heuristic(n.hexes[N], goal.hexes[N])
-		}
-	}
-	return nil, fmt.Errorf("no path available from %d,%d to %d,%d", start.M, start.N, goal.M, goal.N)
-}
-
-// Navigate7 works like Navigate, but for large units.
-func Navigate7(start, goal *Hex7, obstacles []ContextualObstacle) ([]Positioned, error) {
-	if start == nil {
-		return nil, errors.New("no start")
-	}
-	if goal == nil {
-		return nil, errors.New("no goal")
-	}
-
-	oneStep := heuristic(&Hex{M: 0, N: 0}, &Hex{M: 0, N: 1})
-
-	closed := map[Key]interface{}{}
-	open := map[*Hex7]interface{}{
-		start: struct{}{},
-	}
-	cameFrom := map[*Hex7]*Hex7{}
-	costs := map[*Hex7]float64{
-		start: 0,
-	}
-	guesses := map[*Hex7]float64{
-		start: heuristic(start.hexes[CENTER], goal.hexes[CENTER]),
-	}
-
-	for len(open) > 0 {
-		var current *Hex7
-		low := math.MaxFloat64
-		for k := range open {
-			if guesses[k] < low {
-				current = k
-				low = guesses[k]
-			}
-		}
-
-		if current == nil {
-			break
-		} else if current == goal {
-			m := map[Positioned]Positioned{}
-			for k, v := range cameFrom {
-				m[k] = v
-			}
-			return reconstruct(m, goal)
-		}
-
-		delete(open, current)
-		closed[Key{M: current.M, N: current.N}] = struct{}{}
-
-		for _, n := range current.Neighbors() {
-			if _, ok := closed[Key{M: n.M, N: n.N}]; ok {
-				continue
-			}
-
-			tentative := oneStep
-
-			for _, h := range n.hexes {
-				for _, o := range obstacles {
-					if o.M == h.M && o.N == h.N {
-						if o.Cost == math.Inf(0) {
-							tentative = math.MaxFloat64
-							break
-						} else {
-							tentative *= o.Cost
-						}
-					}
-				}
-				if tentative == math.MaxFloat64 {
-					break
-				}
-			}
-			tentative += costs[current]
-
-			if _, ok := open[n]; !ok {
-				open[n] = struct{}{}
-			} else if tentative >= costs[n] {
-				continue
-			}
-
-			cameFrom[n] = current
-			costs[n] = tentative
-			guesses[n] = costs[n] + heuristic(n.hexes[N], goal.hexes[N])
+			guesses[n] = costs[n] + heuristic(n.M, n.N, goal.M, goal.N)
 		}
 	}
 	return nil, fmt.Errorf("no path available from %d,%d to %d,%d", start.M, start.N, goal.M, goal.N)

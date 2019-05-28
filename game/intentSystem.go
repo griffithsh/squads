@@ -23,6 +23,19 @@ func NewIntentSystem(mgr *ecs.World, bus *event.Bus, field *geom.Field) *IntentS
 	}
 }
 
+// ContextualObstacle captures how much of an obstacle this is to the navigator.
+// A bird can fly right over a tree, a snake is not impeded by a swamp. A horse
+// runs fastest when the ground is level and clear. The Cost multiplies the
+// normal traversal time. A Cost of 2 implies that taking this path is twice as
+// long as it normally would be. A cost of Infinity marks something that is
+// completely impassable.
+type ContextualObstacle struct {
+	M, N int
+
+	Cost float64
+}
+
+// Update Actors with Intents.
 func (s *IntentSystem) Update() {
 	entities := s.mgr.Get([]string{"Actor", "MoveIntent", "Position"})
 
@@ -35,35 +48,123 @@ func (s *IntentSystem) Update() {
 
 		obstacles := s.obstaclesFor(e)
 
-		var steps []geom.Positioned
-		var err error
+		var start, goal geom.Key
+		var exists func(geom.Key) bool
+		var costs func(geom.Key) float64
+
 		switch a.Size {
 		case SMALL:
-			steps, err = geom.Navigate(s.field.At(int(pos.Center.X), int(pos.Center.Y)), s.field.At(int(intent.X), int(intent.Y)), obstacles)
-		case MEDIUM:
-			steps, err = geom.Navigate4(s.field.At4(int(pos.Center.X), int(pos.Center.Y)), s.field.At4(int(intent.X), int(intent.Y)), obstacles)
-		case LARGE:
-			steps, err = geom.Navigate7(s.field.At7(int(pos.Center.X), int(pos.Center.Y)), s.field.At7(int(intent.X), int(intent.Y)), obstacles)
-		}
-		if err != nil {
-			fmt.Printf("no path there: %v\n", err)
-			s.Publish(event.ActorMovementConcluded{Entity: e})
-		} else {
-			m := Mover{}
-
-			for _, step := range steps {
-				m.Moves = append(m.Moves, Waypoint{X: step.X(), Y: step.Y()})
+			startHex := s.field.At(int(pos.Center.X), int(pos.Center.Y))
+			goalHex := s.field.At(int(intent.X), int(intent.Y))
+			if startHex == nil || goalHex == nil {
+				// Don't navigate.
+				s.Publish(event.ActorMovementConcluded{Entity: e})
+				continue
 			}
+			start = geom.Key{M: startHex.M, N: startHex.N}
+			goal = geom.Key{M: goalHex.M, N: goalHex.N}
+			exists = func(k geom.Key) bool {
+				return s.field.Get(k.M, k.N) != nil
+			}
+			costs = func(k geom.Key) float64 {
+				hex := s.field.Get(k.M, k.N)
 
-			s.mgr.AddComponent(e, &m)
+				if hex == nil {
+					return math.Inf(0)
+				}
+				for _, o := range obstacles {
+					if o.M == hex.M && o.N == hex.N {
+						return o.Cost
+					}
+				}
+				return 1.0
+			}
+		case MEDIUM:
+			startHex := s.field.At4(int(pos.Center.X), int(pos.Center.Y))
+			goalHex := s.field.At4(int(intent.X), int(intent.Y))
+			if startHex == nil || goalHex == nil {
+				// Don't navigate.
+				s.Publish(event.ActorMovementConcluded{Entity: e})
+				continue
+			}
+			start = geom.Key{M: startHex.M, N: startHex.N}
+			goal = geom.Key{M: goalHex.M, N: goalHex.N}
+			exists = func(k geom.Key) bool {
+				return s.field.Get4(k.M, k.N) != nil
+			}
+			costs = func(k geom.Key) float64 {
+				hex := s.field.Get4(k.M, k.N)
+
+				if hex == nil {
+					return math.Inf(0)
+				}
+				cost := 1.0
+				for _, hex := range hex.Hexes() {
+					for _, o := range obstacles {
+						if o.M == hex.M && o.N == hex.N {
+							if math.IsInf(o.Cost, 0) {
+								return math.Inf(0)
+							}
+							cost = cost * o.Cost
+						}
+					}
+				}
+				return cost
+			}
+		case LARGE:
+			startHex := s.field.At7(int(pos.Center.X), int(pos.Center.Y))
+			goalHex := s.field.At7(int(intent.X), int(intent.Y))
+			if startHex == nil || goalHex == nil {
+				// Don't navigate.
+				s.Publish(event.ActorMovementConcluded{Entity: e})
+				continue
+			}
+			start = geom.Key{M: startHex.M, N: startHex.N}
+			goal = geom.Key{M: goalHex.M, N: goalHex.N}
+			exists = func(k geom.Key) bool {
+				return s.field.Get7(k.M, k.N) != nil
+			}
+			costs = func(k geom.Key) float64 {
+				hex := s.field.Get7(k.M, k.N)
+
+				if hex == nil {
+					return math.Inf(0)
+				}
+				cost := 1.0
+				for _, hex := range hex.Hexes() {
+					for _, o := range obstacles {
+						if o.M == hex.M && o.N == hex.N {
+							if math.IsInf(o.Cost, 0) {
+								return math.Inf(0)
+							}
+							cost = cost * o.Cost
+						}
+					}
+				}
+				return cost
+			}
 		}
+
+		steps, err := geom.Navigate(start, goal, exists, costs)
+		if err != nil {
+			fmt.Printf("Navigate: %v\n", err)
+			s.Publish(event.ActorMovementConcluded{Entity: e})
+			continue
+		}
+
+		m := Mover{}
+		for _, step := range steps {
+			h := s.field.Get(step.M, step.N)
+			m.Moves = append(m.Moves, Waypoint{X: h.X(), Y: h.Y()})
+		}
+		s.mgr.AddComponent(e, &m)
 	}
 }
 
 // obstaclesFor provides the obstacles that exist in the world that will impede
 // (or potentially speed up) the navigation of a character.
-func (s *IntentSystem) obstaclesFor(actor ecs.Entity) []geom.ContextualObstacle {
-	var obstacles []geom.ContextualObstacle
+func (s *IntentSystem) obstaclesFor(actor ecs.Entity) []ContextualObstacle {
+	var obstacles []ContextualObstacle
 	for _, e := range s.mgr.Get([]string{"Obstacle"}) {
 		// An Actor is not an obstacle to itself.
 		if e == actor {
@@ -82,7 +183,7 @@ func (s *IntentSystem) obstaclesFor(actor ecs.Entity) []geom.ContextualObstacle 
 			for _, h := range hex.Hexes() {
 				// Translate the Obstacles into ContextualObstacles based on
 				// how much of an Obstacle this is to the Mover in this context.
-				obstacles = append(obstacles, geom.ContextualObstacle{
+				obstacles = append(obstacles, ContextualObstacle{
 					M:    h.M,
 					N:    h.N,
 					Cost: math.Inf(0), // just pretend these all are total obstacles for now
@@ -98,7 +199,7 @@ func (s *IntentSystem) obstaclesFor(actor ecs.Entity) []geom.ContextualObstacle 
 			for _, h := range hex.Hexes() {
 				// Translate the Obstacles into ContextualObstacles based on
 				// how much of an Obstacle this is to the Mover in this context.
-				obstacles = append(obstacles, geom.ContextualObstacle{
+				obstacles = append(obstacles, ContextualObstacle{
 					M:    h.M,
 					N:    h.N,
 					Cost: math.Inf(0), // just pretend these all are total obstacles for now
@@ -113,7 +214,7 @@ func (s *IntentSystem) obstaclesFor(actor ecs.Entity) []geom.ContextualObstacle 
 			}
 			// Translate the Obstacles into ContextualObstacles based on
 			// how much of an Obstacle this is to the Mover in this context.
-			obstacles = append(obstacles, geom.ContextualObstacle{
+			obstacles = append(obstacles, ContextualObstacle{
 				M:    obstacle.M,
 				N:    obstacle.N,
 				Cost: math.Inf(0), // just pretend these all are total obstacles for now
