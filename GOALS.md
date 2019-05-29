@@ -9,7 +9,7 @@
 - [x] More construction in combat, rather than main
 - [x] Add debouncing of click events to main - Interaction should be called once per click
 - [x] Add an "End Turn" button to the HUD
-- [ ] Preparation, ActionPoints, and anything else needed for turns-based combat
+- [x] Preparation, ActionPoints, and anything else needed for turns-based combat
 - [ ] HUD shows updated information about turn order and Action Points remining for the current actor.
 - [ ] A way to generate starting positions for every actor
 - [ ] Medium and Large Actor art

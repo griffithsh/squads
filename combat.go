@@ -168,8 +168,10 @@ func (c *Combat) Begin() {
 			})
 		}
 
+		a := c.mgr.Component(e, "Actor").(*game.Actor)
 		c.mgr.AddComponent(e, &game.CombatStats{
 			CurrentPreparation: 0,
+			ActionPoints:       a.ActionPoints,
 		})
 		c.mgr.AddComponent(e, &game.Facer{Face: geom.S})
 	}

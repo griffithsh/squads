@@ -37,10 +37,11 @@ type ContextualObstacle struct {
 
 // Update Actors with Intents.
 func (s *IntentSystem) Update() {
-	entities := s.mgr.Get([]string{"Actor", "MoveIntent", "Position"})
+	entities := s.mgr.Get([]string{"Actor", "CombatStats", "MoveIntent", "Position"})
 
 	for _, e := range entities {
 		a := s.mgr.Component(e, "Actor").(*Actor)
+		stats := s.mgr.Component(e, "CombatStats").(*CombatStats)
 		pos := s.mgr.Component(e, "Position").(*Position)
 		intent := s.mgr.Component(e, "MoveIntent").(*MoveIntent)
 
@@ -51,6 +52,7 @@ func (s *IntentSystem) Update() {
 		var start, goal geom.Key
 		var exists func(geom.Key) bool
 		var costs func(geom.Key) float64
+		var stepToWaypoint func(geom.NavigateStep) Waypoint
 
 		switch a.Size {
 		case SMALL:
@@ -78,6 +80,13 @@ func (s *IntentSystem) Update() {
 					}
 				}
 				return 1.0
+			}
+			stepToWaypoint = func(step geom.NavigateStep) Waypoint {
+				h := s.field.Get(step.M, step.N)
+				return Waypoint{
+					X: h.X(),
+					Y: h.Y(),
+				}
 			}
 		case MEDIUM:
 			startHex := s.field.At4(int(pos.Center.X), int(pos.Center.Y))
@@ -111,6 +120,13 @@ func (s *IntentSystem) Update() {
 				}
 				return cost
 			}
+			stepToWaypoint = func(step geom.NavigateStep) Waypoint {
+				h := s.field.Get4(step.M, step.N)
+				return Waypoint{
+					X: h.X(),
+					Y: h.Y(),
+				}
+			}
 		case LARGE:
 			startHex := s.field.At7(int(pos.Center.X), int(pos.Center.Y))
 			goalHex := s.field.At7(int(intent.X), int(intent.Y))
@@ -143,6 +159,13 @@ func (s *IntentSystem) Update() {
 				}
 				return cost
 			}
+			stepToWaypoint = func(step geom.NavigateStep) Waypoint {
+				h := s.field.Get7(step.M, step.N)
+				return Waypoint{
+					X: h.X(),
+					Y: h.Y(),
+				}
+			}
 		}
 
 		steps, err := geom.Navigate(start, goal, exists, costs)
@@ -153,10 +176,15 @@ func (s *IntentSystem) Update() {
 		}
 
 		m := Mover{}
+		cost := 0
 		for _, step := range steps {
-			h := s.field.Get(step.M, step.N)
-			m.Moves = append(m.Moves, Waypoint{X: h.X(), Y: h.Y()})
+			if int(step.Cost) > stats.ActionPoints {
+				break
+			}
+			cost = int(step.Cost)
+			m.Moves = append(m.Moves, stepToWaypoint(step))
 		}
+		stats.ActionPoints -= cost
 		s.mgr.AddComponent(e, &m)
 	}
 }
