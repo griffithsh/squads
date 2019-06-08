@@ -17,6 +17,7 @@ import (
 
 type system struct {
 	render       *game.Renderer
+	fonts        *game.FontSystem
 	combat       *Combat
 	mgr          *ecs.World
 	camera       *Camera
@@ -107,6 +108,8 @@ func setup(w, h int) (*system, error) {
 
 		mgr:    mgr,
 		camera: camera,
+
+		fonts: game.NewFontSystem(mgr),
 	}
 
 	// Create some Actors that are controlled by mouse clicks
@@ -176,6 +179,7 @@ func (s *system) run(screen *ebiten.Image) error {
 	controlCamera(s.camera, elapsed, ctrl)
 
 	s.combat.Run(elapsed)
+	s.fonts.Update()
 
 	w, h := float64(screen.Bounds().Max.X-screen.Bounds().Min.X), float64(screen.Bounds().Max.Y-screen.Bounds().Min.Y)
 
