@@ -81,14 +81,22 @@ func (s *FontSystem) reset(e ecs.Entity) {
 }
 
 // construct all child Entities necessary to compose this Font.
-func (s *FontSystem) construct(e ecs.Entity) {
-	font := s.mgr.Component(e, "Font").(*Font)
-	position := s.mgr.Component(e, "Position").(*Position)
+func (s *FontSystem) construct(parent ecs.Entity) {
+	font := s.mgr.Component(parent, "Font").(*Font)
+	position := s.mgr.Component(parent, "Position").(*Position)
+	scale := s.mgr.Component(parent, "Scale").(*Scale)
+	s.mgr.AddComponent(parent, &ecs.Children{})
+	children := s.mgr.Component(parent, "Children").(*ecs.Children)
 
 	// px, py are the position of each rune
 	var px, py float64 = 0, 0
+	lineHeight := 10.0
+	if scale != nil {
+		lineHeight *= scale.Y
+	}
 	f := func(w, x, y int) {
 		e := s.mgr.NewEntity()
+		children.Value = append(children.Value, e)
 
 		// letterSpace is the distance between letters.
 		letterSpace := 1.0
@@ -100,10 +108,17 @@ func (s *FontSystem) construct(e ecs.Entity) {
 			W:       w,
 			H:       10,
 		})
+		if scale != nil {
+			w = w * int(scale.X)
+			s.mgr.AddComponent(e, &Scale{
+				X: scale.X,
+				Y: scale.Y,
+			})
+		}
 		s.mgr.AddComponent(e, &Position{
 			Center: Center{
 				X: position.Center.X + px + float64(w)/2,
-				Y: position.Center.Y + py,
+				Y: position.Center.Y + py + lineHeight/2,
 			},
 			Layer:    position.Layer,
 			Absolute: position.Absolute,
@@ -115,9 +130,9 @@ func (s *FontSystem) construct(e ecs.Entity) {
 		// whitespace
 		case '\n':
 			px = 0
-			py += 10 + 2
+			py += lineHeight + 2
 		case '\t':
-			px += 10
+			px += lineHeight
 		case ' ':
 			px += 4
 
