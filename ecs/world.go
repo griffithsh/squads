@@ -110,3 +110,46 @@ func (mgr *World) Clear() {
 	mgr.entities = map[Entity]struct{}{}
 	mgr.components = map[string]map[Entity]Component{}
 }
+
+// Tag an Entity with an arbitrary string.
+func (mgr *World) Tag(e Entity, tag string) {
+	c := mgr.Component(e, "Tags")
+	if c == nil {
+		mgr.AddComponent(e, &Tags{tag})
+		return
+	}
+	t := c.(*Tags)
+
+	t2 := append(*t, tag)
+	mgr.AddComponent(e, &t2)
+}
+
+// AnyTagged returns any Entity tagged with tag. It returns 0 when there are no
+// Entities tagged with tag.
+func (mgr *World) AnyTagged(tag string) Entity {
+	for _, e := range mgr.Get([]string{"Tags"}) {
+		t := mgr.Component(e, "Tags").(*Tags)
+
+		for _, v := range *t {
+			if tag == v {
+				return e
+			}
+		}
+	}
+	return 0
+}
+
+// Tagged returns all Entities tagged with tag.
+func (mgr *World) Tagged(tag string) []Entity {
+	var result []Entity
+	for _, e := range mgr.Get([]string{"Tags"}) {
+		t := mgr.Component(e, "Tags").(*Tags)
+
+		for _, v := range *t {
+			if tag == v {
+				result = append(result, e)
+			}
+		}
+	}
+	return result
+}
