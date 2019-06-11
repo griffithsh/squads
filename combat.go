@@ -68,6 +68,11 @@ func NewCombat(mgr *ecs.World, camera *Camera /**/) *Combat {
 	return &c
 }
 
+// setState is the canonical way to change the CombatState.
+func (c *Combat) setState(state CombatState) {
+	c.state = state
+}
+
 // Begin should be called at the start of an engagement to set up components
 // necessary for the combat.
 func (c *Combat) Begin() {
@@ -239,7 +244,7 @@ func (c *Combat) Run(elapsed time.Duration) {
 			fmt.Printf("Awaiting input from %v (%d exceeds %d)\n", e, s.CurrentPreparation, actor.PreparationThreshold)
 
 			s.CurrentPreparation = 0
-			c.state = AwaitingInputState
+			c.setState(AwaitingInputState)
 			c.mgr.AddComponent(e, &game.TurnToken{})
 		}
 
@@ -313,7 +318,7 @@ func (c *Combat) Interaction(x, y int) {
 		m := game.MoveIntent{X: wx, Y: wy}
 		c.mgr.AddComponent(actor, &m)
 
-		c.state = ExecutingState
+		c.setState(ExecutingState)
 
 		c.cursors.Clear()
 	}
@@ -404,7 +409,7 @@ func (c *Combat) handleMovementConcluded(t event.Typer) {
 	// FIXME: Should Obstacle movement be handled by an "obstacle" system instead?
 	c.syncActorObstacle(t.(event.ActorMovementConcluded))
 
-	c.state = AwaitingInputState
+	c.setState(AwaitingInputState)
 	c.MousePosition(c.x, c.y)
 }
 
@@ -504,7 +509,7 @@ func (c *Combat) constructHUD() {
 				c.mgr.RemoveComponent(e, c.mgr.Component(e, "TurnToken"))
 			}
 
-			c.state = PreparingState
+			c.setState(PreparingState)
 		},
 	})
 }
