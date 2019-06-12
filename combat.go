@@ -35,7 +35,7 @@ type Combat struct {
 	bus    *event.Bus
 	field  *geom.Field
 	nav    *game.Navigator
-	camera *Camera
+	camera *game.Camera
 	state  CombatState
 
 	x, y             int     // where the mouse last was in screen coordinates
@@ -52,7 +52,7 @@ type Combat struct {
 // Or it could accept a *ecs.World, which would by convention contain two squads
 // of characters, and some other object that contains terrain, environmental
 // effects etc.
-func NewCombat(mgr *ecs.World, camera *Camera /**/) *Combat {
+func NewCombat(mgr *ecs.World, camera *game.Camera /**/) *Combat {
 	f, _ := geom.NewField(8, 24)
 	bus := &event.Bus{}
 
@@ -270,14 +270,7 @@ func (c *Combat) checkHUD(x, y int) bool {
 
 		// Because Absolutely positioned components might have negative
 		// position, we need to modulo them.
-		px := int(position.Center.X) % c.camera.screenW
-		if px < 0 {
-			px = px + c.camera.screenW
-		}
-		py := int(position.Center.Y) % c.camera.screenH
-		if py < 0 {
-			py = py + c.camera.screenH
-		}
+		px, py := c.camera.Modulo(int(position.Center.X), int(position.Center.Y))
 
 		// Is the x,y of the interaction without the bounds of the
 		// Interactive?

@@ -1,4 +1,4 @@
-package main
+package game
 
 // Camera is a class that stores focus and zoom values
 type Camera struct {
@@ -72,4 +72,20 @@ func (c *Camera) ScreenToWorld(sx, sy int) (wx, wy float64) {
 	wx, wy = wx-float64(c.screenW)/2/zoom, wy-float64(c.screenH)/2/zoom
 
 	return wx, wy
+}
+
+// Modulo an x,y screen coordinate so that things that are beyond the limits of
+// the screen are wrapped around. Use case is when you want to display something
+// aligned to the bottom of the screen, you can set a negative y coordinate, and
+// Modulo will convert that to screen height - y.
+func (c *Camera) Modulo(x, y int) (int, int) {
+	mx := x % c.screenW
+	if mx < 0 {
+		mx = mx + c.screenW
+	}
+	my := y % c.screenH
+	if my < 0 {
+		my = my + c.screenH
+	}
+	return mx, my
 }

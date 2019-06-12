@@ -20,7 +20,7 @@ type system struct {
 	fonts        *game.FontSystem
 	combat       *Combat
 	mgr          *ecs.World
-	camera       *Camera
+	camera       *game.Camera
 	lastMouse    image.Point
 	wasMouseDown bool
 }
@@ -72,8 +72,8 @@ func controls() Controls {
 	}
 }
 
-func controlCamera(c *Camera, t time.Duration, ctrl Controls) {
-	camSpeed := 500.0 / c.zoom
+func controlCamera(c *game.Camera, t time.Duration, ctrl Controls) {
+	camSpeed := 500.0 / c.GetZoom()
 	dt := t.Seconds()
 
 	if ctrl.Left {
@@ -101,7 +101,7 @@ var last time.Time
 func setup(w, h int) (*system, error) {
 	mgr := ecs.NewWorld()
 
-	camera := NewCamera(w, h)
+	camera := game.NewCamera(w, h)
 	s := system{
 		render: game.NewRenderer(),
 		combat: NewCombat(mgr, camera),
