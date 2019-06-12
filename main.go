@@ -12,13 +12,14 @@ import (
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/game/combat"
 	"github.com/hajimehoshi/ebiten"
 )
 
 type system struct {
 	render       *game.Renderer
 	fonts        *game.FontSystem
-	combat       *Combat
+	combat       *combat.Combat
 	mgr          *ecs.World
 	camera       *game.Camera
 	lastMouse    image.Point
@@ -104,7 +105,7 @@ func setup(w, h int) (*system, error) {
 	camera := game.NewCamera(w, h)
 	s := system{
 		render: game.NewRenderer(),
-		combat: NewCombat(mgr, camera),
+		combat: combat.NewCombat(mgr, camera),
 
 		mgr:    mgr,
 		camera: camera,

@@ -1,4 +1,4 @@
-package main
+package combat
 
 import (
 	"fmt"
