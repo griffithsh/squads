@@ -19,7 +19,7 @@ import (
 type system struct {
 	render       *game.Renderer
 	fonts        *game.FontSystem
-	combat       *combat.Combat
+	combat       *combat.Manager
 	mgr          *ecs.World
 	camera       *game.Camera
 	lastMouse    image.Point
@@ -105,7 +105,7 @@ func setup(w, h int) (*system, error) {
 	camera := game.NewCamera(w, h)
 	s := system{
 		render: game.NewRenderer(),
-		combat: combat.NewCombat(mgr, camera),
+		combat: combat.NewManager(mgr, camera),
 
 		mgr:    mgr,
 		camera: camera,
