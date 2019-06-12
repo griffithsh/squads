@@ -11,6 +11,8 @@ import (
 	"github.com/griffithsh/squads/ui"
 )
 
+//go:generate stringer -type=CombatState
+
 // CombatState enumerates the States that a Combat could be in.
 type CombatState int
 
