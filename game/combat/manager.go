@@ -37,6 +37,7 @@ type Manager struct {
 	nav    *game.Navigator
 	camera *game.Camera
 	state  State
+	hud    *HUD
 
 	x, y             int     // where the mouse last was in screen coordinates
 	wx, wy           float64 // where the mouse last was in world coordinates
@@ -63,10 +64,14 @@ func NewManager(mgr *ecs.World, camera *game.Camera /**/) *Manager {
 		nav:     game.NewNavigator(bus),
 		camera:  camera,
 		state:   PreparingState,
+		hud:     NewHUD(mgr, bus),
 		cursors: game.NewCursorSystem(mgr),
 		intents: game.NewIntentSystem(mgr, bus, f),
 	}
+
 	cm.bus.Subscribe(event.MovementConcluded, cm.handleMovementConcluded)
+	cm.bus.Subscribe(event.EndTurnRequestedType, cm.handleEndTurnRequested)
+
 	return &cm
 }
 
@@ -87,7 +92,6 @@ func (cm *Manager) Begin() {
 
 	cm.addGrass()
 	cm.addTrees()
-	cm.constructHUD()
 
 	// Upgrade all actors with components for visibility.
 	entities := cm.mgr.Get([]string{"Actor"})
@@ -182,6 +186,9 @@ func (cm *Manager) Begin() {
 		})
 		cm.mgr.AddComponent(e, &game.Facer{Face: geom.S})
 	}
+
+	// Announce that the Combat has begun.
+	cm.bus.Publish(event.CombatBegun{})
 }
 
 // End should be called at the resolution of a combat encounter. It removes
@@ -202,6 +209,8 @@ func (cm *Manager) End() {
 			cm.mgr.RemoveType(e, comp)
 		}
 	}
+
+	// TODO: publish combat ended event.
 }
 
 // Run a frame of this Combat.
@@ -257,6 +266,8 @@ func (cm *Manager) Run(elapsed time.Duration) {
 	cm.intents.Update()
 }
 
+// checkHUD for interactions at x,y. Although this might sit better as a method
+// of HUD, getting access to camera for Modulo is more awkward.
 func (cm *Manager) checkHUD(x, y int) bool {
 	for _, e := range cm.mgr.Get([]string{"Interactive", "Position", "Sprite"}) {
 		position := cm.mgr.Component(e, "Position").(*game.Position)
@@ -408,6 +419,21 @@ func (cm *Manager) handleMovementConcluded(t event.Typer) {
 	cm.MousePosition(cm.x, cm.y)
 }
 
+func (cm *Manager) handleEndTurnRequested(t event.Typer) {
+	// Remove TurnToken from all actors.
+	for _, e := range cm.mgr.Get([]string{"Actor", "TurnToken"}) {
+		// Reset to maximum AP.
+		actor := cm.mgr.Component(e, "Actor").(*game.Actor)
+		stats := cm.mgr.Component(e, "CombatStats").(*game.CombatStats)
+		stats.ActionPoints = actor.ActionPoints
+
+		// And then remove TurnToken.
+		cm.mgr.RemoveComponent(e, cm.mgr.Component(e, "TurnToken"))
+	}
+
+	cm.setState(PreparingState)
+}
+
 func (cm *Manager) addGrass() {
 	M, N := cm.field.Dimensions()
 	for n := 0; n < N; n++ {
@@ -467,44 +493,4 @@ func (cm *Manager) addTrees() {
 			}
 		}
 	}
-}
-
-func (cm *Manager) constructHUD() {
-	e := cm.mgr.NewEntity()
-	cm.mgr.AddComponent(e, &game.Sprite{
-		Texture: "hud.png",
-		X:       16,
-		Y:       0,
-		W:       46,
-		H:       14,
-	})
-	cm.mgr.AddComponent(e, &game.Scale{
-		X: 3,
-		Y: 3,
-	})
-	cm.mgr.AddComponent(e, &game.Position{
-		Center: game.Center{
-			X: -80,
-			Y: 32,
-		},
-		Layer:    100,
-		Absolute: true,
-	})
-
-	cm.mgr.AddComponent(e, &ui.Interactive{
-		Trigger: func() {
-			// Remove TurnToken from all actors.
-			for _, e := range cm.mgr.Get([]string{"Actor", "TurnToken"}) {
-				// Reset to maximum AP.
-				actor := cm.mgr.Component(e, "Actor").(*game.Actor)
-				stats := cm.mgr.Component(e, "CombatStats").(*game.CombatStats)
-				stats.ActionPoints = actor.ActionPoints
-
-				// And then remove TurnToken.
-				cm.mgr.RemoveComponent(e, cm.mgr.Component(e, "TurnToken"))
-			}
-
-			cm.setState(PreparingState)
-		},
-	})
 }
