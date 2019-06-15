@@ -84,7 +84,13 @@ func (s *FontSystem) reset(e ecs.Entity) {
 func (s *FontSystem) construct(parent ecs.Entity) {
 	font := s.mgr.Component(parent, "Font").(*Font)
 	position := s.mgr.Component(parent, "Position").(*Position)
-	scale := s.mgr.Component(parent, "Scale").(*Scale)
+	scale, ok := s.mgr.Component(parent, "Scale").(*Scale)
+	if !ok {
+		scale = &Scale{
+			X: 1,
+			Y: 1,
+		}
+	}
 	s.mgr.AddComponent(parent, &ecs.Children{})
 	children := s.mgr.Component(parent, "Children").(*ecs.Children)
 
