@@ -12,6 +12,11 @@ import (
 // Font is renderable text.
 type Font struct {
 	Text string
+	// Style string // (one-line|paragraph|centered|right-aligned)
+	// Width int // relevant for paragraphs, centered, and right-aligned
+
+	// N.B. Don't add Color here! A Color tint would need to be applied to a
+	// sprite anyway in order to tint the underlying Sprite-base Entities.
 }
 
 // Type of this Component.
@@ -67,6 +72,10 @@ func (*FontSystem) hash(f *Font, p *Position) []byte {
 		return b
 	}
 	h.Write(bby(p.Absolute))
+
+	// TODO: Scale
+
+	// TODO: Color
 
 	sum := h.Sum([]byte{})
 	return sum
