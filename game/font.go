@@ -285,9 +285,13 @@ func (s *FontSystem) construct(parent ecs.Entity) {
 		case ':':
 			f(1, 22, 60)
 		case '-':
-			f(1, 24, 60)
+			f(2, 24, 60)
 		case '_':
-			f(1, 27, 60)
+			f(4, 27, 60)
+		case '/':
+			f(3, 32, 60)
+		case '\\':
+			f(3, 36, 60)
 
 		// Default
 		case '?':
