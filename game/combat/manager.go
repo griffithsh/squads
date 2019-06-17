@@ -78,6 +78,9 @@ func NewManager(mgr *ecs.World, camera *game.Camera /**/) *Manager {
 // setState is the canonical way to change the CombatState.
 func (cm *Manager) setState(state State) {
 	cm.state = state
+	if state == AwaitingInputState {
+		cm.bus.Publish(&event.AwaitingPlayerInput{})
+	}
 }
 
 // Begin should be called at the start of an engagement to set up components
@@ -255,8 +258,8 @@ func (cm *Manager) Run(elapsed time.Duration) {
 			fmt.Printf("Awaiting input from %v (%d exceeds %d)\n", e, s.CurrentPreparation, actor.PreparationThreshold)
 
 			s.CurrentPreparation = 0
-			cm.setState(AwaitingInputState)
 			cm.mgr.AddComponent(e, &game.TurnToken{})
+			cm.setState(AwaitingInputState)
 		}
 
 	case ExecutingState:

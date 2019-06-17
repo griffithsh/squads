@@ -32,11 +32,16 @@ func NewHUD(mgr *ecs.World, bus *event.Bus) *HUD {
 	}
 
 	bus.Subscribe(event.CombatBegunType, hud.handleCombatBegan)
+	bus.Subscribe(event.AwaitingPlayerInputType, hud.handleAwaitingInput)
 	return &hud
 }
 
 func (hud *HUD) handleCombatBegan(event.Typer) {
 	hud.create()
+}
+
+func (hud *HUD) handleAwaitingInput(event.Typer) {
+	// TODO
 }
 
 // create entire HUD hierarchy of ui elements.

@@ -5,9 +5,10 @@ type Type int
 
 // Types represent things that have happened.
 const (
-	MovementConcluded Type = iota
+	AwaitingPlayerInputType Type = iota
 	CombatBegunType
 	EndTurnRequestedType
+	MovementConcluded
 )
 
 // Typer is an awkward thing that represents anything that provides its type.
