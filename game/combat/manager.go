@@ -312,8 +312,8 @@ func (cm *Manager) checkHUD(x, y int) bool {
 	return false
 }
 
-// Interaction is the way to notify the Combat that a mouse click or touch event
-// occurred.
+// Interaction is the way to notify the Combat Manager that a mouse click or
+// touch event occurred.
 func (cm *Manager) Interaction(x, y int) {
 	if cm.state == AwaitingInputState {
 		if handled := cm.checkHUD(x, y); handled {
