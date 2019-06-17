@@ -45,6 +45,18 @@ func (mgr *World) Get(types []string) []Entity {
 	return result
 }
 
+// Single Entity that has all Components specified by types. Returns the Entity
+// and a boolean indicating whether there was exactly one Entity that satisfies
+// all types. When the second return value is false, the Entity returned is not
+// valid.
+func (mgr *World) Single(types []string) (Entity, bool) {
+	es := mgr.Get(types)
+	if len(es) != 1 {
+		return 0, false
+	}
+	return es[0], true
+}
+
 // Exists returns whether an entity exists in this World.
 func (mgr *World) Exists(e Entity) bool {
 	_, ok := mgr.entities[e]
