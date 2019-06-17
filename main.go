@@ -117,16 +117,19 @@ func setup(w, h int) (*system, error) {
 
 	// Create some Actors that are controlled by mouse clicks
 	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
+		Name:                 "Samithee",
 		Size:                 game.SMALL,
 		PreparationThreshold: 701,
 		ActionPoints:         100,
 	})
 	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
+		Name:                 "Wolf",
 		Size:                 game.MEDIUM,
 		PreparationThreshold: 1103,
 		ActionPoints:         80,
 	})
 	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
+		Name:                 "Giant",
 		Size:                 game.LARGE,
 		PreparationThreshold: 1301,
 		ActionPoints:         120,

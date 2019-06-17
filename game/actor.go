@@ -14,6 +14,7 @@ const (
 
 // Actor is a component that can be commanded to do things. Or maybe it's just an animator?
 type Actor struct {
+	Name string
 	Size ActorSize
 
 	PreparationThreshold int // Preparation required to take a turn
@@ -21,6 +22,6 @@ type Actor struct {
 }
 
 // Type of this Component.
-func (a *Actor) Type() string {
+func (*Actor) Type() string {
 	return "Actor"
 }
