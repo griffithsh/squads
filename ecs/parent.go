@@ -12,28 +12,37 @@ func (*Parent) Type() string {
 }
 
 // ParentSystem manages Parent Components.
-type ParentSystem struct{}
+type ParentSystem struct {
+	mgr *World
+}
+
+// NewParentSystem constructs a new ParentSystem.
+func NewParentSystem(mgr *World) *ParentSystem {
+	return &ParentSystem{
+		mgr: mgr,
+	}
+}
 
 // Update the ParentSystem.
-func (s *ParentSystem) Update(mgr *World) {
+func (s *ParentSystem) Update() {
 	// Remove orphans.
-	for _, e := range mgr.Get([]string{"Parent"}) {
-		p := mgr.Component(e, "Parent").(*Parent)
+	for _, e := range s.mgr.Get([]string{"Parent"}) {
+		p := s.mgr.Component(e, "Parent").(*Parent)
 
-		if mgr.Exists(p.Value) {
+		if s.mgr.Exists(p.Value) {
 			continue
 		}
 
-		mgr.DestroyEntity(e)
+		s.mgr.DestroyEntity(e)
 	}
 
 	// Remove references to Children that have been destroyed from the Parents
 	// that claim them.
-	for _, e := range mgr.Get([]string{"Children"}) {
-		c := mgr.Component(e, "Children").(*Children)
+	for _, e := range s.mgr.Get([]string{"Children"}) {
+		c := s.mgr.Component(e, "Children").(*Children)
 		val := []Entity{}
 		for _, child := range c.Value {
-			if !mgr.Exists(child) {
+			if !s.mgr.Exists(child) {
 				continue
 			}
 			val = append(val, child)

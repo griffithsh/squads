@@ -15,9 +15,9 @@ func TestParent(t *testing.T) {
 	}
 
 	mgr.DestroyEntity(original)
-	system := ParentSystem{}
+	system := NewParentSystem(mgr)
 
-	system.Update(mgr)
+	system.Update()
 
 	if mgr.Exists(child) {
 		t.Error("want child to be gone, got child still exists")
