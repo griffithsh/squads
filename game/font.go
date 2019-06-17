@@ -108,7 +108,7 @@ func (s *FontSystem) construct(parent ecs.Entity) {
 		})
 
 		// letterSpace is the distance between letters.
-		letterSpace := 1.0
+		letterSpace := 1.0 * scale.X
 
 		s.mgr.AddComponent(e, &Sprite{
 			Texture: "font.png",
