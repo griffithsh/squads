@@ -28,7 +28,7 @@ func (EndTurnRequested) Type() Type {
 	return EndTurnRequestedType
 }
 
-// AwaitingPlayerInput occurs when an actor has finished their movement.
+// AwaitingPlayerInput occurs when an actor needs a command.
 type AwaitingPlayerInput struct{}
 
 // Type of the Event.

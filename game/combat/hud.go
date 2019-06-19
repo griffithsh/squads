@@ -118,8 +118,8 @@ func (hud *HUD) createPortrait(parent ecs.Entity) {
 		Texture: "hud.png",
 		X:       0,
 		Y:       24,
-		W:       96,
-		H:       96,
+		W:       52,
+		H:       52,
 	})
 	hud.mgr.AddComponent(e, &game.Scale{
 		X: hud.scale,
@@ -127,8 +127,8 @@ func (hud *HUD) createPortrait(parent ecs.Entity) {
 	})
 	hud.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
-			X: 112,
-			Y: -112,
+			X: 30 * hud.scale,
+			Y: -30 * hud.scale,
 		},
 		Layer:    hud.layer,
 		Absolute: true,
@@ -187,10 +187,10 @@ func (hud *HUD) createStats(parent ecs.Entity) {
 		})
 		return e
 	}
-	label("Health:", 110, -92)
-	label("Energy:", 110, -80)
-	label("Action:", 110, -68)
-	label("Prep:", 110, -56)
+	label("Health:", 58, -52)
+	label("Energy:", 58, -40)
+	label("Action:", 58, -28)
+	label("Prep:", 58, -16)
 
 	labelRightTagged := func(text string, x, y float64, tag string) {
 		e := label("", x, y) // empty string because we're stomping it below
@@ -209,18 +209,160 @@ func (hud *HUD) createStats(parent ecs.Entity) {
 	actor := hud.mgr.Component(e, "Actor").(*game.Actor)
 	stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
 
-	labelRightTagged("10/110", 170, -92, hpLabelTag)
-	labelRightTagged("70/110", 170, -80, energyLabelTag)
+	labelRightTagged("10/110", 100, -52, hpLabelTag)
+	labelRightTagged("70/110", 100, -40, energyLabelTag)
 
 	actionLabel := fmt.Sprintf("%d/%d", stats.ActionPoints, actor.ActionPoints)
-	labelRightTagged(actionLabel, 170, -68, actionLabelTag)
+	labelRightTagged(actionLabel, 100, -28, actionLabelTag)
 
 	prepLabel := fmt.Sprintf("%d/%d", stats.CurrentPreparation, actor.PreparationThreshold)
-	labelRightTagged(prepLabel, 170, -56, prepLabelTag)
-
+	labelRightTagged(prepLabel, 100, -16, prepLabelTag)
 }
 
-func (hud *HUD) createSkills(parent ecs.Entity) {}
+var skillsOffset = struct {
+	X, Y float64
+}{
+	150, -42,
+}
+
+func (hud *HUD) createSkillsTargetSelectionMode(parent ecs.Entity) {
+	// Cancel button always appears in the first skill slot.
+	x, y := 0, 0
+
+	e := hud.mgr.NewEntity()
+	hud.mgr.Tag(e, currentActorTag)
+	hud.mgr.AddComponent(e, &ecs.Parent{
+		Value: parent,
+	})
+	hud.mgr.AddComponent(e, &game.Sprite{
+		Texture: "hud.png",
+		X:       208,
+		Y:       0,
+		W:       24,
+		H:       24,
+	})
+	hud.mgr.AddComponent(e, &game.Scale{
+		X: hud.scale,
+		Y: hud.scale,
+	})
+	hud.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: (skillsOffset.X + float64(26*x)) * hud.scale,
+			Y: (skillsOffset.Y + float64(26*y)) * hud.scale,
+		},
+		Layer:    hud.layer,
+		Absolute: true,
+	})
+
+	hud.mgr.AddComponent(e, &ui.Interactive{
+		Trigger: func() {
+			// hud.bus.Publish(&event.CancelTargetSelection{})
+		},
+	})
+}
+
+func (hud *HUD) createSkills(parent ecs.Entity) {
+	// Two rows of skills, showing a mix of default and personal skills of the actor:
+	// 0,0. Move.
+	// 0,1. Consumables - pops a selection modal
+	// 1-5,0-1. Configurable skills
+	// 6,0. Flee.
+	// 6,1. End Turn.
+
+	for y := 0; y < 2; y++ {
+		for x := 0; x < 7; x++ {
+			e := hud.mgr.NewEntity()
+			hud.mgr.Tag(e, currentActorTag)
+			hud.mgr.AddComponent(e, &ecs.Parent{
+				Value: parent,
+			})
+			hud.mgr.AddComponent(e, &game.Scale{
+				X: hud.scale,
+				Y: hud.scale,
+			})
+			hud.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: (skillsOffset.X + float64(26*x)) * hud.scale,
+					Y: (skillsOffset.Y + float64(26*y)) * hud.scale,
+				},
+				Layer:    hud.layer,
+				Absolute: true,
+			})
+
+			var spr = game.Sprite{
+				Texture: "hud.png",
+				X:       184,
+				Y:       0,
+				W:       24,
+				H:       24,
+			}
+			var trigger = ui.Interactive{
+				Trigger: func() {
+					// TODO Publish ActorRequestedSkill{ skillid:?}
+				},
+			}
+			if x == 0 && y == 0 {
+				// Move
+				spr = game.Sprite{
+					Texture: "hud.png",
+					X:       232,
+					Y:       24,
+					W:       24,
+					H:       24,
+				}
+				// trigger = ui.Interactive{
+				// 	Trigger: func() {
+				// 		hud.bus.Publish(&event.MoveModeRequested{})
+				// 	},
+				// }
+			} else if x == 0 && y == 1 {
+				// Consumables
+				spr = game.Sprite{
+					Texture: "hud.png",
+					X:       232,
+					Y:       0,
+					W:       24,
+					H:       24,
+				}
+				// trigger = ui.Interactive{
+				// 	Trigger: func() {
+				// 		hud.bus.Publish(&event.ViewConsumablesRequested{})
+				// 	},
+				// }
+			} else if x == 6 && y == 0 {
+				// Flee
+				spr = game.Sprite{
+					Texture: "hud.png",
+					X:       184,
+					Y:       24,
+					W:       24,
+					H:       24,
+				}
+				// trigger = ui.Interactive{
+				// 	Trigger: func() {
+				// 		hud.bus.Publish(&event.FleeRequested{})
+				// 	},
+				// }
+			} else if x == 6 && y == 1 {
+				// End Turn
+				spr = game.Sprite{
+					Texture: "hud.png",
+					X:       208,
+					Y:       24,
+					W:       24,
+					H:       24,
+				}
+				trigger = ui.Interactive{
+					Trigger: func() {
+						hud.bus.Publish(&event.EndTurnRequested{})
+					},
+				}
+			}
+			hud.mgr.AddComponent(e, &spr)
+			hud.mgr.AddComponent(e, &trigger)
+		}
+	}
+}
 
 func (hud *HUD) destroyCurrentActor() {
 	e := hud.mgr.AnyTagged(currentActorTag)
@@ -265,8 +407,8 @@ func (hud *HUD) createEndTurnButton(parent ecs.Entity) {
 	})
 	hud.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
-			X: -80,
-			Y: 32,
+			X: -27 * hud.scale,
+			Y: 11 * hud.scale,
 		},
 		Layer:    hud.layer,
 		Absolute: true,

@@ -233,7 +233,8 @@ func (cm *Manager) Run(elapsed time.Duration) {
 			}
 		}
 
-		// prepared Entities are the ones
+		// prepared captures all Actors who are fully prepared to take their
+		// turn now.
 		prepared := []ecs.Entity{}
 
 		// Now that we know the increment, we can apply it with confidence that
