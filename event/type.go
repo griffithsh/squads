@@ -7,6 +7,7 @@ type Type int
 const (
 	AwaitingPlayerInputType Type = iota
 	CombatBegunType
+	CombatStatModifiedType
 	EndTurnRequestedType
 	MovementConcluded
 )

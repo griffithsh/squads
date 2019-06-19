@@ -1,7 +1,6 @@
 package combat
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/griffithsh/squads/ecs"
@@ -244,20 +243,31 @@ func (cm *Manager) Run(elapsed time.Duration) {
 			actor := cm.mgr.Component(e, "Actor").(*game.Actor)
 
 			s.CurrentPreparation += increment
+			cm.bus.Publish(&event.CombatStatModified{
+				Entity: e,
+				Stat:   event.PrepStat,
+				Amount: increment,
+			})
 
 			if s.CurrentPreparation >= actor.PreparationThreshold {
 				prepared = append(prepared, e)
 			}
 		}
 
+		// N.B. It's non-deterministic whose turn it is when multiple Actors
+		// finish preparing at the same time.
 		if len(prepared) > 0 {
 			e := prepared[0]
 			s := cm.mgr.Component(e, "CombatStats").(*game.CombatStats)
-			actor := cm.mgr.Component(e, "Actor").(*game.Actor)
 
-			fmt.Printf("Awaiting input from %v (%d exceeds %d)\n", e, s.CurrentPreparation, actor.PreparationThreshold)
-
+			ev := &event.CombatStatModified{
+				Entity: e,
+				Stat:   event.PrepStat,
+				Amount: -s.CurrentPreparation,
+			}
 			s.CurrentPreparation = 0
+			cm.bus.Publish(ev)
+
 			cm.mgr.AddComponent(e, &game.TurnToken{})
 			cm.setState(AwaitingInputState)
 		}

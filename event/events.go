@@ -35,3 +35,25 @@ type AwaitingPlayerInput struct{}
 func (AwaitingPlayerInput) Type() Type {
 	return AwaitingPlayerInputType
 }
+
+type CombatStatType int
+
+const (
+	HPStat CombatStatType = iota
+	EnergyStat
+	ActionStat
+	PrepStat
+)
+
+// CombatStatModified occurs when an Actor's current stats changed.
+type CombatStatModified struct {
+	// type
+	Entity ecs.Entity
+	Stat   CombatStatType
+	Amount int
+}
+
+// Type of the Event.
+func (CombatStatModified) Type() Type {
+	return CombatStatModifiedType
+}

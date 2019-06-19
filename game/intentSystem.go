@@ -185,6 +185,12 @@ func (s *IntentSystem) Update() {
 			m.Moves = append(m.Moves, stepToWaypoint(step))
 		}
 		stats.ActionPoints -= cost
+		s.Publish(&event.CombatStatModified{
+			Entity: e,
+			Stat:   event.ActionStat,
+			Amount: -cost,
+		})
+
 		s.mgr.AddComponent(e, &m)
 	}
 }

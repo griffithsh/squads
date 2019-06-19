@@ -33,10 +33,10 @@ CombatHUD
 var (
 	combatHUDTag     = "COMBAT_HUD"
 	currentActorTag  = combatHUDTag + ".CURRENT_ACTOR"
-	hpLabelTag       = currentActorTag + ".HPLabelTag"
-	energyLabelTag   = currentActorTag + ".HPLabelTag"
-	actionLabelTag   = currentActorTag + ".HPLabelTag"
-	prepLabelTag     = currentActorTag + ".HPLabelTag"
+	hpLabelTag       = currentActorTag + ".HP"
+	energyLabelTag   = currentActorTag + ".ENERGY"
+	actionLabelTag   = currentActorTag + ".ACTION"
+	prepLabelTag     = currentActorTag + ".PREPARATION"
 	turnQueueTag     = combatHUDTag + ".TURN_QUEUE"
 	endTurnButtonTag = combatHUDTag + ".END_TURN_BUTTON"
 )
@@ -60,6 +60,8 @@ func NewHUD(mgr *ecs.World, bus *event.Bus) *HUD {
 
 	bus.Subscribe(event.CombatBegunType, hud.handleCombatBegan)
 	bus.Subscribe(event.AwaitingPlayerInputType, hud.handleAwaitingInput)
+	bus.Subscribe(event.CombatStatModifiedType, hud.handleCombatStatModified)
+
 	return &hud
 }
 
@@ -70,6 +72,30 @@ func (hud *HUD) handleCombatBegan(event.Typer) {
 func (hud *HUD) handleAwaitingInput(event.Typer) {
 	hud.destroyCurrentActor()
 	hud.createCurrentActor(hud.mgr.AnyTagged(combatHUDTag))
+}
+
+func (hud *HUD) handleCombatStatModified(ev event.Typer) {
+	csm := ev.(*event.CombatStatModified)
+
+	// If there is no actor waiting for commands, or this event is for another
+	// actor, then stop.
+	e, ok := hud.mgr.Single([]string{"Actor", "TurnToken", "CombatStats"})
+	if !ok || e != csm.Entity {
+		return
+	}
+
+	actor := hud.mgr.Component(e, "Actor").(*game.Actor)
+	stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
+	switch csm.Stat {
+	case event.ActionStat:
+		e = hud.mgr.AnyTagged(actionLabelTag)
+		font := hud.mgr.Component(e, "Font").(*game.Font)
+		font.Text = fmt.Sprintf("%d/%d", stats.ActionPoints, actor.ActionPoints)
+	case event.PrepStat:
+		e = hud.mgr.AnyTagged(prepLabelTag)
+		font := hud.mgr.Component(e, "Font").(*game.Font)
+		font.Text = fmt.Sprintf("%d/%d", stats.CurrentPreparation, actor.PreparationThreshold)
+	}
 }
 
 // create entire HUD hierarchy of ui elements.
