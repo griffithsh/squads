@@ -47,7 +47,6 @@ const (
 
 // CombatStatModified occurs when an Actor's current stats changed.
 type CombatStatModified struct {
-	// type
 	Entity ecs.Entity
 	Stat   CombatStatType
 	Amount int
@@ -56,4 +55,14 @@ type CombatStatModified struct {
 // Type of the Event.
 func (CombatStatModified) Type() Type {
 	return CombatStatModifiedType
+}
+
+// CombatStateTransition occurs when the combat's state changes
+type CombatStateTransition struct {
+	Old, New int // FIXME: cannot reference game.State because that would be a circular reference.
+}
+
+// Type of the Event.
+func (CombatStateTransition) Type() Type {
+	return CombatStateTransitionType
 }

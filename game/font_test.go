@@ -8,6 +8,7 @@ import (
 
 func TestFont(t *testing.T) {
 	const text = "Exactamento!"
+	const text2 = "Secondi!"
 	mgr := ecs.NewWorld()
 
 	e := mgr.NewEntity()
@@ -29,6 +30,15 @@ func TestFont(t *testing.T) {
 	sprites = mgr.Get([]string{"Sprite"})
 	if len(sprites) != len(text) {
 		t.Errorf("assert: want %d sprites, got %d", len(text), len(sprites))
+	}
+
+	// Test a mutation.
+	f := mgr.Component(e, "Font").(*Font)
+	f.Text = text2
+	fs.Update()
+	sprites = mgr.Get([]string{"Sprite"})
+	if len(sprites) != len(text2) {
+		t.Errorf("assert: after mutating want %d sprites, got %d", len(text2), len(sprites))
 	}
 
 	// Clean up the entity

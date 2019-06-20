@@ -29,11 +29,9 @@ func (s *ParentSystem) Update() {
 	for _, e := range s.mgr.Get([]string{"Parent"}) {
 		p := s.mgr.Component(e, "Parent").(*Parent)
 
-		if s.mgr.Exists(p.Value) {
-			continue
+		if !s.mgr.Exists(p.Value) {
+			s.mgr.DestroyEntity(e)
 		}
-
-		s.mgr.DestroyEntity(e)
 	}
 
 	// Remove references to Children that have been destroyed from the Parents

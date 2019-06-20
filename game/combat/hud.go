@@ -27,7 +27,6 @@ CombatHUD
 		[]
 			Portrait
 			Prep
-	EndTurnButton
 */
 
 var (
@@ -37,6 +36,7 @@ var (
 	energyLabelTag   = currentActorTag + ".ENERGY"
 	actionLabelTag   = currentActorTag + ".ACTION"
 	prepLabelTag     = currentActorTag + ".PREPARATION"
+	skillsTag        = currentActorTag + ".SKILLS"
 	turnQueueTag     = combatHUDTag + ".TURN_QUEUE"
 	endTurnButtonTag = combatHUDTag + ".END_TURN_BUTTON"
 )
@@ -59,7 +59,7 @@ func NewHUD(mgr *ecs.World, bus *event.Bus) *HUD {
 	}
 
 	bus.Subscribe(event.CombatBegunType, hud.handleCombatBegan)
-	bus.Subscribe(event.AwaitingPlayerInputType, hud.handleAwaitingInput)
+	bus.Subscribe(event.CombatStateTransitionType, hud.handleCombatStateTransition)
 	bus.Subscribe(event.CombatStatModifiedType, hud.handleCombatStatModified)
 
 	return &hud
@@ -69,9 +69,16 @@ func (hud *HUD) handleCombatBegan(event.Typer) {
 	hud.create()
 }
 
-func (hud *HUD) handleAwaitingInput(event.Typer) {
-	hud.destroyCurrentActor()
-	hud.createCurrentActor(hud.mgr.AnyTagged(combatHUDTag))
+func (hud *HUD) handleCombatStateTransition(ev event.Typer) {
+	// when we are awaiting input, then we should just create the current
+	// actor, because destroy should already have happened.
+	cst := ev.(*event.CombatStateTransition)
+
+	if State(cst.New) == AwaitingInputState {
+		hud.createCurrentActor(hud.mgr.AnyTagged(combatHUDTag))
+	} else {
+		hud.destroyCurrentActor()
+	}
 }
 
 func (hud *HUD) handleCombatStatModified(ev event.Typer) {
@@ -105,7 +112,6 @@ func (hud *HUD) create() {
 
 	hud.createCurrentActor(e)
 	// hud.createTurnQueue(e) // TODO
-	hud.createEndTurnButton(e)
 }
 
 func (hud *HUD) createPortrait(parent ecs.Entity) {
@@ -209,8 +215,8 @@ func (hud *HUD) createStats(parent ecs.Entity) {
 	actor := hud.mgr.Component(e, "Actor").(*game.Actor)
 	stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
 
-	labelRightTagged("10/110", 100, -52, hpLabelTag)
-	labelRightTagged("70/110", 100, -40, energyLabelTag)
+	labelRightTagged("?/N", 100, -52, hpLabelTag)
+	labelRightTagged("?/N", 100, -40, energyLabelTag)
 
 	actionLabel := fmt.Sprintf("%d/%d", stats.ActionPoints, actor.ActionPoints)
 	labelRightTagged(actionLabel, 100, -28, actionLabelTag)
@@ -230,7 +236,7 @@ func (hud *HUD) createSkillsTargetSelectionMode(parent ecs.Entity) {
 	x, y := 0, 0
 
 	e := hud.mgr.NewEntity()
-	hud.mgr.Tag(e, currentActorTag)
+	hud.mgr.Tag(e, skillsTag)
 	hud.mgr.AddComponent(e, &ecs.Parent{
 		Value: parent,
 	})
@@ -272,7 +278,7 @@ func (hud *HUD) createSkills(parent ecs.Entity) {
 	for y := 0; y < 2; y++ {
 		for x := 0; x < 7; x++ {
 			e := hud.mgr.NewEntity()
-			hud.mgr.Tag(e, currentActorTag)
+			hud.mgr.Tag(e, skillsTag)
 			hud.mgr.AddComponent(e, &ecs.Parent{
 				Value: parent,
 			})
@@ -366,7 +372,6 @@ func (hud *HUD) createSkills(parent ecs.Entity) {
 
 func (hud *HUD) destroyCurrentActor() {
 	e := hud.mgr.AnyTagged(currentActorTag)
-
 	hud.mgr.DestroyEntity(e)
 }
 
@@ -385,38 +390,4 @@ func (hud *HUD) createCurrentActor(parent ecs.Entity) {
 	hud.createName(e)
 	hud.createStats(e)
 	hud.createSkills(e)
-}
-
-func (hud *HUD) createEndTurnButton(parent ecs.Entity) {
-	e := hud.mgr.NewEntity()
-	hud.mgr.Tag(e, endTurnButtonTag)
-	hud.mgr.AddComponent(e, &ecs.Parent{
-		Value: parent,
-	})
-
-	hud.mgr.AddComponent(e, &game.Sprite{
-		Texture: "hud.png",
-		X:       16,
-		Y:       0,
-		W:       46,
-		H:       14,
-	})
-	hud.mgr.AddComponent(e, &game.Scale{
-		X: hud.scale,
-		Y: hud.scale,
-	})
-	hud.mgr.AddComponent(e, &game.Position{
-		Center: game.Center{
-			X: -27 * hud.scale,
-			Y: 11 * hud.scale,
-		},
-		Layer:    hud.layer,
-		Absolute: true,
-	})
-
-	hud.mgr.AddComponent(e, &ui.Interactive{
-		Trigger: func() {
-			hud.bus.Publish(&event.EndTurnRequested{})
-		},
-	})
 }

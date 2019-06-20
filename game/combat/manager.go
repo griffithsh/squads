@@ -76,10 +76,15 @@ func NewManager(mgr *ecs.World, camera *game.Camera /**/) *Manager {
 
 // setState is the canonical way to change the CombatState.
 func (cm *Manager) setState(state State) {
-	cm.state = state
-	if state == AwaitingInputState {
-		cm.bus.Publish(&event.AwaitingPlayerInput{})
+	if state == cm.state {
+		return
 	}
+	ev := event.CombatStateTransition{
+		Old: int(cm.state),
+		New: int(state),
+	}
+	cm.state = state
+	cm.bus.Publish(&ev)
 }
 
 // Begin should be called at the start of an engagement to set up components
