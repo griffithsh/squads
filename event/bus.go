@@ -1,15 +1,44 @@
 package event
 
+import "math/rand"
+
 // Bus intemediates publishers and subscribers via an event interface.
 type Bus struct {
-	subs map[Type][]Subscriber
+	subs map[Type]map[int64]Subscriber
 }
 
-// Subscribe to all events of a type.
-// FIXME: How could Unsubscribe be implemented?
-func (b *Bus) Subscribe(t Type, f Subscriber) {
+// ensure that the internal map is initialised.
+func (b *Bus) ensure() {
+	if b.subs == nil {
+		b.subs = map[Type]map[int64]Subscriber{}
+	}
+}
+
+func (b *Bus) unsubscribeKey() int64 {
+	return rand.Int63()
+}
+
+// Subscribe to all events of a type. Returns an Unsubscribe function.
+func (b *Bus) Subscribe(t Type, f Subscriber) func() {
 	b.ensure()
-	b.subs[t] = append(b.subs[t], f)
+	m, ok := b.subs[t]
+	if !ok {
+		b.subs[t] = map[int64]Subscriber{}
+		m = b.subs[t]
+	}
+	var key int64
+	for {
+		_, ok := m[key]
+		if ok {
+			continue
+		}
+		key = b.unsubscribeKey()
+		break
+	}
+	m[key] = f
+	return func() {
+		delete(m, key)
+	}
 }
 
 // Publish an event to all Subscribers to that type.
@@ -23,11 +52,5 @@ func (b *Bus) Publish(t Typer) {
 
 	for _, f := range subscriptions {
 		f(t)
-	}
-}
-
-func (b *Bus) ensure() {
-	if b.subs == nil {
-		b.subs = map[Type][]Subscriber{}
 	}
 }

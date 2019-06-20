@@ -3,6 +3,10 @@ package event
 // Type enumerates directions.
 type Type int
 
+func (ty Type) Type() Type {
+	return ty
+}
+
 // Types represent things that have happened.
 const (
 	AwaitingPlayerInputType Type = iota
