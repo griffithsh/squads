@@ -61,7 +61,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			// Are we done?
 			if len(mover.Moves) == 0 {
 				mgr.RemoveComponent(e, mover)
-				nav.Publish(event.ActorMovementConcluded{Entity: e})
+				nav.Publish(CombatActorMovementConcluded{Entity: e})
 				continue
 			}
 

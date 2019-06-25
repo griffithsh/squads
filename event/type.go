@@ -1,21 +1,12 @@
 package event
 
 // Type enumerates directions.
-type Type int
+type Type string
 
+// Type implements the Typer interface, so that simple events without data can be Published.
 func (ty Type) Type() Type {
 	return ty
 }
-
-// Types represent things that have happened.
-const (
-	AwaitingPlayerInputType Type = iota
-	CombatBegunType
-	CombatStateTransitionType
-	CombatStatModifiedType
-	EndTurnRequestedType
-	MovementConcluded
-)
 
 // Typer is an awkward thing that represents anything that provides its type.
 type Typer interface {

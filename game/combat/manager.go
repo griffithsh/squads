@@ -68,8 +68,8 @@ func NewManager(mgr *ecs.World, camera *game.Camera /**/) *Manager {
 		intents: game.NewIntentSystem(mgr, bus, f),
 	}
 
-	cm.bus.Subscribe(event.MovementConcluded, cm.handleMovementConcluded)
-	cm.bus.Subscribe(event.EndTurnRequestedType, cm.handleEndTurnRequested)
+	cm.bus.Subscribe(game.CombatActorMovementConcluded{}.Type(), cm.handleMovementConcluded)
+	cm.bus.Subscribe(game.EndTurnRequested{}.Type(), cm.handleEndTurnRequested)
 
 	return &cm
 }
@@ -79,9 +79,9 @@ func (cm *Manager) setState(state State) {
 	if state == cm.state {
 		return
 	}
-	ev := event.CombatStateTransition{
-		Old: int(cm.state),
-		New: int(state),
+	ev := StateTransition{
+		Old: cm.state,
+		New: state,
 	}
 	cm.state = state
 	cm.bus.Publish(&ev)
@@ -195,7 +195,7 @@ func (cm *Manager) Begin() {
 	}
 
 	// Announce that the Combat has begun.
-	cm.bus.Publish(event.CombatBegun{})
+	cm.bus.Publish(game.CombatBegan{})
 }
 
 // End should be called at the resolution of a combat encounter. It removes
@@ -249,9 +249,9 @@ func (cm *Manager) Run(elapsed time.Duration) {
 			actor := cm.mgr.Component(e, "Actor").(*game.Actor)
 
 			s.CurrentPreparation += increment
-			cm.bus.Publish(&event.CombatStatModified{
+			cm.bus.Publish(&game.CombatStatModified{
 				Entity: e,
-				Stat:   event.PrepStat,
+				Stat:   game.PrepStat,
 				Amount: increment,
 			})
 
@@ -266,9 +266,9 @@ func (cm *Manager) Run(elapsed time.Duration) {
 			e := prepared[0]
 			s := cm.mgr.Component(e, "CombatStats").(*game.CombatStats)
 
-			ev := &event.CombatStatModified{
+			ev := &game.CombatStatModified{
 				Entity: e,
-				Stat:   event.PrepStat,
+				Stat:   game.PrepStat,
 				Amount: -s.CurrentPreparation,
 			}
 			s.CurrentPreparation = 0
@@ -408,7 +408,7 @@ func (cm *Manager) actorAwaitingInput() ecs.Entity {
 
 // syncActorObstacle updates the an Actor's Obstacle to be synchronised with its
 // position. It should be called when an Actor has completed a move.
-func (cm *Manager) syncActorObstacle(evt event.ActorMovementConcluded) {
+func (cm *Manager) syncActorObstacle(evt game.CombatActorMovementConcluded) {
 	actor := cm.mgr.Component(evt.Entity, "Actor").(*game.Actor)
 	obstacle := cm.mgr.Component(evt.Entity, "Obstacle").(*game.Obstacle)
 	position := cm.mgr.Component(evt.Entity, "Position").(*game.Position)
@@ -432,7 +432,7 @@ func (cm *Manager) syncActorObstacle(evt event.ActorMovementConcluded) {
 
 func (cm *Manager) handleMovementConcluded(t event.Typer) {
 	// FIXME: Should Obstacle movement be handled by an "obstacle" system instead?
-	cm.syncActorObstacle(t.(event.ActorMovementConcluded))
+	cm.syncActorObstacle(t.(game.CombatActorMovementConcluded))
 
 	cm.setState(AwaitingInputState)
 	cm.MousePosition(cm.x, cm.y)

@@ -60,7 +60,7 @@ func (s *IntentSystem) Update() {
 			goalHex := s.field.At(int(intent.X), int(intent.Y))
 			if startHex == nil || goalHex == nil {
 				// Don't navigate.
-				s.Publish(event.ActorMovementConcluded{Entity: e})
+				s.Publish(CombatActorMovementConcluded{Entity: e})
 				continue
 			}
 			start = geom.Key{M: startHex.M, N: startHex.N}
@@ -93,7 +93,7 @@ func (s *IntentSystem) Update() {
 			goalHex := s.field.At4(int(intent.X), int(intent.Y))
 			if startHex == nil || goalHex == nil {
 				// Don't navigate.
-				s.Publish(event.ActorMovementConcluded{Entity: e})
+				s.Publish(CombatActorMovementConcluded{Entity: e})
 				continue
 			}
 			start = geom.Key{M: startHex.M, N: startHex.N}
@@ -132,7 +132,7 @@ func (s *IntentSystem) Update() {
 			goalHex := s.field.At7(int(intent.X), int(intent.Y))
 			if startHex == nil || goalHex == nil {
 				// Don't navigate.
-				s.Publish(event.ActorMovementConcluded{Entity: e})
+				s.Publish(CombatActorMovementConcluded{Entity: e})
 				continue
 			}
 			start = geom.Key{M: startHex.M, N: startHex.N}
@@ -171,7 +171,7 @@ func (s *IntentSystem) Update() {
 		steps, err := geom.Navigate(start, goal, exists, costs)
 		if err != nil {
 			fmt.Printf("Navigate: %v\n", err)
-			s.Publish(event.ActorMovementConcluded{Entity: e})
+			s.Publish(CombatActorMovementConcluded{Entity: e})
 			continue
 		}
 
@@ -185,9 +185,9 @@ func (s *IntentSystem) Update() {
 			m.Moves = append(m.Moves, stepToWaypoint(step))
 		}
 		stats.ActionPoints -= cost
-		s.Publish(&event.CombatStatModified{
+		s.Publish(&CombatStatModified{
 			Entity: e,
-			Stat:   event.ActionStat,
+			Stat:   ActionStat,
 			Amount: -cost,
 		})
 

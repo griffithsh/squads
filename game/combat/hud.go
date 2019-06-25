@@ -58,9 +58,9 @@ func NewHUD(mgr *ecs.World, bus *event.Bus) *HUD {
 		layer: 100,
 	}
 
-	bus.Subscribe(event.CombatBegunType, hud.handleCombatBegan)
-	bus.Subscribe(event.CombatStateTransitionType, hud.handleCombatStateTransition)
-	bus.Subscribe(event.CombatStatModifiedType, hud.handleCombatStatModified)
+	bus.Subscribe(game.CombatBegan{}.Type(), hud.handleCombatBegan)
+	bus.Subscribe(StateTransition{}.Type(), hud.handleCombatStateTransition)
+	bus.Subscribe(game.CombatStatModified{}.Type(), hud.handleCombatStatModified)
 
 	return &hud
 }
@@ -72,7 +72,7 @@ func (hud *HUD) handleCombatBegan(event.Typer) {
 func (hud *HUD) handleCombatStateTransition(ev event.Typer) {
 	// when we are awaiting input, then we should just create the current
 	// actor, because destroy should already have happened.
-	cst := ev.(*event.CombatStateTransition)
+	cst := ev.(*StateTransition)
 
 	if State(cst.New) == AwaitingInputState {
 		hud.createCurrentActor(hud.mgr.AnyTagged(combatHUDTag))
@@ -82,7 +82,7 @@ func (hud *HUD) handleCombatStateTransition(ev event.Typer) {
 }
 
 func (hud *HUD) handleCombatStatModified(ev event.Typer) {
-	csm := ev.(*event.CombatStatModified)
+	csm := ev.(*game.CombatStatModified)
 
 	// If there is no actor waiting for commands, or this event is for another
 	// actor, then stop.
@@ -94,11 +94,11 @@ func (hud *HUD) handleCombatStatModified(ev event.Typer) {
 	actor := hud.mgr.Component(e, "Actor").(*game.Actor)
 	stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
 	switch csm.Stat {
-	case event.ActionStat:
+	case game.ActionStat:
 		e = hud.mgr.AnyTagged(actionLabelTag)
 		font := hud.mgr.Component(e, "Font").(*game.Font)
 		font.Text = fmt.Sprintf("%d/%d", stats.ActionPoints, actor.ActionPoints)
-	case event.PrepStat:
+	case game.PrepStat:
 		e = hud.mgr.AnyTagged(prepLabelTag)
 		font := hud.mgr.Component(e, "Font").(*game.Font)
 		font.Text = fmt.Sprintf("%d/%d", stats.CurrentPreparation, actor.PreparationThreshold)
@@ -360,7 +360,7 @@ func (hud *HUD) createSkills(parent ecs.Entity) {
 				}
 				trigger = ui.Interactive{
 					Trigger: func() {
-						hud.bus.Publish(&event.EndTurnRequested{})
+						hud.bus.Publish(&game.EndTurnRequested{})
 					},
 				}
 			}
