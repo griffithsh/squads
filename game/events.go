@@ -19,7 +19,7 @@ type CombatBegan struct{}
 
 // Type of the Event.
 func (CombatBegan) Type() event.Type {
-	return "CombatBegan"
+	return "game.CombatBegan"
 }
 
 // CombatStatModified occurs when an Actor's current stats changed.
@@ -31,7 +31,7 @@ type CombatStatModified struct {
 
 // Type of the Event.
 func (CombatStatModified) Type() event.Type {
-	return "CombatStatModified"
+	return "game.CombatStatModified"
 }
 
 // EndTurnRequested occurs when the player indicates that they are finished
@@ -40,7 +40,7 @@ type EndTurnRequested struct{}
 
 // Type of the Event.
 func (EndTurnRequested) Type() event.Type {
-	return "CombatEndTurnRequested"
+	return "game.EndTurnRequested"
 }
 
 // CombatActorMovementConcluded occurs when an actor has finished their movement.
@@ -50,7 +50,7 @@ type CombatActorMovementConcluded struct {
 
 // Type of the Event.
 func (CombatActorMovementConcluded) Type() event.Type {
-	return "CombatActorMovementConcluded"
+	return "game.CombatActorMovementConcluded"
 }
 
 // CombatAwaitingPlayerInput occurs when an actor needs a command.
@@ -58,5 +58,5 @@ type CombatAwaitingPlayerInput struct{}
 
 // Type of the Event.
 func (CombatAwaitingPlayerInput) Type() event.Type {
-	return "CombatAwaitingPlayerInputType"
+	return "game.CombatAwaitingPlayerInput"
 }
