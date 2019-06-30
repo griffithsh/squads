@@ -1,21 +1,27 @@
 package game
 
+import "github.com/griffithsh/squads/event"
+
 // Camera is a class that stores focus and zoom values
 type Camera struct {
+	bus              event.Bus
 	focusX, focusY   float64
 	zoom             float64
 	screenW, screenH int
 }
 
 // NewCamera creates a new camera for a view of the requested width and height
-func NewCamera(width, height int) *Camera {
-	return &Camera{
+func NewCamera(width, height int, bus *event.Bus) *Camera {
+
+	c := Camera{
 		focusX:  0,
 		focusY:  0,
 		zoom:    3.0,
 		screenW: width,
 		screenH: height,
 	}
+	bus.Subscribe(WindowSizeChanged{}.Type(), c.handleWindowSizeChanged)
+	return &c
 }
 
 // Center the view on a point.
@@ -42,6 +48,21 @@ func (c *Camera) GetY() float64 {
 // SetY coordinate of the camera.
 func (c *Camera) SetY(y float64) {
 	c.focusY = y
+}
+
+// GetW returns the width of the game's window.
+func (c *Camera) GetW() int {
+	return c.screenW
+}
+
+// GetH returns the height of the game's window.
+func (c *Camera) GetH() int {
+	return c.screenH
+}
+
+func (c *Camera) handleWindowSizeChanged(e event.Typer) {
+	wsc := e.(*WindowSizeChanged)
+	c.screenW, c.screenH = wsc.NewW, wsc.NewH
 }
 
 // GetZoom of the camera.

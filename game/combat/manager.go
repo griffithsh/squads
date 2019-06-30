@@ -52,21 +52,21 @@ type Manager struct {
 // Or it could accept a *ecs.World, which would by convention contain two squads
 // of characters, and some other object that contains terrain, environmental
 // effects etc.
-func NewManager(mgr *ecs.World, camera *game.Camera /**/) *Manager {
+func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 	f, _ := geom.NewField(8, 24)
-	bus := &event.Bus{}
 
 	cm := Manager{
-		mgr:     mgr,
-		bus:     bus,
-		field:   f,
-		nav:     game.NewNavigator(bus),
-		camera:  camera,
-		state:   PreparingState,
-		hud:     NewHUD(mgr, bus),
+		mgr:    mgr,
+		bus:    bus,
+		field:  f,
+		nav:    game.NewNavigator(bus),
+		camera: camera,
+		// state:   TODO: some-uninitialised-state
+		hud:     NewHUD(mgr, bus, camera.GetW(), camera.GetH()),
 		cursors: game.NewCursorSystem(mgr),
 		intents: game.NewIntentSystem(mgr, bus, f),
 	}
+	cm.setState(PreparingState)
 
 	cm.bus.Subscribe(game.CombatActorMovementConcluded{}.Type(), cm.handleMovementConcluded)
 	cm.bus.Subscribe(game.EndTurnRequested{}.Type(), cm.handleEndTurnRequested)

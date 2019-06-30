@@ -12,6 +12,7 @@ import (
 /*
 HUD element hierarchy design:
 
+TimePassingIcon
 CombatHUD
 	CurrentActor
 		Portrait
@@ -31,6 +32,7 @@ CombatHUD
 
 var (
 	combatHUDTag     = "COMBAT_HUD"
+	timePassingTag   = combatHUDTag + ".TIME_PASSING"
 	currentActorTag  = combatHUDTag + ".CURRENT_ACTOR"
 	hpLabelTag       = currentActorTag + ".HP"
 	energyLabelTag   = currentActorTag + ".ENERGY"
@@ -43,21 +45,25 @@ var (
 
 // HUD is a heads up display for the combat game state.
 type HUD struct {
-	mgr   *ecs.World
-	bus   *event.Bus
-	scale float64
-	layer int
+	mgr              *ecs.World
+	bus              *event.Bus
+	scale            float64
+	layer            int
+	centerX, centerY float64 // center of the game's window, or half the width and height.
 }
 
 // NewHUD construct a HUD.
-func NewHUD(mgr *ecs.World, bus *event.Bus) *HUD {
+func NewHUD(mgr *ecs.World, bus *event.Bus, screenX int, screenY int) *HUD {
 	hud := HUD{
-		mgr:   mgr,
-		bus:   bus,
-		scale: 2,
-		layer: 100,
+		mgr:     mgr,
+		bus:     bus,
+		scale:   2,
+		layer:   100,
+		centerX: float64(screenX) / 2,
+		centerY: float64(screenY) / 2,
 	}
 
+	bus.Subscribe(game.WindowSizeChanged{}.Type(), hud.handleWindowSizeChanged)
 	bus.Subscribe(game.CombatBegan{}.Type(), hud.handleCombatBegan)
 	bus.Subscribe(StateTransition{}.Type(), hud.handleCombatStateTransition)
 	bus.Subscribe(game.CombatStatModified{}.Type(), hud.handleCombatStatModified)
@@ -65,19 +71,37 @@ func NewHUD(mgr *ecs.World, bus *event.Bus) *HUD {
 	return &hud
 }
 
+func (hud *HUD) handleWindowSizeChanged(e event.Typer) {
+	wsc := e.(*game.WindowSizeChanged)
+	hud.centerX, hud.centerY = float64(wsc.NewW)/2, float64(wsc.NewH)/2
+
+	if hud.mgr.AnyTagged(timePassingTag) == 0 {
+		return
+	}
+
+	hud.destroyTimePassingIcon()
+	hud.createTimePassingIcon()
+}
+
 func (hud *HUD) handleCombatBegan(event.Typer) {
 	hud.create()
 }
 
 func (hud *HUD) handleCombatStateTransition(ev event.Typer) {
-	// when we are awaiting input, then we should just create the current
-	// actor, because destroy should already have happened.
 	cst := ev.(*StateTransition)
 
-	if State(cst.New) == AwaitingInputState {
+	// when we are awaiting input, then we should just create the current
+	// actor, because destroy should already have happened.
+	if cst.New == AwaitingInputState {
 		hud.createCurrentActor(hud.mgr.AnyTagged(combatHUDTag))
 	} else {
 		hud.destroyCurrentActor()
+	}
+
+	if cst.New == PreparingState {
+		hud.createTimePassingIcon()
+	} else {
+		hud.destroyTimePassingIcon()
 	}
 }
 
@@ -390,4 +414,34 @@ func (hud *HUD) createCurrentActor(parent ecs.Entity) {
 	hud.createName(e)
 	hud.createStats(e)
 	hud.createSkills(e)
+}
+
+func (hud *HUD) destroyTimePassingIcon() {
+	e := hud.mgr.AnyTagged(timePassingTag)
+	hud.mgr.DestroyEntity(e)
+}
+
+func (hud *HUD) createTimePassingIcon() {
+	e := hud.mgr.NewEntity()
+	hud.mgr.Tag(e, timePassingTag)
+	hud.mgr.AddComponent(e, &game.Sprite{
+		Texture: "hud.png",
+		X:       16,
+		Y:       0,
+		W:       16,
+		H:       24,
+	})
+	hud.mgr.AddComponent(e, &game.Scale{
+		X: hud.scale,
+		Y: hud.scale,
+	})
+	hud.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: hud.centerX,
+			Y: hud.centerY,
+		},
+		Layer:    hud.layer,
+		Absolute: true,
+	})
+
 }

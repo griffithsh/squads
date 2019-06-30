@@ -11,12 +11,14 @@ import (
 	"time"
 
 	"github.com/griffithsh/squads/ecs"
+	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/game/combat"
 	"github.com/hajimehoshi/ebiten"
 )
 
 type system struct {
+	bus          *event.Bus
 	render       *game.Renderer
 	fonts        *game.FontSystem
 	hierarchy    *ecs.ParentSystem
@@ -101,12 +103,14 @@ var last time.Time
 
 // setup the game Entities.
 func setup(w, h int) (*system, error) {
+	bus := &event.Bus{}
 	mgr := ecs.NewWorld()
 
-	camera := game.NewCamera(w, h)
+	camera := game.NewCamera(w, h, bus)
 	s := system{
+		bus:    bus,
 		render: game.NewRenderer(),
-		combat: combat.NewManager(mgr, camera),
+		combat: combat.NewManager(mgr, camera, bus),
 
 		mgr:    mgr,
 		camera: camera,
@@ -151,6 +155,16 @@ var (
 	second      = time.Tick(time.Second)
 )
 
+func (s *system) setScreenSize(w, h int) {
+	s.bus.Publish(&game.WindowSizeChanged{
+		OldW: s.camera.GetW(),
+		OldH: s.camera.GetH(),
+		NewW: w,
+		NewH: h,
+	})
+	ebiten.SetScreenSize(w, h)
+}
+
 func (s *system) run(screen *ebiten.Image) error {
 	start := time.Now()
 	defer func() {
@@ -161,6 +175,11 @@ func (s *system) run(screen *ebiten.Image) error {
 
 	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
 		return errExitGame
+	}
+	if ebiten.IsKeyPressed(ebiten.Key1) {
+		s.setScreenSize(640, 480)
+	} else if ebiten.IsKeyPressed(ebiten.Key2) {
+		s.setScreenSize(1024, 768)
 	}
 
 	x, y := ebiten.CursorPosition()
