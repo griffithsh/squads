@@ -7,6 +7,7 @@ import (
 
 type StatType int
 
+//go:generate stringer -type=StatType
 const (
 	HPStat StatType = iota
 	EnergyStat
