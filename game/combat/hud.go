@@ -2,6 +2,7 @@ package combat
 
 import (
 	"fmt"
+	"sort"
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
@@ -108,25 +109,12 @@ func (hud *HUD) handleCombatStateTransition(ev event.Typer) {
 func (hud *HUD) handleCombatStatModified(ev event.Typer) {
 	csm := ev.(*game.CombatStatModified)
 
-	// If there is no actor waiting for commands, or this event is for another
-	// actor, then stop.
-	e, ok := hud.mgr.Single([]string{"Actor", "TurnToken", "CombatStats"})
-	if !ok || e != csm.Entity {
-		return
+	switch csm.Stat {
+	case game.PrepStat:
+		hud.destroyTurnQueue()
+		hud.createTurnQueue(hud.mgr.AnyTagged(combatHUDTag))
 	}
 
-	actor := hud.mgr.Component(e, "Actor").(*game.Actor)
-	stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
-	switch csm.Stat {
-	case game.ActionStat:
-		e = hud.mgr.AnyTagged(actionLabelTag)
-		font := hud.mgr.Component(e, "Font").(*game.Font)
-		font.Text = fmt.Sprintf("%d/%d", stats.ActionPoints, actor.ActionPoints)
-	case game.PrepStat:
-		e = hud.mgr.AnyTagged(prepLabelTag)
-		font := hud.mgr.Component(e, "Font").(*game.Font)
-		font.Text = fmt.Sprintf("%d/%d", stats.CurrentPreparation, actor.PreparationThreshold)
-	}
 }
 
 // create entire HUD hierarchy of ui elements.
@@ -135,7 +123,7 @@ func (hud *HUD) create() {
 	hud.mgr.Tag(e, combatHUDTag)
 
 	hud.createCurrentActor(e)
-	// hud.createTurnQueue(e) // TODO
+	hud.createTurnQueue(e)
 }
 
 func (hud *HUD) createPortrait(parent ecs.Entity) {
@@ -414,6 +402,104 @@ func (hud *HUD) createCurrentActor(parent ecs.Entity) {
 	hud.createName(e)
 	hud.createStats(e)
 	hud.createSkills(e)
+}
+
+func (hud *HUD) createTurnQueue(parent ecs.Entity) {
+	e := hud.mgr.NewEntity()
+	hud.mgr.Tag(e, turnQueueTag)
+	hud.mgr.AddComponent(e, &ecs.Parent{
+		Value: parent,
+	})
+
+	type v struct {
+		e            ecs.Entity
+		remaining    int
+		textureY     int
+		current, max int
+	}
+
+	var q []v
+	for _, e := range hud.mgr.Get([]string{"Actor", "CombatStats"}) {
+		actor := hud.mgr.Component(e, "Actor").(*game.Actor)
+		stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
+		if stats.CurrentPreparation == 0 {
+			continue
+		}
+		textureY := 0
+		if actor.Size == game.MEDIUM {
+			textureY = 52
+		} else if actor.Size == game.LARGE {
+			textureY = 104
+		}
+		q = append(q, v{
+			e:         e,
+			remaining: actor.PreparationThreshold - stats.CurrentPreparation,
+			textureY:  textureY,
+			current:   stats.CurrentPreparation,
+			max:       actor.PreparationThreshold,
+		})
+	}
+	sort.Slice(q, func(i, j int) bool {
+		return q[i].remaining < q[j].remaining
+	})
+
+	x, y := 10, 10+13
+	for i, v := range q {
+		// actor's small icon
+		child := hud.mgr.NewEntity()
+		hud.mgr.AddComponent(child, &ecs.Parent{
+			Value: e,
+		})
+		hud.mgr.AddComponent(child, &game.Sprite{
+			Texture: "hud.png",
+			X:       v.textureY,
+			Y:       76,
+			W:       26,
+			H:       26,
+		})
+		hud.mgr.AddComponent(child, &game.Position{
+			Center: game.Center{
+				X: float64(13+x+i*30) * hud.scale,
+				Y: float64(y) * hud.scale,
+			},
+			Layer:    hud.layer,
+			Absolute: true,
+		})
+		hud.mgr.AddComponent(child, &game.Scale{
+			X: hud.scale,
+			Y: hud.scale,
+		})
+
+		// current prep
+		prepPerc := float64(v.current) / float64(v.max)
+		child = hud.mgr.NewEntity()
+		hud.mgr.AddComponent(child, &ecs.Parent{
+			Value: e,
+		})
+		hud.mgr.AddComponent(child, &game.Sprite{
+			Texture: "tranquility-plus-39-palette.png",
+			X:       1,
+			Y:       2,
+			W:       1,
+			H:       1,
+		})
+		hud.mgr.AddComponent(child, &game.Position{
+			Center: game.Center{
+				X: (13*prepPerc + float64(x+i*30)) * hud.scale,
+				Y: float64(y+13+2) * hud.scale,
+			},
+			Layer:    hud.layer + 1,
+			Absolute: true,
+		})
+		hud.mgr.AddComponent(child, &game.Scale{
+			X: hud.scale * 26 * prepPerc,
+			Y: hud.scale * 4,
+		})
+	}
+}
+
+func (hud *HUD) destroyTurnQueue() {
+	hud.mgr.DestroyEntity(hud.mgr.AnyTagged(turnQueueTag))
 }
 
 func (hud *HUD) destroyTimePassingIcon() {

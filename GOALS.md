@@ -12,7 +12,7 @@
 - [x] Preparation, ActionPoints, and anything else needed for turns-based combat
 - [x] HUD shows updated information about Action Points remaining for the current actor.
 - [x] HUD shows a skills section
-- [ ] HUD shows updated information about turn order of the actors
+- [x] HUD shows updated information about turn order of the actors
 - [ ] A way to generate starting positions for every actor
 - [ ] Medium and Large Actor art
 - [ ] Facing
