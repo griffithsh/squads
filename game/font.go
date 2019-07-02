@@ -12,8 +12,9 @@ import (
 // Font is renderable text.
 type Font struct {
 	Text string
-	// Style string // (one-line|paragraph|centered|right-aligned)
-	// Width int // relevant for paragraphs, centered, and right-aligned
+	Size string // (small|normal|large)
+	// Align string // (left|wrap|center|right)
+	// Width int // relevant for wrap, center, and right Alignments
 
 	// N.B. Don't add Color here! A Color tint would need to be applied to a
 	// sprite anyway in order to tint the underlying Sprite-base Entities.
@@ -89,6 +90,270 @@ func (s *FontSystem) reset(e ecs.Entity) {
 	}
 }
 
+func switchRuneSmall(r rune) (w, h, x, y int) {
+	switch r {
+	// Alpha
+	case 'A', 'a':
+		return 3, 5, 0, 75
+	case 'B', 'b':
+		return 3, 5, 4, 75
+	case 'C', 'c':
+		return 3, 5, 8, 75
+	case 'D', 'd':
+		return 3, 5, 12, 75
+	case 'E', 'e':
+		return 3, 5, 16, 75
+	case 'F', 'f':
+		return 3, 5, 20, 75
+	case 'G', 'g':
+		return 3, 5, 24, 75
+	case 'H', 'h':
+		return 3, 5, 28, 75
+	case 'I', 'i':
+		return 3, 5, 32, 75
+	case 'J', 'j':
+		return 4, 5, 36, 75
+	case 'K', 'k':
+		return 4, 5, 41, 75
+	case 'L', 'l':
+		return 3, 5, 46, 75
+	case 'M', 'm':
+		return 5, 5, 50, 75
+	case 'N', 'n':
+		return 4, 5, 56, 75
+	case 'O', 'o':
+		return 4, 5, 39, 70 // NB same as zero.
+	case 'P', 'p':
+		return 3, 5, 0, 80
+	case 'Q', 'q':
+		return 4, 5, 4, 80
+	case 'R', 'r':
+		return 4, 5, 9, 80
+	case 'S', 's':
+		return 3, 5, 14, 80
+	case 'T', 't':
+		return 3, 5, 18, 80
+	case 'U', 'u':
+		return 4, 5, 22, 80
+	case 'V', 'v':
+		return 5, 5, 27, 80
+	case 'W', 'w':
+		return 7, 5, 33, 80
+	case 'X', 'x':
+		return 5, 5, 41, 80
+	case 'Y', 'y':
+		return 5, 5, 47, 80
+	case 'Z', 'z':
+		return 5, 5, 53, 80
+
+	// Numeric
+	case '1':
+		return 2, 5, 0, 70
+	case '2':
+		return 4, 5, 3, 70
+	case '3':
+		return 3, 5, 8, 70
+	case '4':
+		return 3, 5, 12, 70
+	case '5':
+		return 3, 5, 16, 70
+	case '6':
+		return 4, 5, 20, 70
+	case '7':
+		return 3, 5, 25, 70
+	case '8':
+		return 4, 5, 29, 70
+	case '9':
+		return 4, 5, 34, 70
+	case '0':
+		return 4, 5, 39, 70
+
+	// Other
+	case '!':
+		return 1, 5, 59, 80
+	case '.':
+		return 1, 5, 61, 80
+	case ',':
+		return 2, 5, 0, 85
+	case ';':
+		return 2, 5, 3, 85
+	case ':':
+		return 1, 5, 6, 85
+	case '-':
+		return 2, 5, 8, 85
+	case '_':
+		return 3, 5, 11, 85
+	case '/':
+		return 3, 5, 15, 85
+	case '\\':
+		return 3, 5, 19, 85
+
+	// Default
+	case '?':
+		fallthrough
+	default:
+		return 3, 5, 61, 85
+	}
+}
+
+func switchRuneNormal(r rune) (w, h, x, y int) {
+	switch r {
+	// Alpha
+	case 'a':
+		return 5, 10, 0, 0
+	case 'A':
+		return 5, 10, 6, 0
+	case 'b':
+		return 6, 10, 12, 0
+	case 'B':
+		return 5, 10, 19, 0
+	case 'c':
+		return 5, 10, 25, 0
+	case 'C':
+		return 7, 10, 31, 0
+	case 'd':
+		return 5, 10, 39, 0
+	case 'D':
+		return 5, 10, 45, 0
+	case 'e':
+		return 5, 10, 51, 0
+	case 'E':
+		return 4, 10, 57, 0
+	case 'f':
+		return 4, 10, 0, 10
+	case 'F':
+		return 4, 10, 5, 10
+	case 'g':
+		return 5, 10, 10, 10
+	case 'G':
+		return 5, 10, 16, 10
+	case 'h':
+		return 6, 10, 22, 10
+	case 'H':
+		return 5, 10, 29, 10
+	case 'i':
+		return 2, 10, 35, 10
+	case 'I':
+		return 3, 10, 38, 10
+	case 'j':
+		return 3, 10, 42, 10
+	case 'J':
+		return 5, 10, 46, 10
+	case 'k':
+		return 5, 10, 52, 10
+	case 'K':
+		return 6, 10, 58, 10
+	case 'l':
+		return 4, 10, 0, 20
+	case 'L':
+		return 5, 10, 5, 20
+	case 'm':
+		return 7, 10, 11, 20
+	case 'M':
+		return 7, 10, 19, 20
+	case 'n':
+		return 4, 10, 27, 20
+	case 'N':
+		return 6, 10, 32, 20
+	case 'o':
+		return 5, 10, 39, 20
+	case 'O':
+		return 6, 10, 45, 20
+	case 'p':
+		return 5, 10, 52, 20
+	case 'P':
+		return 5, 10, 58, 20
+	case 'q':
+		return 5, 10, 1, 30
+	case 'Q':
+		return 6, 10, 7, 30
+	case 'r':
+		return 5, 10, 14, 30
+	case 'R':
+		return 6, 10, 20, 30
+	case 's':
+		return 4, 10, 27, 30
+	case 'S':
+		return 5, 10, 32, 30
+	case 't':
+		return 3, 10, 38, 30
+	case 'T':
+		return 7, 10, 42, 30
+	case 'u':
+		return 5, 10, 50, 30
+	case 'U':
+		return 7, 10, 56, 30
+	case 'v':
+		return 5, 10, 0, 40
+	case 'V':
+		return 7, 10, 6, 40
+	case 'w':
+		return 5, 10, 14, 40
+	case 'W':
+		return 9, 10, 20, 40
+	case 'x':
+		return 5, 10, 30, 40
+	case 'X':
+		return 8, 10, 36, 40
+	case 'y':
+		return 6, 10, 45, 40
+	case 'Y':
+		return 5, 10, 52, 40
+	case 'z':
+		return 5, 10, 0, 50
+	case 'Z':
+		return 8, 10, 6, 50
+
+	// Numeric
+	case '0':
+		return 5, 10, 15, 50
+	case '1':
+		return 3, 10, 21, 50
+	case '2':
+		return 6, 10, 25, 50
+	case '3':
+		return 5, 10, 32, 50
+	case '4':
+		return 5, 10, 38, 50
+	case '5':
+		return 6, 10, 44, 50
+	case '6':
+		return 5, 10, 51, 50
+	case '7':
+		return 6, 10, 57, 50
+	case '8':
+		return 5, 10, 0, 60
+	case '9':
+		return 5, 10, 6, 60
+
+	// Other
+	case '!':
+		return 1, 10, 12, 60
+	case '.':
+		return 1, 10, 14, 60
+	case ',':
+		return 2, 10, 16, 60
+	case ';':
+		return 1, 10, 19, 60
+	case ':':
+		return 1, 10, 22, 60
+	case '-':
+		return 2, 10, 24, 60
+	case '_':
+		return 4, 10, 27, 60
+	case '/':
+		return 3, 10, 32, 60
+	case '\\':
+		return 3, 10, 36, 60
+
+	// Default
+	case '?':
+		fallthrough
+	default:
+		return 6, 10, 58, 110
+	}
+}
+
 // construct all child Entities necessary to compose this Font.
 func (s *FontSystem) construct(parent ecs.Entity) {
 	font := s.mgr.Component(parent, "Font").(*Font)
@@ -106,10 +371,18 @@ func (s *FontSystem) construct(parent ecs.Entity) {
 	// px, py are the position of each rune
 	var px, py float64 = 0, 0
 	lineHeight := 10.0
+	lineSpace := 2.0
+	switchRune := switchRuneNormal
+	if font.Size == "small" {
+		lineHeight = 5
+		lineSpace = 1
+		switchRune = switchRuneSmall
+	}
 	if scale != nil {
 		lineHeight *= scale.Y
+		lineSpace *= scale.Y
 	}
-	f := func(w, x, y int) {
+	f := func(w, h, x, y int) {
 		e := s.mgr.NewEntity()
 		children.Value = append(children.Value, e)
 		s.mgr.AddComponent(e, &ecs.Parent{
@@ -124,7 +397,7 @@ func (s *FontSystem) construct(parent ecs.Entity) {
 			X:       x,
 			Y:       y,
 			W:       w,
-			H:       10,
+			H:       h,
 		})
 		if scale != nil {
 			w = w * int(scale.X)
@@ -144,170 +417,13 @@ func (s *FontSystem) construct(parent ecs.Entity) {
 		px += float64(w) + letterSpace
 	}
 	for _, rn := range font.Text {
-		switch rn {
-		// whitespace
-		case '\n':
+		if rn == '\n' {
 			px = 0
-			py += lineHeight + 2
-		case '\t':
-			px += lineHeight
-		case ' ':
+			py += lineHeight + lineSpace
+		} else if rn == ' ' {
 			px += 4
-
-		// Alpha
-		case 'a':
-			f(5, 0, 0)
-		case 'A':
-			f(5, 6, 0)
-		case 'b':
-			f(6, 12, 0)
-		case 'B':
-			f(5, 19, 0)
-		case 'c':
-			f(5, 25, 0)
-		case 'C':
-			f(7, 31, 0)
-		case 'd':
-			f(5, 39, 0)
-		case 'D':
-			f(5, 45, 0)
-		case 'e':
-			f(5, 51, 0)
-		case 'E':
-			f(4, 57, 0)
-		case 'f':
-			f(4, 0, 10)
-		case 'F':
-			f(4, 5, 10)
-		case 'g':
-			f(5, 10, 10)
-		case 'G':
-			f(5, 16, 10)
-		case 'h':
-			f(6, 22, 10)
-		case 'H':
-			f(5, 29, 10)
-		case 'i':
-			f(2, 35, 10)
-		case 'I':
-			f(3, 38, 10)
-		case 'j':
-			f(3, 42, 10)
-		case 'J':
-			f(5, 46, 10)
-		case 'k':
-			f(5, 52, 10)
-		case 'K':
-			f(6, 58, 10)
-		case 'l':
-			f(4, 0, 20)
-		case 'L':
-			f(5, 5, 20)
-		case 'm':
-			f(7, 11, 20)
-		case 'M':
-			f(7, 19, 20)
-		case 'n':
-			f(4, 27, 20)
-		case 'N':
-			f(6, 32, 20)
-		case 'o':
-			f(5, 39, 20)
-		case 'O':
-			f(6, 45, 20)
-		case 'p':
-			f(5, 52, 20)
-		case 'P':
-			f(5, 58, 20)
-		case 'q':
-			f(5, 1, 30)
-		case 'Q':
-			f(6, 7, 30)
-		case 'r':
-			f(5, 14, 30)
-		case 'R':
-			f(6, 20, 30)
-		case 's':
-			f(4, 27, 30)
-		case 'S':
-			f(5, 32, 30)
-		case 't':
-			f(3, 38, 30)
-		case 'T':
-			f(7, 42, 30)
-		case 'u':
-			f(5, 50, 30)
-		case 'U':
-			f(7, 56, 30)
-		case 'v':
-			f(5, 0, 40)
-		case 'V':
-			f(7, 6, 40)
-		case 'w':
-			f(5, 14, 40)
-		case 'W':
-			f(9, 20, 40)
-		case 'x':
-			f(5, 30, 40)
-		case 'X':
-			f(8, 36, 40)
-		case 'y':
-			f(6, 45, 40)
-		case 'Y':
-			f(5, 52, 40)
-		case 'z':
-			f(5, 0, 50)
-		case 'Z':
-			f(8, 6, 50)
-
-		// Numeric
-		case '0':
-			f(5, 15, 50)
-		case '1':
-			f(3, 21, 50)
-		case '2':
-			f(6, 25, 50)
-		case '3':
-			f(5, 32, 50)
-		case '4':
-			f(5, 38, 50)
-		case '5':
-			f(6, 44, 50)
-		case '6':
-			f(5, 51, 50)
-		case '7':
-			f(6, 57, 50)
-		case '8':
-			f(5, 0, 60)
-		case '9':
-			f(5, 6, 60)
-
-		// Other
-		case '!':
-			f(1, 12, 60)
-		case '.':
-			f(1, 14, 60)
-		case ',':
-			f(2, 16, 60)
-		case ';':
-			f(1, 19, 60)
-		case ':':
-			f(1, 22, 60)
-		case '-':
-			f(2, 24, 60)
-		case '_':
-			f(4, 27, 60)
-		case '/':
-			f(3, 32, 60)
-		case '\\':
-			f(3, 36, 60)
-
-		// Default
-		case '?':
-			fallthrough
-		default:
-			f(6, 58, 110)
 		}
+		f(switchRune(rn))
 	}
 }
 
