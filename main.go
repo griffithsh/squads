@@ -125,18 +125,60 @@ func setup(w, h int) (*system, error) {
 		Size:                 game.SMALL,
 		PreparationThreshold: 701,
 		ActionPoints:         100,
+		SmallIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       0,
+			Y:       76,
+			W:       26,
+			H:       26,
+		},
+		BigIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       0,
+			Y:       24,
+			W:       52,
+			H:       52,
+		},
 	})
 	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
 		Name:                 "Wolf",
 		Size:                 game.MEDIUM,
 		PreparationThreshold: 1103,
 		ActionPoints:         80,
+		SmallIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       52,
+			Y:       76,
+			W:       26,
+			H:       26,
+		},
+		BigIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       52,
+			Y:       24,
+			W:       52,
+			H:       52,
+		},
 	})
 	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
 		Name:                 "Giant",
 		Size:                 game.LARGE,
 		PreparationThreshold: 1301,
 		ActionPoints:         120,
+		SmallIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       104,
+			Y:       76,
+			W:       26,
+			H:       26,
+		},
+		BigIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       104,
+			Y:       24,
+			W:       52,
+			H:       52,
+		},
 	})
 
 	// Start combat!

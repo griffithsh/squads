@@ -132,13 +132,10 @@ func (hud *HUD) createPortrait(parent ecs.Entity) {
 		Value: parent,
 	})
 
-	hud.mgr.AddComponent(e, &game.Sprite{
-		Texture: "hud.png",
-		X:       0,
-		Y:       24,
-		W:       52,
-		H:       52,
-	})
+	actor := hud.mgr.Component(ecs.Must(hud.mgr.Single([]string{"Actor", "TurnToken"})), "Actor").(*game.Actor)
+
+	hud.mgr.AddComponent(e, &actor.BigIcon)
+
 	hud.mgr.AddComponent(e, &game.Scale{
 		X: hud.scale,
 		Y: hud.scale,
@@ -416,6 +413,7 @@ func (hud *HUD) createTurnQueue(parent ecs.Entity) {
 		remaining    int
 		textureY     int
 		current, max int
+		icon         *game.Sprite
 	}
 
 	var q []v
@@ -425,18 +423,12 @@ func (hud *HUD) createTurnQueue(parent ecs.Entity) {
 		if stats.CurrentPreparation == 0 {
 			continue
 		}
-		textureY := 0
-		if actor.Size == game.MEDIUM {
-			textureY = 52
-		} else if actor.Size == game.LARGE {
-			textureY = 104
-		}
 		q = append(q, v{
 			e:         e,
 			remaining: actor.PreparationThreshold - stats.CurrentPreparation,
-			textureY:  textureY,
 			current:   stats.CurrentPreparation,
 			max:       actor.PreparationThreshold,
+			icon:      &actor.SmallIcon,
 		})
 	}
 	sort.Slice(q, func(i, j int) bool {
@@ -446,18 +438,12 @@ func (hud *HUD) createTurnQueue(parent ecs.Entity) {
 	x, y := 10, 10+13
 	stride := 42
 	for i, v := range q {
-		// actor's small icon
+		// actor's portrait icon
 		child := hud.mgr.NewEntity()
 		hud.mgr.AddComponent(child, &ecs.Parent{
 			Value: e,
 		})
-		hud.mgr.AddComponent(child, &game.Sprite{
-			Texture: "hud.png",
-			X:       v.textureY,
-			Y:       76,
-			W:       26,
-			H:       26,
-		})
+		hud.mgr.AddComponent(child, v.icon)
 		hud.mgr.AddComponent(child, &game.Position{
 			Center: game.Center{
 				X: float64(13+x+i*stride) * hud.scale,

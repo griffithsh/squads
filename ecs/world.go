@@ -45,6 +45,15 @@ func (mgr *World) Get(types []string) []Entity {
 	return result
 }
 
+// Must returns the Entity when ok is true, otherwise it will panic.
+func Must(e Entity, ok bool) Entity {
+	if !ok {
+		// FIXME: Better message.
+		panic("ecs.Must not ok")
+	}
+	return e
+}
+
 // Single Entity that has all Components specified by types. Returns the Entity
 // and a boolean indicating whether there was exactly one Entity that satisfies
 // all types. When the second return value is false, the Entity returned is not

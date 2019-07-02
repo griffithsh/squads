@@ -2,10 +2,11 @@ package game
 
 //go:generate stringer -type=ActorSize
 
-// ActorSize enumerates directions.
+// ActorSize enumerates Sizes for Actors.
 type ActorSize int
 
-// ActorSize represent the 6 directions that a Mover can face.
+// ActorSize represents the sizes that an Actor can be. Small Actrors take only
+// one Hex, Medium, take 4, and Large take 7.
 const (
 	SMALL ActorSize = iota
 	MEDIUM
@@ -14,8 +15,14 @@ const (
 
 // Actor is a component that can be commanded to do things. Or maybe it's just an animator?
 type Actor struct {
-	Name string
+	// Things that don't affect gameplay.
+	Name      string
+	SmallIcon Sprite // (26x26)
+	BigIcon   Sprite // (52x52)
+
+	// Intrinsic to the Actor
 	Size ActorSize
+	// Sex
 
 	PreparationThreshold int // Preparation required to take a turn
 	ActionPoints         int
