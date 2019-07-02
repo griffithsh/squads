@@ -444,6 +444,7 @@ func (hud *HUD) createTurnQueue(parent ecs.Entity) {
 	})
 
 	x, y := 10, 10+13
+	stride := 42
 	for i, v := range q {
 		// actor's small icon
 		child := hud.mgr.NewEntity()
@@ -459,7 +460,7 @@ func (hud *HUD) createTurnQueue(parent ecs.Entity) {
 		})
 		hud.mgr.AddComponent(child, &game.Position{
 			Center: game.Center{
-				X: float64(13+x+i*30) * hud.scale,
+				X: float64(13+x+i*stride) * hud.scale,
 				Y: float64(y) * hud.scale,
 			},
 			Layer:    hud.layer,
@@ -485,7 +486,7 @@ func (hud *HUD) createTurnQueue(parent ecs.Entity) {
 		})
 		hud.mgr.AddComponent(child, &game.Position{
 			Center: game.Center{
-				X: (13*prepPerc + float64(x+i*30)) * hud.scale,
+				X: (13*prepPerc + float64(x+i*stride)) * hud.scale,
 				Y: float64(y+13+2) * hud.scale,
 			},
 			Layer:    hud.layer + 1,
@@ -495,6 +496,29 @@ func (hud *HUD) createTurnQueue(parent ecs.Entity) {
 			X: hud.scale * 26 * prepPerc,
 			Y: hud.scale * 4,
 		})
+
+		// current/max prep text
+		child = hud.mgr.NewEntity()
+		hud.mgr.AddComponent(child, &ecs.Parent{
+			Value: e,
+		})
+		hud.mgr.AddComponent(child, &game.Font{
+			Text: fmt.Sprintf("%d/%d", v.current, v.max),
+			Size: "small",
+		})
+		hud.mgr.AddComponent(child, &game.Position{
+			Center: game.Center{
+				X: float64(x+i*stride) * hud.scale,
+				Y: float64(y+13+2+4+2) * hud.scale,
+			},
+			Layer:    hud.layer,
+			Absolute: true,
+		})
+		hud.mgr.AddComponent(child, &game.Scale{
+			X: hud.scale,
+			Y: hud.scale,
+		})
+
 	}
 }
 
