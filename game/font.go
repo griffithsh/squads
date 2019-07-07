@@ -46,6 +46,9 @@ func (*FontSystem) hash(f *Font, p *Position) []byte {
 	h := fnv.New128()
 
 	h.Write([]byte(f.Text))
+	h.Write([]byte(f.Size))
+	// TODO: Align
+	// TODO: Width
 
 	fby := func(float float64) []byte {
 		bits := math.Float64bits(float)
@@ -74,9 +77,7 @@ func (*FontSystem) hash(f *Font, p *Position) []byte {
 	}
 	h.Write(bby(p.Absolute))
 
-	// TODO: Scale
-
-	// TODO: Color
+	// TODO: Include values from a Color Component when implemented
 
 	sum := h.Sum([]byte{})
 	return sum
