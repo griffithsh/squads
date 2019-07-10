@@ -605,9 +605,12 @@ func (cm *Manager) addTrees() {
 	M, N := cm.field.Dimensions()
 	for n := 0; n < N; n++ {
 		for m := 0; m < M; m++ {
+			if m == 4 && n == 14 {
+				continue
+			}
 			i := m + n*M
 			h := cm.field.Get(m, n)
-			if i == 1 || i%17 == 1 || i%13 == 1 {
+			if i%17 == 1 || i%23 == 1 {
 				e := cm.mgr.NewEntity()
 				cm.mgr.AddComponent(e, &game.Sprite{
 					Texture: "trees.png",
