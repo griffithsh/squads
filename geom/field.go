@@ -328,6 +328,17 @@ func (f *Field) calcHex7() {
 	}
 }
 
+// Hexes generates a slice of the Hexes of the Field.
+func (f *Field) Hexes() []*Hex {
+	result := make([]*Hex, len(f.hexes))
+	i := 0
+	for _, v := range f.hexes {
+		result[i] = v
+		i++
+	}
+	return result
+}
+
 // Width of the Field in pixels.
 func (f *Field) Width() float64 {
 	return float64(f.stride * xStride)

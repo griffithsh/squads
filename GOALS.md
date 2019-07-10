@@ -13,7 +13,7 @@
 - [x] HUD shows updated information about Action Points remaining for the current actor.
 - [x] HUD shows a skills section
 - [x] HUD shows updated information about turn order of the actors
-- [ ] A way to generate starting positions for every actor
+- [x] A way to generate starting positions for every actor
 - [ ] Medium and Large Actor art
 - [ ] Facing
 - [ ] Animations

@@ -1,6 +1,9 @@
 package combat
 
 import (
+	"math"
+	"math/rand"
+	"sort"
 	"time"
 
 	"github.com/griffithsh/squads/ecs"
@@ -100,11 +103,175 @@ func (cm *Manager) Begin() {
 	cm.addGrass()
 	cm.addTrees()
 
-	// Upgrade all actors with components for visibility.
+	// TODO:
+	// There is some entity which stores info about a "level", and produces artifacts that can be used by the combat Manager.
+	// It should produce the shape of the level, and the terrain of each hex (grass, water, blocked by tree etc).
+	// It should also produce starting positions for teams...
+	// Some other entity should produce an opponent team for the player's squad to fight _on_ this level.
+
+	// semiSort provides the list of Hexes in the field roughly sorted by their
+	// distance from m,n. It intends to provide randomish starting locations.
+	semiSort := func(m, n int, f *geom.Field) []*geom.Hex {
+		type s struct {
+			distance float64
+			h        *geom.Hex
+		}
+		start := geom.Hex{M: m, N: n}
+		distances := make([]s, len(f.Hexes()))
+
+		for i, h := range f.Hexes() {
+			distances[i] = s{math.Pow(math.Abs(h.X()-start.X()), 2) + math.Pow(math.Abs(h.Y()-start.Y()), 2), h}
+		}
+		sort.Slice(distances, func(i, j int) bool {
+			return distances[i].distance < distances[j].distance
+		})
+
+		// bucket the hexes into small groups, and shuffle the hexes within
+		// each group. This is going to keep the nearest together, but still
+		// not always pick the same places every time.
+		bucket := 25
+		gi := 0 // global index
+		for {
+			rand.Shuffle(bucket, func(i, j int) {
+				distances[i+gi], distances[j+gi] = distances[j+gi], distances[i+gi]
+			})
+			gi += bucket
+			if gi+bucket >= len(distances) {
+				break
+			}
+		}
+
+		result := make([]*geom.Hex, len(distances))
+		for i := range distances {
+			result[i] = distances[i].h
+		}
+		return result
+	}
+
+	// With two starting locations: (6,18 and 2,8).
+	start1 := semiSort(6, 18, cm.field)
+	start2 := semiSort(2, 8, cm.field)
+
+	// Then each team takes a turn placing an Actor from largest to smallest,
+	// working through the semi-shuffled list of results.
+
+	// isBlocked determines if an Actor with an ActorSize of sz can be placed at m,n.
+	isBlocked := func(m, n int, sz game.ActorSize, mgr *ecs.World) bool {
+		// blockages is a set of Keys that are taken by other things
+		blockages := map[geom.Key]struct{}{}
+		for _, e := range mgr.Get([]string{"Obstacle"}) {
+			o := mgr.Component(e, "Obstacle").(*game.Obstacle)
+
+			if o.ObstacleType == game.MediumActor {
+				// Hex4 logic
+				for _, h := range cm.field.Get4(o.M, o.N).Hexes() {
+					blockages[geom.Key{M: h.M, N: h.N}] = struct{}{}
+				}
+			} else if o.ObstacleType == game.LargeActor {
+				// Hex7 logic
+				for _, h := range cm.field.Get7(o.M, o.N).Hexes() {
+					blockages[geom.Key{M: h.M, N: h.N}] = struct{}{}
+				}
+			} else {
+				// NB assuming everything is an obstacle, even ... I don't know, shallow water? Bushes?
+				blockages[geom.Key{M: o.M, N: o.N}] = struct{}{}
+			}
+		}
+
+		// occupy is the list of Hexes an Actor with sz and m,n will occupy.
+		occupy := []*geom.Hex{cm.field.Get(m, n)} // Default is SMALL
+		if sz == game.MEDIUM {
+			occupy = cm.field.Get4(m, n).Hexes()
+		} else if sz == game.LARGE {
+			occupy = cm.field.Get7(m, n).Hexes()
+		}
+
+		for _, h := range occupy {
+			if _, blocked := blockages[geom.Key{M: h.M, N: h.N}]; blocked {
+				return true
+			}
+		}
+
+		return false
+	}
+
+	// In game, something like this process should occur when additional Actors are summoned.
+	// Necromancers summon Skeletons (this could be ground targeted with a range)
+	// Gemini auto-summon their twin at the start of combat (this sounds more like what's happening here)
+	// Druids summon beasts (ground targeted again)
+
+	// Upgrade all Actors with components for combat.
 	entities := cm.mgr.Get([]string{"Actor"})
 	for _, e := range entities {
 		actor := cm.mgr.Component(e, "Actor").(*game.Actor)
 
+		// Pick positions for the Actors
+		if actor.Size == game.SMALL {
+			for _, h := range start1 {
+				if isBlocked(h.M, h.N, actor.Size, cm.mgr) {
+					continue
+				}
+				start := cm.field.Get(h.M, h.N)
+				cm.mgr.AddComponent(e, &game.Position{
+					Center: game.Center{
+						X: start.X(),
+						Y: start.Y(),
+					},
+					Layer: 10,
+				})
+
+				cm.mgr.AddComponent(e, &game.Obstacle{
+					M:            h.M,
+					N:            h.N,
+					ObstacleType: game.SmallActor,
+				})
+				break
+			}
+		} else if actor.Size == game.MEDIUM {
+			for _, h := range start2 {
+				if isBlocked(h.M, h.N, actor.Size, cm.mgr) {
+					continue
+				}
+				start := cm.field.Get4(h.M, h.N)
+				cm.mgr.AddComponent(e, &game.Position{
+					Center: game.Center{
+						X: start.X(),
+						Y: start.Y(),
+					},
+					Layer: 10,
+				})
+
+				cm.mgr.AddComponent(e, &game.Obstacle{
+					M:            h.M,
+					N:            h.N,
+					ObstacleType: game.MediumActor,
+				})
+				break
+			}
+		} else if actor.Size == game.LARGE {
+			for _, h := range start2 {
+				if isBlocked(h.M, h.N, actor.Size, cm.mgr) {
+					continue
+				}
+				start := cm.field.Get7(h.M, h.N)
+				cm.mgr.AddComponent(e, &game.Position{
+					Center: game.Center{
+						X: start.X(),
+						Y: start.Y(),
+					},
+					Layer: 10,
+				})
+
+				cm.mgr.AddComponent(e, &game.Obstacle{
+					M:            h.M,
+					N:            h.N,
+					ObstacleType: game.LargeActor,
+				})
+				break
+			}
+		}
+
+		// Add Sprites for Actors.
 		if actor.Size == game.SMALL {
 			cm.mgr.AddComponent(e, &game.Sprite{
 				Texture: "figure.png",
@@ -115,21 +282,6 @@ func (cm *Manager) Begin() {
 			})
 			cm.mgr.AddComponent(e, &game.SpriteOffset{
 				Y: -16,
-			})
-
-			start := cm.field.Get(0, 0)
-			cm.mgr.AddComponent(e, &game.Position{
-				Center: game.Center{
-					X: start.X(),
-					Y: start.Y(),
-				},
-				Layer: 10,
-			})
-
-			cm.mgr.AddComponent(e, &game.Obstacle{
-				M:            0,
-				N:            0,
-				ObstacleType: game.SmallActor,
 			})
 		} else if actor.Size == game.MEDIUM {
 			cm.mgr.AddComponent(e, &game.Sprite{
@@ -142,21 +294,6 @@ func (cm *Manager) Begin() {
 			cm.mgr.AddComponent(e, &game.SpriteOffset{
 				Y: -4,
 			})
-
-			start := cm.field.Get4(0, 7)
-			cm.mgr.AddComponent(e, &game.Position{
-				Center: game.Center{
-					X: start.X(),
-					Y: start.Y(),
-				},
-				Layer: 10,
-			})
-
-			cm.mgr.AddComponent(e, &game.Obstacle{
-				M:            0,
-				N:            7,
-				ObstacleType: game.MediumActor,
-			})
 		} else if actor.Size == game.LARGE {
 			cm.mgr.AddComponent(e, &game.Sprite{
 				Texture: "figure.png",
@@ -168,28 +305,13 @@ func (cm *Manager) Begin() {
 			cm.mgr.AddComponent(e, &game.SpriteOffset{
 				Y: -32,
 			})
+			// FIXME: Add real art for Large Actor, not scaled.
 			cm.mgr.AddComponent(e, &game.Scale{X: 2, Y: 2})
-
-			start := cm.field.Get7(3, 8)
-			cm.mgr.AddComponent(e, &game.Position{
-				Center: game.Center{
-					X: start.X(),
-					Y: start.Y(),
-				},
-				Layer: 10,
-			})
-
-			cm.mgr.AddComponent(e, &game.Obstacle{
-				M:            3,
-				N:            8,
-				ObstacleType: game.LargeActor,
-			})
 		}
 
-		a := cm.mgr.Component(e, "Actor").(*game.Actor)
 		cm.mgr.AddComponent(e, &game.CombatStats{
 			CurrentPreparation: 0,
-			ActionPoints:       a.ActionPoints,
+			ActionPoints:       actor.ActionPoints,
 		})
 		cm.mgr.AddComponent(e, &game.Facer{Face: geom.S})
 	}
