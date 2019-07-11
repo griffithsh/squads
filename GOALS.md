@@ -14,9 +14,10 @@
 - [x] HUD shows a skills section
 - [x] HUD shows updated information about turn order of the actors
 - [x] A way to generate starting positions for every actor
-- [ ] Medium and Large Actor art
-- [ ] Facing
+- [x] Actors have a team
 - [ ] Animations
+- [ ] Medium and Large Actor art
+- [ ] Facing (for backstab damage)
 - [ ] Profession and Sex for every Actor and a mapping between those and a set of animations
 - [ ] Intent Queue(?) for AI Actors
 

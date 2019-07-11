@@ -148,9 +148,15 @@ func (cm *Manager) Begin() {
 		return result
 	}
 
-	// With two starting locations: (6,18 and 2,8).
-	start1 := semiSort(6, 18, cm.field)
-	start2 := semiSort(2, 8, cm.field)
+	// List of start locations.
+	levelStarts := []geom.Key{
+		{M: 6, N: 18},
+		{M: 2, N: 8},
+	}
+	rand.Shuffle(len(levelStarts), func(i, j int) {
+		levelStarts[i], levelStarts[j] = levelStarts[j], levelStarts[i]
+	})
+	usedStarts := map[int64][]*geom.Hex{}
 
 	// Then each team takes a turn placing an Actor from largest to smallest,
 	// working through the semi-shuffled list of results.
@@ -181,12 +187,23 @@ func (cm *Manager) Begin() {
 		// occupy is the list of Hexes an Actor with sz and m,n will occupy.
 		occupy := []*geom.Hex{cm.field.Get(m, n)} // Default is SMALL
 		if sz == game.MEDIUM {
-			occupy = cm.field.Get4(m, n).Hexes()
+			h := cm.field.Get4(m, n)
+			if h == nil {
+				return true
+			}
+			occupy = h.Hexes()
 		} else if sz == game.LARGE {
-			occupy = cm.field.Get7(m, n).Hexes()
+			h := cm.field.Get7(m, n)
+			if h == nil {
+				return true
+			}
+			occupy = h.Hexes()
 		}
 
 		for _, h := range occupy {
+			if h == nil {
+				return true
+			}
 			if _, blocked := blockages[geom.Key{M: h.M, N: h.N}]; blocked {
 				return true
 			}
@@ -204,13 +221,21 @@ func (cm *Manager) Begin() {
 	entities := cm.mgr.Get([]string{"Actor"})
 	for _, e := range entities {
 		actor := cm.mgr.Component(e, "Actor").(*game.Actor)
+		team := cm.mgr.Component(e, "Team").(*Team)
 
-		// Pick positions for the Actors
-		if actor.Size == game.SMALL {
-			for _, h := range start1 {
-				if isBlocked(h.M, h.N, actor.Size, cm.mgr) {
-					continue
-				}
+		if _, ok := usedStarts[team.ID]; !ok {
+			s := levelStarts[len(usedStarts)]
+			usedStarts[team.ID] = semiSort(s.M, s.N, cm.field)
+		}
+		nearbys := usedStarts[team.ID]
+
+		// Pick positions for the Actors.
+		for _, h := range nearbys {
+			if isBlocked(h.M, h.N, actor.Size, cm.mgr) {
+				continue
+			}
+			switch actor.Size {
+			case game.SMALL:
 				start := cm.field.Get(h.M, h.N)
 				cm.mgr.AddComponent(e, &game.Position{
 					Center: game.Center{
@@ -225,13 +250,7 @@ func (cm *Manager) Begin() {
 					N:            h.N,
 					ObstacleType: game.SmallActor,
 				})
-				break
-			}
-		} else if actor.Size == game.MEDIUM {
-			for _, h := range start2 {
-				if isBlocked(h.M, h.N, actor.Size, cm.mgr) {
-					continue
-				}
+			case game.MEDIUM:
 				start := cm.field.Get4(h.M, h.N)
 				cm.mgr.AddComponent(e, &game.Position{
 					Center: game.Center{
@@ -246,13 +265,7 @@ func (cm *Manager) Begin() {
 					N:            h.N,
 					ObstacleType: game.MediumActor,
 				})
-				break
-			}
-		} else if actor.Size == game.LARGE {
-			for _, h := range start2 {
-				if isBlocked(h.M, h.N, actor.Size, cm.mgr) {
-					continue
-				}
+			case game.LARGE:
 				start := cm.field.Get7(h.M, h.N)
 				cm.mgr.AddComponent(e, &game.Position{
 					Center: game.Center{
@@ -267,8 +280,8 @@ func (cm *Manager) Begin() {
 					N:            h.N,
 					ObstacleType: game.LargeActor,
 				})
-				break
 			}
+			break
 		}
 
 		// Add Sprites for Actors.

@@ -118,9 +118,11 @@ func setup(w, h int) (*system, error) {
 		fonts:     game.NewFontSystem(mgr),
 		hierarchy: ecs.NewParentSystem(mgr),
 	}
+	t := combat.NewTeam()
 
 	// Create some Actors that are controlled by mouse clicks
-	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
+	e := mgr.NewEntity()
+	mgr.AddComponent(e, &game.Actor{
 		Name:                 "Samithee",
 		Size:                 game.SMALL,
 		PreparationThreshold: 701,
@@ -140,7 +142,12 @@ func setup(w, h int) (*system, error) {
 			H:       52,
 		},
 	})
-	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
+	mgr.AddComponent(e, t)
+
+	e = mgr.NewEntity()
+	t = combat.NewTeam()
+
+	mgr.AddComponent(e, &game.Actor{
 		Name:                 "Wolf",
 		Size:                 game.MEDIUM,
 		PreparationThreshold: 1103,
@@ -160,7 +167,10 @@ func setup(w, h int) (*system, error) {
 			H:       52,
 		},
 	})
-	mgr.AddComponent(mgr.NewEntity(), &game.Actor{
+	mgr.AddComponent(e, t)
+
+	e = mgr.NewEntity()
+	mgr.AddComponent(e, &game.Actor{
 		Name:                 "Giant",
 		Size:                 game.LARGE,
 		PreparationThreshold: 1301,
@@ -180,6 +190,7 @@ func setup(w, h int) (*system, error) {
 			H:       52,
 		},
 	})
+	mgr.AddComponent(e, t)
 
 	// Start combat!
 	s.combat.Begin()
