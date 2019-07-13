@@ -145,6 +145,29 @@ func setup(w, h int) (*system, error) {
 	mgr.AddComponent(e, t)
 
 	e = mgr.NewEntity()
+	mgr.AddComponent(e, &game.Actor{
+		Name:                 "Timjamen",
+		Size:                 game.SMALL,
+		PreparationThreshold: 699,
+		ActionPoints:         100,
+		SmallIcon: game.Sprite{
+			Texture: "portraits.png",
+			X:       178,
+			Y:       230,
+			W:       26,
+			H:       26,
+		},
+		BigIcon: game.Sprite{
+			Texture: "portraits.png",
+			X:       204,
+			Y:       204,
+			W:       52,
+			H:       52,
+		},
+	})
+	mgr.AddComponent(e, t)
+
+	e = mgr.NewEntity()
 	t = combat.NewTeam()
 
 	mgr.AddComponent(e, &game.Actor{
