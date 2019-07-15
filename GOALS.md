@@ -18,8 +18,8 @@
 - [ ] Animations
   - [x] Frame/Sprite Animations
   - [ ] TranslationAnimations
-    - [ ] Merge SpriteOffset into Sprite
-    - [ ] Add RenderOffset to replace it
+    - [x] Merge SpriteOffset into Sprite
+    - [x] Add RenderOffset to replace it
     - [ ] Bounce Animation - makes the entity float up and down (for a floating cursor?)
     - [ ] Shake animation - makes the entity shake left and right (like for taking hits?)
 - [ ] Medium and Large Actor art

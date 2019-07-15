@@ -292,9 +292,7 @@ func (cm *Manager) Begin() {
 				Y:       0,
 				W:       24,
 				H:       48,
-			})
-			cm.mgr.AddComponent(e, &game.SpriteOffset{
-				Y: -16,
+				OffsetY: -16,
 			})
 			fa := game.FrameAnimation{
 				Frames: []game.Sprite{
@@ -304,6 +302,7 @@ func (cm *Manager) Begin() {
 						Y:       0,
 						W:       24,
 						H:       48,
+						OffsetY: -16,
 					},
 					game.Sprite{
 						Texture: "figure.png",
@@ -311,6 +310,7 @@ func (cm *Manager) Begin() {
 						Y:       0,
 						W:       24,
 						H:       48,
+						OffsetY: -16,
 					},
 					game.Sprite{
 						Texture: "figure.png",
@@ -318,6 +318,7 @@ func (cm *Manager) Begin() {
 						Y:       0,
 						W:       24,
 						H:       48,
+						OffsetY: -16,
 					},
 				},
 				Timings: []time.Duration{1500 * time.Millisecond, 300 * time.Millisecond, 300 * time.Millisecond},
@@ -330,9 +331,7 @@ func (cm *Manager) Begin() {
 				Y:       0,
 				W:       58,
 				H:       48,
-			})
-			cm.mgr.AddComponent(e, &game.SpriteOffset{
-				Y: -4,
+				OffsetY: -4,
 			})
 		} else if actor.Size == game.LARGE {
 			cm.mgr.AddComponent(e, &game.Sprite{
@@ -341,9 +340,7 @@ func (cm *Manager) Begin() {
 				Y:       0,
 				W:       24,
 				H:       48,
-			})
-			cm.mgr.AddComponent(e, &game.SpriteOffset{
-				Y: -32,
+				OffsetY: -32,
 			})
 			// FIXME: Add real art for Large Actor, not scaled.
 			cm.mgr.AddComponent(e, &game.Scale{X: 2, Y: 2})
@@ -365,7 +362,7 @@ func (cm *Manager) Begin() {
 func (cm *Manager) End() {
 	removals := []string{
 		"Sprite",
-		"SpriteOffset",
+		"RenderOffset",
 		"Scale",
 		"Position",
 		"Obstacle",
@@ -658,9 +655,7 @@ func (cm *Manager) addTrees() {
 					Y:       0,
 					W:       24,
 					H:       48,
-				})
-				cm.mgr.AddComponent(e, &game.SpriteOffset{
-					Y: -16,
+					OffsetY: -16,
 				})
 				cm.mgr.AddComponent(e, &game.Position{
 					Center: game.Center{

@@ -27,7 +27,7 @@ func NewRenderer() *Renderer {
 type entity struct {
 	s      *Sprite
 	p      *Position
-	offset *SpriteOffset
+	offset *RenderOffset
 	scale  *Scale
 }
 
@@ -43,7 +43,7 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 			s: mgr.Component(e, "Sprite").(*Sprite),
 			p: mgr.Component(e, "Position").(*Position),
 		}
-		if offset, ok := mgr.Component(e, "SpriteOffset").(*SpriteOffset); ok {
+		if offset, ok := mgr.Component(e, "RenderOffset").(*RenderOffset); ok {
 			entities[i].offset = offset
 		}
 		if scale, ok := mgr.Component(e, "Scale").(*Scale); ok {
@@ -59,6 +59,10 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 
 		iExtent := entities[i].p.Center.Y + float64(entities[i].s.H/2)
 		jExtent := entities[j].p.Center.Y + float64(entities[j].s.H/2)
+
+		iExtent += float64(entities[i].s.OffsetY)
+		jExtent += float64(entities[j].s.OffsetY)
+
 		if entities[i].offset != nil {
 			iExtent += float64(entities[i].offset.Y)
 		}
@@ -125,6 +129,10 @@ func (r *Renderer) Render(screen *ebiten.Image, x, y, zoom, w, h float64, mgr *e
 				wrappedY = wrappedY + h
 			}
 
+			// NB wrapping of position occurs prior to sprite offset.
+			wrappedX += float64(e.s.OffsetX)
+			wrappedY += float64(e.s.OffsetY)
+
 			// Translate for the location of the Entity
 			op.GeoM.Translate(wrappedX, wrappedY)
 
@@ -149,7 +157,8 @@ func (r *Renderer) Render(screen *ebiten.Image, x, y, zoom, w, h float64, mgr *e
 			// Translate for the location of the Entity
 			op.GeoM.Translate(e.p.Center.X, e.p.Center.Y)
 
-			// Some sprites may need to be drawn with an offset.
+			// Some sprites may need to be rendered with an offset.
+			op.GeoM.Translate(float64(e.s.OffsetX), float64(e.s.OffsetY))
 			if e.offset != nil {
 				op.GeoM.Translate(float64(e.offset.X), float64(e.offset.Y))
 			}
