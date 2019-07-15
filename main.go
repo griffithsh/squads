@@ -20,6 +20,7 @@ import (
 type system struct {
 	bus          *event.Bus
 	render       *game.Renderer
+	anim         *game.AnimationSystem
 	fonts        *game.FontSystem
 	hierarchy    *ecs.ParentSystem
 	combat       *combat.Manager
@@ -110,6 +111,7 @@ func setup(w, h int) (*system, error) {
 	s := system{
 		bus:    bus,
 		render: game.NewRenderer(),
+		anim:   &game.AnimationSystem{},
 		combat: combat.NewManager(mgr, camera, bus),
 
 		mgr:    mgr,
@@ -282,6 +284,7 @@ func (s *system) run(screen *ebiten.Image) error {
 	s.combat.Run(elapsed)
 	s.fonts.Update()
 	s.hierarchy.Update()
+	s.anim.Update(s.mgr, elapsed)
 
 	w, h := float64(screen.Bounds().Max.X-screen.Bounds().Min.X), float64(screen.Bounds().Max.Y-screen.Bounds().Min.Y)
 

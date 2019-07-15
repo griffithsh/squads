@@ -296,6 +296,33 @@ func (cm *Manager) Begin() {
 			cm.mgr.AddComponent(e, &game.SpriteOffset{
 				Y: -16,
 			})
+			fa := game.FrameAnimation{
+				Frames: []game.Sprite{
+					game.Sprite{
+						Texture: "figure.png",
+						X:       0,
+						Y:       0,
+						W:       24,
+						H:       48,
+					},
+					game.Sprite{
+						Texture: "figure.png",
+						X:       48,
+						Y:       0,
+						W:       24,
+						H:       48,
+					},
+					game.Sprite{
+						Texture: "figure.png",
+						X:       24,
+						Y:       0,
+						W:       24,
+						H:       48,
+					},
+				},
+				Timings: []time.Duration{1500 * time.Millisecond, 300 * time.Millisecond, 300 * time.Millisecond},
+			}
+			cm.mgr.AddComponent(e, fa.Randomise())
 		} else if actor.Size == game.MEDIUM {
 			cm.mgr.AddComponent(e, &game.Sprite{
 				Texture: "wolf.png",
