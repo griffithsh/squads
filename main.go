@@ -218,7 +218,7 @@ func setup(w, h int) (*system, error) {
 	mgr.AddComponent(e, t)
 
 	// Start combat!
-	s.combat.Begin()
+	s.combat.Begin( /* a thing that has enough information to construct a Field and the enemies you'll face in the combat */ )
 
 	last = time.Now()
 

@@ -360,6 +360,11 @@ func (cm *Manager) Begin() {
 // End should be called at the resolution of a combat encounter. It removes
 // combat-specific Components.
 func (cm *Manager) End() {
+	// TODO: When there are summoned units, then in Manager.End(), we will need
+	// to remove them. Potentialy a new Component called "Impermanent", or
+	// "Summoned" could be added to these, and we would need to Destroy these
+	// Entities before removing combat-only Components from the other Actors.
+
 	removals := []string{
 		"Sprite",
 		"RenderOffset",

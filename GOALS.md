@@ -35,8 +35,14 @@
 
 ## Scratch pad & ideas
 
+### Intents?
+
 I think there is a concept like an _intent_ or a command. This concept would capture the idea of a an Actor intending to "retreat from danger" or "approach the nearest opponent" or more concrete things like "move to M,N". These intent would also be things like "Use skill X", or "Use skill Y on nearest ally".
 
 Intents would be translated to Actions like "move to the hex to the SW, then SW, then SW, then S" and "use skill Y on M,N".
 
 I guess the line is that intents can be non-specific, Actions must be concrete.
+
+### Ownership versus effect
+
+In an Entity Component System, is there some way of talking about the ownership of a thing versus the application of a thing? One Actor (a paladin?) might have an aura that affects allies to give them additional action points. The paladin owns the aura; the aura's lifecycle is tied to the paladin. But, the allies are affected by the aura. This seems like a separation between affect? and ownership.
