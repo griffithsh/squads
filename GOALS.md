@@ -15,20 +15,23 @@
 - [x] HUD shows updated information about turn order of the actors
 - [x] A way to generate starting positions for every actor
 - [x] Actors have a team
-- [ ] Animations
+- [x] Animations scaffolding
   - [x] Frame/Sprite Animations
-  - [ ] TranslationAnimations
+  - [x] TranslationAnimations
     - [x] Merge SpriteOffset into Sprite
     - [x] Add RenderOffset to replace it
-    - [ ] Bounce Animation - makes the entity float up and down (for a floating cursor?)
-    - [ ] Shake animation - makes the entity shake left and right (like for taking hits?)
+    - [x] Floating Animation - makes the entity hover up and down (for a floating cursor?)
 - [ ] Medium and Large Actor art
 - [ ] Facing (for backstab damage)
 - [ ] Profession and Sex for every Actor and a mapping between those and a set of animations
+- [ ] Animations at a game-concept level
 - [ ] Add Move and cancel buttons to go in and out of move mode
 - [ ] Intent Queue(?) for AI Actors
 
 ## MAYDO
+- [ ] Other Animation types
+  - [ ] Jump Animation - makes the entity go up then down, then auto-ends
+  - [ ] Shake animation - makes the entity shake left and right (like for taking hits?)
 
 ## Scratch pad & ideas
 

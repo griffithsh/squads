@@ -56,6 +56,27 @@ func (*FrameAnimation) Type() string {
 	return "FrameAnimation"
 }
 
+// HoverAnimation makes the entity float up and down.
+type HoverAnimation struct {
+	YVelocity  float64
+	YTranslate float64
+	Force      float64
+}
+
+// NewHoverAnimation creates a new HoverAnimation.
+func NewHoverAnimation() *HoverAnimation {
+	return &HoverAnimation{
+		Force:      92.5,
+		YTranslate: -5,
+		YVelocity:  0.0,
+	}
+}
+
+// Type of this Component.
+func (*HoverAnimation) Type() string {
+	return "HoverAnimation"
+}
+
 // AnimationSystem animates the visual Components of Entities. It's not
 // responsible for translating or mapping game concepts like "casting a spell"
 // to the assignment of appropriate animation Components for that Entity.
@@ -77,5 +98,21 @@ func (as *AnimationSystem) Update(mgr *ecs.World, elapsed time.Duration) {
 		mgr.AddComponent(e, &anim.Frames[i])
 	}
 
-	// TODO: for each TranslationAnimation
+	for _, e := range mgr.Get([]string{"HoverAnimation"}) {
+		anim := mgr.Component(e, "HoverAnimation").(*HoverAnimation)
+
+		if anim.YTranslate > 0 {
+			anim.YVelocity -= anim.Force * elapsed.Seconds()
+		} else {
+			anim.YVelocity += anim.Force * elapsed.Seconds()
+		}
+
+		// Apply velocity to offset.
+		anim.YTranslate += anim.YVelocity * elapsed.Seconds()
+
+		// Save offset.
+		mgr.AddComponent(e, &RenderOffset{
+			Y: int(anim.YTranslate),
+		})
+	}
 }

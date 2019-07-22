@@ -16,6 +16,7 @@ HUD element hierarchy design:
 TimePassingIcon
 CombatHUD
 	CurrentActor
+		Hover-er
 		Portrait
 		Name
 		Health
@@ -124,6 +125,29 @@ func (hud *HUD) create() {
 
 	hud.createCurrentActor(e)
 	hud.createTurnQueue(e)
+}
+
+func (hud *HUD) createHoverer(parent ecs.Entity) {
+	e := hud.mgr.NewEntity()
+	hud.mgr.AddComponent(e, &ecs.Parent{
+		Value: parent,
+	})
+
+	pos := hud.mgr.Component(ecs.Must(hud.mgr.Single([]string{"Actor", "TurnToken"})), "Position").(*game.Position)
+
+	hud.mgr.AddComponent(e, &game.Sprite{
+		Texture: "hud.png",
+		X:       32,
+		Y:       0,
+		W:       18,
+		H:       5,
+		OffsetY: -32,
+	})
+	hud.mgr.AddComponent(e, &game.Position{
+		Center: pos.Center,
+		Layer:  hud.layer,
+	})
+	hud.mgr.AddComponent(e, game.NewHoverAnimation())
 }
 
 func (hud *HUD) createPortrait(parent ecs.Entity) {
@@ -395,6 +419,7 @@ func (hud *HUD) createCurrentActor(parent ecs.Entity) {
 		Value: parent,
 	})
 
+	hud.createHoverer(e)
 	hud.createPortrait(e)
 	hud.createName(e)
 	hud.createStats(e)
@@ -539,5 +564,4 @@ func (hud *HUD) createTimePassingIcon() {
 		Layer:    hud.layer,
 		Absolute: true,
 	})
-
 }
