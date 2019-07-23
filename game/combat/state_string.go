@@ -9,14 +9,15 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[AwaitingInputState-0]
-	_ = x[ExecutingState-1]
-	_ = x[ThinkingState-2]
-	_ = x[PreparingState-3]
+	_ = x[SelectingTargetState-1]
+	_ = x[ExecutingState-2]
+	_ = x[ThinkingState-3]
+	_ = x[PreparingState-4]
 }
 
-const _State_name = "AwaitingInputStateExecutingStateThinkingStatePreparingState"
+const _State_name = "AwaitingInputStateSelectingTargetStateExecutingStateThinkingStatePreparingState"
 
-var _State_index = [...]uint8{0, 18, 32, 45, 59}
+var _State_index = [...]uint8{0, 18, 38, 52, 65, 79}
 
 func (i State) String() string {
 	if i < 0 || i >= State(len(_State_index)-1) {

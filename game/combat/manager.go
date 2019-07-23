@@ -21,6 +21,8 @@ type State int
 const (
 	// AwaitingInputState is when the combat is waiting for the local, human player to make a move.
 	AwaitingInputState State = iota
+	// SelectingTargetState is when the local player is picking a hex to use a skill on.
+	SelectingTargetState
 	// ExecutingState is when a move or action is being played out by a character.
 	ExecutingState
 	// ThinkingState is when an AI-controller player is waiting to get command.
@@ -73,6 +75,8 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 
 	cm.bus.Subscribe(game.CombatActorMovementConcluded{}.Type(), cm.handleMovementConcluded)
 	cm.bus.Subscribe(game.EndTurnRequested{}.Type(), cm.handleEndTurnRequested)
+	cm.bus.Subscribe(game.MoveModeRequested{}.Type(), cm.handleMoveModeRequested)
+	cm.bus.Subscribe(game.CancelSkillRequested{}.Type(), cm.handleCancelSkillRequested)
 
 	return &cm
 }
@@ -496,10 +500,11 @@ func (cm *Manager) checkHUD(x, y int) bool {
 // touch event occurred.
 func (cm *Manager) Interaction(x, y int) {
 	if cm.state == AwaitingInputState {
+		cm.checkHUD(x, y)
+	} else if cm.state == SelectingTargetState {
 		if handled := cm.checkHUD(x, y); handled {
 			return
 		}
-
 		actor := cm.actorAwaitingInput()
 
 		wx, wy := cm.camera.ScreenToWorld(x, y)
@@ -523,7 +528,7 @@ func (cm *Manager) MousePosition(x, y int) {
 	cm.wx = wx
 	cm.wy = wy
 
-	if cm.state == AwaitingInputState {
+	if cm.state == SelectingTargetState {
 		cm.cursors.Clear()
 		e := cm.actorAwaitingInput()
 		if e == 0 {
@@ -602,7 +607,7 @@ func (cm *Manager) handleMovementConcluded(t event.Typer) {
 	cm.MousePosition(cm.x, cm.y)
 }
 
-func (cm *Manager) handleEndTurnRequested(t event.Typer) {
+func (cm *Manager) handleEndTurnRequested(event.Typer) {
 	// Remove TurnToken from all actors.
 	for _, e := range cm.mgr.Get([]string{"Actor", "TurnToken"}) {
 		// Reset to maximum AP.
@@ -615,6 +620,14 @@ func (cm *Manager) handleEndTurnRequested(t event.Typer) {
 	}
 
 	cm.setState(PreparingState)
+}
+
+func (cm *Manager) handleMoveModeRequested(event.Typer) {
+	cm.setState(SelectingTargetState)
+}
+
+func (cm *Manager) handleCancelSkillRequested(event.Typer) {
+	cm.setState(AwaitingInputState)
 }
 
 func (cm *Manager) addGrass() {

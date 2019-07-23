@@ -36,6 +36,7 @@ var (
 	combatHUDTag     = "COMBAT_HUD"
 	timePassingTag   = combatHUDTag + ".TIME_PASSING"
 	currentActorTag  = combatHUDTag + ".CURRENT_ACTOR"
+	hovererTag       = currentActorTag + ".HOVERER"
 	hpLabelTag       = currentActorTag + ".HP"
 	energyLabelTag   = currentActorTag + ".ENERGY"
 	actionLabelTag   = currentActorTag + ".ACTION"
@@ -94,8 +95,8 @@ func (hud *HUD) handleCombatStateTransition(ev event.Typer) {
 
 	// when we are awaiting input, then we should just create the current
 	// actor, because destroy should already have happened.
-	if cst.New == AwaitingInputState {
-		hud.createCurrentActor(hud.mgr.AnyTagged(combatHUDTag))
+	if cst.New == AwaitingInputState || cst.New == SelectingTargetState {
+		hud.createCurrentActor(hud.mgr.AnyTagged(combatHUDTag), cst.New)
 	} else {
 		hud.destroyCurrentActor()
 	}
@@ -123,15 +124,20 @@ func (hud *HUD) create() {
 	e := hud.mgr.NewEntity()
 	hud.mgr.Tag(e, combatHUDTag)
 
-	hud.createCurrentActor(e)
+	hud.createCurrentActor(e, AwaitingInputState)
 	hud.createTurnQueue(e)
 }
 
 func (hud *HUD) createHoverer(parent ecs.Entity) {
+	for _, e := range hud.mgr.Tagged(hovererTag) {
+		hud.mgr.DestroyEntity(e)
+	}
+
 	e := hud.mgr.NewEntity()
 	hud.mgr.AddComponent(e, &ecs.Parent{
 		Value: parent,
 	})
+	hud.mgr.Tag(e, hovererTag)
 
 	pos := hud.mgr.Component(ecs.Must(hud.mgr.Single([]string{"Actor", "TurnToken"})), "Position").(*game.Position)
 
@@ -295,7 +301,7 @@ func (hud *HUD) createSkillsTargetSelectionMode(parent ecs.Entity) {
 
 	hud.mgr.AddComponent(e, &ui.Interactive{
 		Trigger: func() {
-			// hud.bus.Publish(&event.CancelTargetSelection{})
+			hud.bus.Publish(&game.CancelSkillRequested{})
 		},
 	})
 }
@@ -349,11 +355,11 @@ func (hud *HUD) createSkills(parent ecs.Entity) {
 					W:       24,
 					H:       24,
 				}
-				// trigger = ui.Interactive{
-				// 	Trigger: func() {
-				// 		hud.bus.Publish(&event.MoveModeRequested{})
-				// 	},
-				// }
+				trigger = ui.Interactive{
+					Trigger: func() {
+						hud.bus.Publish(&game.MoveModeRequested{})
+					},
+				}
 			} else if x == 0 && y == 1 {
 				// Consumables
 				spr = game.Sprite{
@@ -408,7 +414,7 @@ func (hud *HUD) destroyCurrentActor() {
 	hud.mgr.DestroyEntity(e)
 }
 
-func (hud *HUD) createCurrentActor(parent ecs.Entity) {
+func (hud *HUD) createCurrentActor(parent ecs.Entity, state State) {
 	if _, ok := hud.mgr.Single([]string{"Actor", "TurnToken"}); !ok {
 		return
 	}
@@ -423,7 +429,15 @@ func (hud *HUD) createCurrentActor(parent ecs.Entity) {
 	hud.createPortrait(e)
 	hud.createName(e)
 	hud.createStats(e)
-	hud.createSkills(e)
+
+	for _, e := range hud.mgr.Tagged(skillsTag) {
+		hud.mgr.DestroyEntity(e)
+	}
+	if state == SelectingTargetState {
+		hud.createSkillsTargetSelectionMode(e)
+	} else if state == AwaitingInputState {
+		hud.createSkills(e)
+	}
 }
 
 func (hud *HUD) createTurnQueue(parent ecs.Entity) {

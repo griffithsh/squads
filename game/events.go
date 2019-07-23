@@ -44,6 +44,24 @@ func (EndTurnRequested) Type() event.Type {
 	return "game.EndTurnRequested"
 }
 
+// MoveModeRequested occurs when the player indicates that they wish to move the
+// actor awaiting input.
+type MoveModeRequested struct{}
+
+// Type of the Event.
+func (MoveModeRequested) Type() event.Type {
+	return "game.MoveModeRequested"
+}
+
+// CancelSkillRequested occurs when the player indicates they want to cancel
+// targeting of the skill they selected.
+type CancelSkillRequested struct{}
+
+// Type of the Event.
+func (CancelSkillRequested) Type() event.Type {
+	return "game.CancelSkillRequested"
+}
+
 // CombatActorMovementConcluded occurs when an actor has finished their movement.
 type CombatActorMovementConcluded struct {
 	Entity ecs.Entity

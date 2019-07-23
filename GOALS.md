@@ -25,7 +25,7 @@
 - [ ] Facing (for backstab damage)
 - [ ] Profession and Sex for every Actor and a mapping between those and a set of animations
 - [ ] Animations at a game-concept level
-- [ ] Add Move and cancel buttons to go in and out of move mode
+- [x] Add Move and cancel buttons to go in and out of move mode
 - [ ] Intent Queue(?) for AI Actors
 
 ## MAYDO
