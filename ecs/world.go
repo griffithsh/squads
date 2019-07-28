@@ -160,6 +160,23 @@ func (mgr *World) AnyTagged(tag string) Entity {
 	return 0
 }
 
+// HasTag returns whether an Entity has the passed tag.
+func (mgr *World) HasTag(e Entity, tag string) bool {
+	comp := mgr.Component(e, "Tags")
+	if comp == nil {
+		return false
+	}
+
+	tags := comp.(*Tags)
+
+	for _, t := range *tags {
+		if tag == t {
+			return true
+		}
+	}
+	return false
+}
+
 // Tagged returns all Entities tagged with tag.
 func (mgr *World) Tagged(tag string) []Entity {
 	var result []Entity
@@ -173,4 +190,24 @@ func (mgr *World) Tagged(tag string) []Entity {
 		}
 	}
 	return result
+}
+
+// RemoveTag from the Entity.
+func (mgr *World) RemoveTag(e Entity, tag string) {
+	comp := mgr.Component(e, "Tags")
+	if comp == nil {
+		return
+	}
+	tags := comp.(*Tags)
+	newTags := Tags{}
+	for _, t := range *tags {
+		if tag != t {
+			newTags = append(newTags, t)
+		}
+	}
+	if len(newTags) > 0 {
+		mgr.AddComponent(e, &newTags)
+	} else {
+		mgr.RemoveComponent(e, tags)
+	}
 }
