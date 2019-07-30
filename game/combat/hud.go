@@ -11,6 +11,36 @@ import (
 )
 
 /*
+Problem:
+
+The current architecture is confusing. Should something be created
+versus how it is drawn are mixed together in the current architecture
+
+Proposed Solution:
+
+There are two (pseudo-public) methods to control all UI groups.
+
+ShowX
+HideX
+
+Another method is only called internally - by the Update method.
+
+RepaintX
+
+- Show must add all entities, their tags, and parent relationships and the
+invalidated tag. Because it's adding entities, it needs to ensure that it
+does not add duplicates. It's the only method that should call to
+mgr.NewEntity().
+
+- Hide must call DestroyEntity on all the Entities that compose the group.
+Anything that is added by Show.
+
+- Repaint must add/replace the Position, Sprite, Font etc Components,
+and then remove the invalidated tag.
+
+There is no hierarchy between groups, each set of these functions is an
+island disconnected from the others, and is only responsible for its own
+Entities.
 HUD element hierarchy design:
 
 TimePassingIcon
