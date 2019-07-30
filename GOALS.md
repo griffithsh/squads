@@ -32,6 +32,7 @@
 - [ ] Other Animation types
   - [ ] Jump Animation - makes the entity go up then down, then auto-ends
   - [ ] Shake animation - makes the entity shake left and right (like for taking hits?)
+  - [ ] Float-away animation - (like for damage amount floaters)
 
 ## Scratch pad & ideas
 

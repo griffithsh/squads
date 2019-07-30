@@ -3,6 +3,7 @@ package combat
 import (
 	"fmt"
 	"sort"
+	"time"
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
@@ -11,13 +12,6 @@ import (
 )
 
 /*
-Problem:
-
-The current architecture is confusing. Should something be created
-versus how it is drawn are mixed together in the current architecture
-
-Proposed Solution:
-
 There are two (pseudo-public) methods to control all UI groups.
 
 ShowX
@@ -41,39 +35,39 @@ and then remove the invalidated tag.
 There is no hierarchy between groups, each set of these functions is an
 island disconnected from the others, and is only responsible for its own
 Entities.
-HUD element hierarchy design:
+
+HUD element groups:
 
 TimePassingIcon
-CombatHUD
-	CurrentActor
-		Hover-er
-		Portrait
-		Name
-		Health
-		Mana
-		Action
-		Preparation
-		Skills
-			[]
-				Icon
-	TurnQueue
-		[]
-			Portrait
-			Prep
+CurrentActor
+	Hover-er
+	Portrait
+	Name
+CurrentActorStats
+	Health
+	Energy
+	Action
+	Preparation
+Skills
+	Icon,Interactive
+TurnQueue[]
+	Portrait
+	Prep
 */
 
 var (
-	combatHUDTag     = "COMBAT_HUD"
-	timePassingTag   = combatHUDTag + ".TIME_PASSING"
-	currentActorTag  = combatHUDTag + ".CURRENT_ACTOR"
-	hovererTag       = currentActorTag + ".HOVERER"
-	hpLabelTag       = currentActorTag + ".HP"
-	energyLabelTag   = currentActorTag + ".ENERGY"
-	actionLabelTag   = currentActorTag + ".ACTION"
-	prepLabelTag     = currentActorTag + ".PREPARATION"
-	skillsTag        = currentActorTag + ".SKILLS"
-	turnQueueTag     = combatHUDTag + ".TURN_QUEUE"
-	endTurnButtonTag = combatHUDTag + ".END_TURN_BUTTON"
+	combatHUDTag            = "COMBAT_HUD"
+	timePassingTag          = combatHUDTag + ".TIME_PASSING"
+	currentActorTag         = combatHUDTag + ".CURRENT_ACTOR"
+	currentActorHovererTag  = currentActorTag + ".HOVERER"
+	currentActorPortraitTag = currentActorTag + ".PORTRAIT"
+	currentActorNameTag     = currentActorTag + ".NAME"
+	currentActorStatsTag    = currentActorTag + ".STATS"
+	skillsTag               = currentActorTag + ".SKILLS"
+	turnQueueTag            = combatHUDTag + ".TURN_QUEUE"
+	endTurnButtonTag        = combatHUDTag + ".END_TURN_BUTTON"
+
+	invalidatedTag = combatHUDTag + ".INVALIDATED"
 )
 
 // HUD is a heads up display for the combat game state.
@@ -83,17 +77,19 @@ type HUD struct {
 	scale            float64
 	layer            int
 	centerX, centerY float64 // center of the game's window, or half the width and height.
+	lastCombatState  State
 }
 
 // NewHUD construct a HUD.
 func NewHUD(mgr *ecs.World, bus *event.Bus, screenX int, screenY int) *HUD {
 	hud := HUD{
-		mgr:     mgr,
-		bus:     bus,
-		scale:   2,
-		layer:   100,
-		centerX: float64(screenX) / 2,
-		centerY: float64(screenY) / 2,
+		mgr:             mgr,
+		bus:             bus,
+		scale:           2,
+		layer:           100,
+		centerX:         float64(screenX) / 2,
+		centerY:         float64(screenY) / 2,
+		lastCombatState: AwaitingInputState,
 	}
 
 	bus.Subscribe(game.WindowSizeChanged{}.Type(), hud.handleWindowSizeChanged)
@@ -112,29 +108,36 @@ func (hud *HUD) handleWindowSizeChanged(e event.Typer) {
 		return
 	}
 
-	hud.destroyTimePassingIcon()
-	hud.createTimePassingIcon()
+	hud.showTimePassingIcon()
 }
 
 func (hud *HUD) handleCombatBegan(event.Typer) {
-	hud.create()
+	e := hud.mgr.NewEntity()
+	hud.mgr.Tag(e, combatHUDTag)
+
+	hud.showTurnQueue()
 }
 
 func (hud *HUD) handleCombatStateTransition(ev event.Typer) {
 	cst := ev.(*StateTransition)
+	hud.lastCombatState = cst.New
 
-	// when we are awaiting input, then we should just create the current
-	// actor, because destroy should already have happened.
 	if cst.New == AwaitingInputState || cst.New == SelectingTargetState {
-		hud.createCurrentActor(hud.mgr.AnyTagged(combatHUDTag), cst.New)
+		hud.showSkills()
+		if cst.Old != AwaitingInputState && cst.Old != SelectingTargetState {
+			hud.showCurrentActor()
+			hud.showCurrentActorStats()
+		}
 	} else {
-		hud.destroyCurrentActor()
+		hud.hideSkills()
+		hud.hideCurrentActor()
+		hud.hideCurrentActorStats()
 	}
 
 	if cst.New == PreparingState {
-		hud.createTimePassingIcon()
+		hud.showTimePassingIcon()
 	} else {
-		hud.destroyTimePassingIcon()
+		hud.hideTimePassingIcon()
 	}
 }
 
@@ -143,33 +146,126 @@ func (hud *HUD) handleCombatStatModified(ev event.Typer) {
 
 	switch csm.Stat {
 	case game.PrepStat:
-		hud.destroyTurnQueue()
-		hud.createTurnQueue(hud.mgr.AnyTagged(combatHUDTag))
+		hud.showTurnQueue()
 	}
-
 }
 
-// create entire HUD hierarchy of ui elements.
-func (hud *HUD) create() {
-	e := hud.mgr.NewEntity()
-	hud.mgr.Tag(e, combatHUDTag)
+// Update the HUD. Synchronise the current game state to the Entities that compose it.
+func (hud *HUD) Update(elapsed time.Duration) {
+	var e ecs.Entity
 
-	hud.createCurrentActor(e, AwaitingInputState)
-	hud.createTurnQueue(e)
+	e = hud.mgr.AnyTagged(timePassingTag)
+	if e != 0 && hud.mgr.HasTag(e, invalidatedTag) {
+		hud.repaintTimePassingIcon()
+	}
+	e = hud.mgr.AnyTagged(currentActorTag)
+	if e != 0 && hud.mgr.HasTag(e, invalidatedTag) {
+		hud.repaintCurrentActor()
+	}
+	e = hud.mgr.AnyTagged(currentActorStatsTag)
+	if e != 0 && hud.mgr.HasTag(e, invalidatedTag) {
+		hud.repaintCurrentActorStats()
+	}
+	e = hud.mgr.AnyTagged(skillsTag)
+	if e != 0 && hud.mgr.HasTag(e, invalidatedTag) {
+		hud.repaintSkills()
+	}
+	e = hud.mgr.AnyTagged(turnQueueTag)
+	if e != 0 && hud.mgr.HasTag(e, invalidatedTag) {
+		hud.repaintTurnQueue()
+	}
 }
 
-func (hud *HUD) createHoverer(parent ecs.Entity) {
-	for _, e := range hud.mgr.Tagged(hovererTag) {
-		hud.mgr.DestroyEntity(e)
+func (hud *HUD) showTimePassingIcon() {
+	e := hud.mgr.AnyTagged(timePassingTag)
+	if e != 0 {
+		hud.mgr.Tag(e, invalidatedTag)
+		return
 	}
+	e = hud.mgr.NewEntity()
+	hud.mgr.Tag(e, timePassingTag)
+	hud.mgr.Tag(e, invalidatedTag)
+}
 
-	e := hud.mgr.NewEntity()
-	hud.mgr.AddComponent(e, &ecs.Parent{
-		Value: parent,
+func (hud *HUD) hideTimePassingIcon() {
+	e := hud.mgr.AnyTagged(timePassingTag)
+	if e == 0 {
+		return
+	}
+	hud.mgr.DestroyEntity(e)
+}
+
+func (hud *HUD) repaintTimePassingIcon() {
+	e := hud.mgr.AnyTagged(timePassingTag)
+	if e == 0 {
+		return
+	}
+	hud.mgr.AddComponent(e, &game.Sprite{
+		Texture: "hud.png",
+		X:       16,
+		Y:       0,
+		W:       16,
+		H:       24,
 	})
-	hud.mgr.Tag(e, hovererTag)
+	hud.mgr.AddComponent(e, &game.Scale{
+		X: hud.scale,
+		Y: hud.scale,
+	})
+	hud.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: hud.centerX,
+			Y: hud.centerY,
+		},
+		Layer:    hud.layer,
+		Absolute: true,
+	})
+	hud.mgr.RemoveTag(e, invalidatedTag)
+}
 
-	pos := hud.mgr.Component(ecs.Must(hud.mgr.Single([]string{"Actor", "TurnToken"})), "Position").(*game.Position)
+func (hud *HUD) showCurrentActor() {
+	e := hud.mgr.AnyTagged(currentActorTag)
+	if e != 0 {
+		hud.mgr.Tag(e, invalidatedTag)
+		return
+	}
+	parent := hud.mgr.NewEntity()
+	hud.mgr.Tag(parent, currentActorTag)
+	hud.mgr.Tag(parent, invalidatedTag)
+
+	e = hud.mgr.NewEntity()
+	hud.mgr.AddComponent(e, &ecs.Parent{Value: parent})
+	hud.mgr.Tag(e, currentActorHovererTag)
+
+	e = hud.mgr.NewEntity()
+	hud.mgr.AddComponent(e, &ecs.Parent{Value: parent})
+	hud.mgr.Tag(e, currentActorPortraitTag)
+
+	e = hud.mgr.NewEntity()
+	hud.mgr.AddComponent(e, &ecs.Parent{Value: parent})
+	hud.mgr.Tag(e, currentActorNameTag)
+}
+
+func (hud *HUD) hideCurrentActor() {
+	e := hud.mgr.AnyTagged(currentActorTag)
+	if e == 0 {
+		return
+	}
+	hud.mgr.DestroyEntity(e)
+}
+
+func (hud *HUD) repaintCurrentActor() {
+	parent := hud.mgr.AnyTagged(currentActorHovererTag)
+	if parent == 0 {
+		return
+	}
+
+	// Repaint the hovering arrow that points to the current actor.
+	e := hud.mgr.AnyTagged(currentActorHovererTag)
+	ex, ok := hud.mgr.Single([]string{"Actor", "TurnToken"})
+	if !ok {
+		return
+	}
+	pos := hud.mgr.Component(ex, "Position").(*game.Position)
 
 	hud.mgr.AddComponent(e, &game.Sprite{
 		Texture: "hud.png",
@@ -184,14 +280,9 @@ func (hud *HUD) createHoverer(parent ecs.Entity) {
 		Layer:  hud.layer,
 	})
 	hud.mgr.AddComponent(e, game.NewHoverAnimation())
-}
 
-func (hud *HUD) createPortrait(parent ecs.Entity) {
-	e := hud.mgr.NewEntity()
-	hud.mgr.AddComponent(e, &ecs.Parent{
-		Value: parent,
-	})
-
+	// Repaint the current Actor's portrait.
+	e = hud.mgr.AnyTagged(currentActorPortraitTag)
 	actor := hud.mgr.Component(ecs.Must(hud.mgr.Single([]string{"Actor", "TurnToken"})), "Actor").(*game.Actor)
 
 	hud.mgr.AddComponent(e, &actor.BigIcon)
@@ -208,19 +299,9 @@ func (hud *HUD) createPortrait(parent ecs.Entity) {
 		Layer:    hud.layer,
 		Absolute: true,
 	})
-}
 
-func (hud *HUD) createName(parent ecs.Entity) {
-	e, ok := hud.mgr.Single([]string{"TurnToken", "Actor"})
-	if !ok {
-		return
-	}
-	actor := hud.mgr.Component(e, "Actor").(*game.Actor)
-	e = hud.mgr.NewEntity()
-	hud.mgr.AddComponent(e, &ecs.Parent{
-		Value: parent,
-	})
-
+	// Repaint the current actor's name.
+	e = hud.mgr.AnyTagged(currentActorNameTag)
 	hud.mgr.AddComponent(e, &game.Font{
 		Text: actor.Name,
 	})
@@ -236,23 +317,64 @@ func (hud *HUD) createName(parent ecs.Entity) {
 		Layer:    hud.layer + 1,
 		Absolute: true,
 	})
+	hud.mgr.RemoveTag(parent, invalidatedTag)
 }
 
-func (hud *HUD) createStats(parent ecs.Entity) {
-	label := func(text string, x, y float64) ecs.Entity {
+func (hud *HUD) showCurrentActorStats() {
+	e := hud.mgr.AnyTagged(currentActorStatsTag)
+	if e != 0 {
+		hud.mgr.Tag(e, invalidatedTag)
+		return
+	}
+	parent := hud.mgr.NewEntity()
+	hud.mgr.Tag(parent, currentActorStatsTag)
+	hud.mgr.Tag(parent, invalidatedTag)
+
+	// Create enough child entities for every stat and its label.
+	children := make([]ecs.Entity, 8)
+	for i := 0; i < 8; i++ {
 		e := hud.mgr.NewEntity()
 		hud.mgr.AddComponent(e, &ecs.Parent{
 			Value: parent,
 		})
+		children[i] = e
+	}
+	hud.mgr.AddComponent(parent, &ecs.Children{
+		Value: children,
+	})
+}
 
-		hud.mgr.AddComponent(e, &game.Font{
-			Text: text,
-		})
-		hud.mgr.AddComponent(e, &game.Scale{
-			X: hud.scale,
-			Y: hud.scale,
-		})
-		hud.mgr.AddComponent(e, &game.Position{
+func (hud *HUD) hideCurrentActorStats() {
+	e := hud.mgr.AnyTagged(currentActorStatsTag)
+	if e == 0 {
+		return
+	}
+	hud.mgr.DestroyEntity(e)
+}
+
+func (hud *HUD) repaintCurrentActorStats() {
+	parent := hud.mgr.AnyTagged(currentActorStatsTag)
+	children := hud.mgr.Component(parent, "Children").(*ecs.Children)
+
+	e := ecs.Must(hud.mgr.Single([]string{"Actor", "CombatStats", "TurnToken"}))
+	actor := hud.mgr.Component(e, "Actor").(*game.Actor)
+	stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
+	labels := []string{
+		"Health:",
+		"?/N", // TODO
+		"Energy:",
+		"?/N", // TODO
+		"Action:",
+		fmt.Sprintf("%d/%d", stats.ActionPoints, actor.ActionPoints),
+		"Prep:",
+		fmt.Sprintf("%d/%d", stats.CurrentPreparation, actor.PreparationThreshold),
+	}
+	for i, child := range children.Value {
+		// Magical x,y coordinates for stats are:
+		// x = 58 or 100
+		// y = -16, -28, -40, or -52
+		x, y := 58.0+float64(i%2)*42.0, -52.0+float64(i/2*12)
+		hud.mgr.AddComponent(child, &game.Position{
 			Center: game.Center{
 				X: x * hud.scale,
 				Y: y * hud.scale,
@@ -260,223 +382,213 @@ func (hud *HUD) createStats(parent ecs.Entity) {
 			Layer:    hud.layer,
 			Absolute: true,
 		})
-		return e
-	}
-	label("Health:", 58, -52)
-	label("Energy:", 58, -40)
-	label("Action:", 58, -28)
-	label("Prep:", 58, -16)
 
-	labelRightTagged := func(text string, x, y float64, tag string) {
-		e := label("", x, y) // empty string because we're stomping it below
-		hud.mgr.Tag(e, tag)
-		hud.mgr.AddComponent(e, &game.Font{
-			Text: text,
-			// TODO: Style should be right aligned!
-			// TODO: Some width? 32?
+		hud.mgr.AddComponent(child, &game.Scale{
+			X: hud.scale,
+			Y: hud.scale,
+		})
+
+		hud.mgr.AddComponent(child, &game.Font{
+			Text: labels[i],
+		})
+	}
+	hud.mgr.RemoveTag(parent, invalidatedTag)
+}
+
+func (hud *HUD) showSkills() {
+	// Create a parent entity tagged with invalidatedTag and skillsTag
+	e := hud.mgr.AnyTagged(skillsTag)
+	if e != 0 {
+		hud.mgr.Tag(e, invalidatedTag)
+		return
+	}
+	e = hud.mgr.NewEntity()
+	hud.mgr.Tag(e, skillsTag)
+
+	// Create 7x2 child Entities with parent Components
+	children := make([]ecs.Entity, 14)
+	for i := 0; i < 14; i++ {
+		children[i] = hud.mgr.NewEntity()
+		hud.mgr.AddComponent(children[i], &ecs.Parent{
+			Value: e,
 		})
 	}
 
-	e, ok := hud.mgr.Single([]string{"TurnToken", "Actor", "CombatStats"})
-	if !ok {
+	// Append all child entities to parent
+	hud.mgr.AddComponent(e, &ecs.Children{
+		Value: children,
+	})
+	hud.mgr.Tag(e, invalidatedTag)
+}
+
+func (hud *HUD) hideSkills() {
+	e := hud.mgr.AnyTagged(skillsTag)
+	if e == 0 {
 		return
 	}
-	actor := hud.mgr.Component(e, "Actor").(*game.Actor)
-	stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
-
-	labelRightTagged("?/N", 100, -52, hpLabelTag)
-	labelRightTagged("?/N", 100, -40, energyLabelTag)
-
-	actionLabel := fmt.Sprintf("%d/%d", stats.ActionPoints, actor.ActionPoints)
-	labelRightTagged(actionLabel, 100, -28, actionLabelTag)
-
-	prepLabel := fmt.Sprintf("%d/%d", stats.CurrentPreparation, actor.PreparationThreshold)
-	labelRightTagged(prepLabel, 100, -16, prepLabelTag)
+	hud.mgr.DestroyEntity(e)
 }
 
-var skillsOffset = struct {
-	X, Y float64
-}{
-	150, -42,
-}
+func (hud *HUD) repaintSkills() {
+	parent := hud.mgr.AnyTagged(skillsTag)
+	children := hud.mgr.Component(parent, "Children").(*ecs.Children)
 
-func (hud *HUD) createSkillsTargetSelectionMode(parent ecs.Entity) {
-	// Cancel button always appears in the first skill slot.
-	x, y := 0, 0
+	type skill struct {
+		sprite      game.Sprite
+		interactive *ui.Interactive
+	}
 
-	e := hud.mgr.NewEntity()
-	hud.mgr.Tag(e, skillsTag)
-	hud.mgr.AddComponent(e, &ecs.Parent{
-		Value: parent,
-	})
-	hud.mgr.AddComponent(e, &game.Sprite{
-		Texture: "hud.png",
-		X:       208,
-		Y:       0,
-		W:       24,
-		H:       24,
-	})
-	hud.mgr.AddComponent(e, &game.Scale{
-		X: hud.scale,
-		Y: hud.scale,
-	})
-	hud.mgr.AddComponent(e, &game.Position{
-		Center: game.Center{
-			X: (skillsOffset.X + float64(26*x)) * hud.scale,
-			Y: (skillsOffset.Y + float64(26*y)) * hud.scale,
-		},
-		Layer:    hud.layer,
-		Absolute: true,
-	})
-
-	hud.mgr.AddComponent(e, &ui.Interactive{
-		Trigger: func() {
-			hud.bus.Publish(&game.CancelSkillRequested{})
-		},
-	})
-}
-
-func (hud *HUD) createSkills(parent ecs.Entity) {
-	// Two rows of skills, showing a mix of default and personal skills of the actor:
-	// 0,0. Move.
-	// 0,1. Consumables - pops a selection modal
-	// 1-5,0-1. Configurable skills
-	// 6,0. Flee.
-	// 6,1. End Turn.
-
-	for y := 0; y < 2; y++ {
-		for x := 0; x < 7; x++ {
-			e := hud.mgr.NewEntity()
-			hud.mgr.Tag(e, skillsTag)
-			hud.mgr.AddComponent(e, &ecs.Parent{
-				Value: parent,
-			})
-			hud.mgr.AddComponent(e, &game.Scale{
-				X: hud.scale,
-				Y: hud.scale,
-			})
-			hud.mgr.AddComponent(e, &game.Position{
-				Center: game.Center{
-					X: (skillsOffset.X + float64(26*x)) * hud.scale,
-					Y: (skillsOffset.Y + float64(26*y)) * hud.scale,
-				},
-				Layer:    hud.layer,
-				Absolute: true,
-			})
-
-			var spr = game.Sprite{
+	skills := map[int]skill{
+		// Cancel button
+		0: skill{
+			sprite: game.Sprite{
 				Texture: "hud.png",
-				X:       184,
+				X:       208,
 				Y:       0,
 				W:       24,
 				H:       24,
-			}
-			var trigger = ui.Interactive{
+			},
+			interactive: &ui.Interactive{
 				Trigger: func() {
-					// TODO Publish ActorRequestedSkill{ skillid:?}
+					hud.bus.Publish(&game.CancelSkillRequested{})
 				},
-			}
-			if x == 0 && y == 0 {
-				// Move
-				spr = game.Sprite{
+			},
+		},
+	}
+
+	if hud.lastCombatState == AwaitingInputState {
+		skills = map[int]skill{
+			// Move
+			0: skill{
+				sprite: game.Sprite{
 					Texture: "hud.png",
 					X:       232,
 					Y:       24,
 					W:       24,
 					H:       24,
-				}
-				trigger = ui.Interactive{
+				},
+				interactive: &ui.Interactive{
 					Trigger: func() {
 						hud.bus.Publish(&game.MoveModeRequested{})
 					},
-				}
-			} else if x == 0 && y == 1 {
-				// Consumables
-				spr = game.Sprite{
+				},
+			},
+
+			// Consumables
+			7: skill{
+				sprite: game.Sprite{
 					Texture: "hud.png",
 					X:       232,
 					Y:       0,
 					W:       24,
 					H:       24,
-				}
-				// trigger = ui.Interactive{
-				// 	Trigger: func() {
-				// 		hud.bus.Publish(&event.ViewConsumablesRequested{})
-				// 	},
-				// }
-			} else if x == 6 && y == 0 {
-				// Flee
-				spr = game.Sprite{
+				},
+			},
+
+			// Flee
+			6: skill{
+				sprite: game.Sprite{
 					Texture: "hud.png",
 					X:       184,
 					Y:       24,
 					W:       24,
 					H:       24,
-				}
-				// trigger = ui.Interactive{
-				// 	Trigger: func() {
-				// 		hud.bus.Publish(&event.FleeRequested{})
-				// 	},
-				// }
-			} else if x == 6 && y == 1 {
-				// End Turn
-				spr = game.Sprite{
+				},
+			},
+
+			// End turn
+			13: skill{
+				sprite: game.Sprite{
 					Texture: "hud.png",
 					X:       208,
 					Y:       24,
 					W:       24,
 					H:       24,
-				}
-				trigger = ui.Interactive{
+				},
+				interactive: &ui.Interactive{
 					Trigger: func() {
 						hud.bus.Publish(&game.EndTurnRequested{})
 					},
-				}
-			}
-			hud.mgr.AddComponent(e, &spr)
-			hud.mgr.AddComponent(e, &trigger)
+				},
+			},
 		}
 	}
+
+	for i, child := range children.Value {
+		x, y := i%7, i/7
+
+		hud.mgr.AddComponent(child, &game.Scale{
+			X: hud.scale,
+			Y: hud.scale,
+		})
+		hud.mgr.AddComponent(child, &game.Position{
+			Center: game.Center{
+				X: (150 + float64(26*x)) * hud.scale,
+				Y: (-42 + float64(26*y)) * hud.scale,
+			},
+			Layer:    hud.layer,
+			Absolute: true,
+		})
+
+		s, ok := skills[i]
+		if !ok {
+			// Add empty skill slot sprite component
+			hud.mgr.AddComponent(child, &game.Sprite{
+				Texture: "hud.png",
+				X:       184,
+				Y:       0,
+				W:       24,
+				H:       24,
+			})
+			continue
+		}
+		hud.mgr.AddComponent(child, &s.sprite)
+		if s.interactive != nil {
+			hud.mgr.AddComponent(child, s.interactive)
+		}
+	}
+	hud.mgr.RemoveTag(parent, invalidatedTag)
 }
 
-func (hud *HUD) destroyCurrentActor() {
-	e := hud.mgr.AnyTagged(currentActorTag)
+const turnQueueSlots int = 8
+const entitiesPerTurnQueueSlot int = 3
+
+func (hud *HUD) showTurnQueue() {
+	e := hud.mgr.AnyTagged(turnQueueTag)
+	if e != 0 {
+		hud.mgr.Tag(e, invalidatedTag)
+		return
+	}
+	e = hud.mgr.NewEntity()
+	hud.mgr.Tag(e, turnQueueTag)
+	hud.mgr.Tag(e, invalidatedTag)
+
+	children := make([]ecs.Entity, turnQueueSlots*entitiesPerTurnQueueSlot)
+	for i := 0; i < turnQueueSlots*entitiesPerTurnQueueSlot; i++ {
+		child := hud.mgr.NewEntity()
+		hud.mgr.AddComponent(child, &ecs.Parent{
+			Value: e,
+		})
+		children[i] = child
+	}
+	hud.mgr.AddComponent(e, &ecs.Children{
+		Value: children,
+	})
+}
+
+func (hud *HUD) hideTurnQueue() {
+	e := hud.mgr.AnyTagged(turnQueueTag)
+	if e == 0 {
+		return
+	}
 	hud.mgr.DestroyEntity(e)
 }
 
-func (hud *HUD) createCurrentActor(parent ecs.Entity, state State) {
-	if _, ok := hud.mgr.Single([]string{"Actor", "TurnToken"}); !ok {
+func (hud *HUD) repaintTurnQueue() {
+	parent := hud.mgr.AnyTagged(turnQueueTag)
+	if parent == 0 {
 		return
 	}
-
-	e := hud.mgr.NewEntity()
-	hud.mgr.Tag(e, currentActorTag)
-	hud.mgr.AddComponent(e, &ecs.Parent{
-		Value: parent,
-	})
-
-	hud.createHoverer(e)
-	hud.createPortrait(e)
-	hud.createName(e)
-	hud.createStats(e)
-
-	for _, e := range hud.mgr.Tagged(skillsTag) {
-		hud.mgr.DestroyEntity(e)
-	}
-	if state == SelectingTargetState {
-		hud.createSkillsTargetSelectionMode(e)
-	} else if state == AwaitingInputState {
-		hud.createSkills(e)
-	}
-}
-
-func (hud *HUD) createTurnQueue(parent ecs.Entity) {
-	e := hud.mgr.NewEntity()
-	hud.mgr.Tag(e, turnQueueTag)
-	hud.mgr.AddComponent(e, &ecs.Parent{
-		Value: parent,
-	})
-
 	type v struct {
 		e            ecs.Entity
 		remaining    int
@@ -489,9 +601,12 @@ func (hud *HUD) createTurnQueue(parent ecs.Entity) {
 	for _, e := range hud.mgr.Get([]string{"Actor", "CombatStats"}) {
 		actor := hud.mgr.Component(e, "Actor").(*game.Actor)
 		stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
+
+		// An Awkward way of not including the Actor with the TurnToken.
 		if stats.CurrentPreparation == 0 {
 			continue
 		}
+
 		q = append(q, v{
 			e:         e,
 			remaining: actor.PreparationThreshold - stats.CurrentPreparation,
@@ -504,14 +619,22 @@ func (hud *HUD) createTurnQueue(parent ecs.Entity) {
 		return q[i].remaining < q[j].remaining
 	})
 
+	children := hud.mgr.Component(parent, "Children").(*ecs.Children)
 	x, y := 10, 10+13
 	stride := 42
-	for i, v := range q {
+	for i := 0; i < turnQueueSlots; i++ {
 		// actor's portrait icon
-		child := hud.mgr.NewEntity()
-		hud.mgr.AddComponent(child, &ecs.Parent{
-			Value: e,
-		})
+		child := children.Value[i*3]
+
+		// If we have no more Actors for this slot, then hide it.
+		if i >= len(q) {
+			hud.mgr.RemoveComponent(children.Value[i*3+0], &game.Sprite{})
+			hud.mgr.RemoveComponent(children.Value[i*3+1], &game.Sprite{})
+			hud.mgr.AddComponent(children.Value[i*3+2], &game.Font{})
+			continue
+		}
+
+		v := q[i]
 		hud.mgr.AddComponent(child, v.icon)
 		hud.mgr.AddComponent(child, &game.Position{
 			Center: game.Center{
@@ -526,11 +649,11 @@ func (hud *HUD) createTurnQueue(parent ecs.Entity) {
 			Y: hud.scale,
 		})
 
-		// current prep
+		// current preparation progressbar
 		prepPerc := float64(v.current) / float64(v.max)
-		child = hud.mgr.NewEntity()
+		child = children.Value[i*3+1]
 		hud.mgr.AddComponent(child, &ecs.Parent{
-			Value: e,
+			Value: parent,
 		})
 		hud.mgr.AddComponent(child, &game.Sprite{
 			Texture: "tranquility-plus-39-palette.png",
@@ -552,10 +675,10 @@ func (hud *HUD) createTurnQueue(parent ecs.Entity) {
 			Y: hud.scale * 4,
 		})
 
-		// current/max prep text
-		child = hud.mgr.NewEntity()
+		// current/max preparation text
+		child = children.Value[i*3+2]
 		hud.mgr.AddComponent(child, &ecs.Parent{
-			Value: e,
+			Value: parent,
 		})
 		hud.mgr.AddComponent(child, &game.Font{
 			Text: fmt.Sprintf("%d/%d", v.current, v.max),
@@ -573,39 +696,6 @@ func (hud *HUD) createTurnQueue(parent ecs.Entity) {
 			X: hud.scale,
 			Y: hud.scale,
 		})
-
 	}
-}
-
-func (hud *HUD) destroyTurnQueue() {
-	hud.mgr.DestroyEntity(hud.mgr.AnyTagged(turnQueueTag))
-}
-
-func (hud *HUD) destroyTimePassingIcon() {
-	e := hud.mgr.AnyTagged(timePassingTag)
-	hud.mgr.DestroyEntity(e)
-}
-
-func (hud *HUD) createTimePassingIcon() {
-	e := hud.mgr.NewEntity()
-	hud.mgr.Tag(e, timePassingTag)
-	hud.mgr.AddComponent(e, &game.Sprite{
-		Texture: "hud.png",
-		X:       16,
-		Y:       0,
-		W:       16,
-		H:       24,
-	})
-	hud.mgr.AddComponent(e, &game.Scale{
-		X: hud.scale,
-		Y: hud.scale,
-	})
-	hud.mgr.AddComponent(e, &game.Position{
-		Center: game.Center{
-			X: hud.centerX,
-			Y: hud.centerY,
-		},
-		Layer:    hud.layer,
-		Absolute: true,
-	})
+	hud.mgr.RemoveTag(parent, invalidatedTag)
 }

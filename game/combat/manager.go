@@ -451,6 +451,7 @@ func (cm *Manager) Run(elapsed time.Duration) {
 	}
 
 	cm.intents.Update()
+	cm.hud.Update(elapsed)
 }
 
 // checkHUD for interactions at x,y. Although this might sit better as a method
