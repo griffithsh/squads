@@ -311,8 +311,8 @@ func (hud *HUD) repaintCurrentActor() {
 	})
 	hud.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
-			X: 12,
-			Y: -32,
+			X: 58 * hud.scale,
+			Y: -54 * hud.scale,
 		},
 		Layer:    hud.layer + 1,
 		Absolute: true,
@@ -371,9 +371,9 @@ func (hud *HUD) repaintCurrentActorStats() {
 	}
 	for i, child := range children.Value {
 		// Magical x,y coordinates for stats are:
-		// x = 58 or 100
-		// y = -16, -28, -40, or -52
-		x, y := 58.0+float64(i%2)*42.0, -52.0+float64(i/2*12)
+		// x = 60 or 102
+		// y = -43, -36, -29, or -22
+		x, y := 60.0+float64(i%2)*42.0, -43.0+float64(i/2*7)
 		hud.mgr.AddComponent(child, &game.Position{
 			Center: game.Center{
 				X: x * hud.scale,
@@ -390,6 +390,7 @@ func (hud *HUD) repaintCurrentActorStats() {
 
 		hud.mgr.AddComponent(child, &game.Font{
 			Text: labels[i],
+			Size: "small",
 		})
 	}
 	hud.mgr.RemoveTag(parent, invalidatedTag)
