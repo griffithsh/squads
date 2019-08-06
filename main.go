@@ -23,6 +23,7 @@ type system struct {
 	anim         *game.AnimationSystem
 	fonts        *game.FontSystem
 	hierarchy    *ecs.ParentSystem
+	leash        *game.LeashSystem
 	combat       *combat.Manager
 	mgr          *ecs.World
 	camera       *game.Camera
@@ -119,6 +120,7 @@ func setup(w, h int) (*system, error) {
 
 		fonts:     game.NewFontSystem(mgr),
 		hierarchy: ecs.NewParentSystem(mgr),
+		leash:     &game.LeashSystem{},
 	}
 	t := combat.NewTeam()
 
@@ -284,6 +286,7 @@ func (s *system) run(screen *ebiten.Image) error {
 	s.combat.Run(elapsed)
 	s.fonts.Update()
 	s.hierarchy.Update()
+	s.leash.Update(s.mgr, elapsed)
 	s.anim.Update(s.mgr, elapsed)
 
 	w, h := float64(screen.Bounds().Max.X-screen.Bounds().Min.X), float64(screen.Bounds().Max.Y-screen.Bounds().Min.Y)
