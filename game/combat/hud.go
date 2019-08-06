@@ -38,6 +38,7 @@ Entities.
 
 HUD element groups:
 
+AllActors
 TimePassingIcon
 CurrentActor
 	Hover-er
@@ -57,6 +58,7 @@ TurnQueue[]
 
 var (
 	combatHUDTag            = "COMBAT_HUD"
+	liveActorsTag           = combatHUDTag + ".LIVE_ACTORS"
 	timePassingTag          = combatHUDTag + ".TIME_PASSING"
 	currentActorTag         = combatHUDTag + ".CURRENT_ACTOR"
 	currentActorHovererTag  = currentActorTag + ".HOVERER"
@@ -94,8 +96,9 @@ func NewHUD(mgr *ecs.World, bus *event.Bus, screenX int, screenY int) *HUD {
 
 	bus.Subscribe(game.WindowSizeChanged{}.Type(), hud.handleWindowSizeChanged)
 	bus.Subscribe(game.CombatBegan{}.Type(), hud.handleCombatBegan)
-	bus.Subscribe(StateTransition{}.Type(), hud.handleCombatStateTransition)
 	bus.Subscribe(game.CombatStatModified{}.Type(), hud.handleCombatStatModified)
+	bus.Subscribe(StateTransition{}.Type(), hud.handleCombatStateTransition)
+	bus.Subscribe(DifferentHexSelected{}.Type(), hud.handleDifferentHexSelected)
 
 	return &hud
 }
@@ -116,6 +119,16 @@ func (hud *HUD) handleCombatBegan(event.Typer) {
 	hud.mgr.Tag(e, combatHUDTag)
 
 	hud.showTurnQueue()
+	hud.showLiveActors()
+}
+
+func (hud *HUD) handleCombatStatModified(ev event.Typer) {
+	csm := ev.(*game.CombatStatModified)
+
+	switch csm.Stat {
+	case game.PrepStat:
+		hud.showTurnQueue()
+	}
 }
 
 func (hud *HUD) handleCombatStateTransition(ev event.Typer) {
@@ -141,19 +154,20 @@ func (hud *HUD) handleCombatStateTransition(ev event.Typer) {
 	}
 }
 
-func (hud *HUD) handleCombatStatModified(ev event.Typer) {
-	csm := ev.(*game.CombatStatModified)
+func (hud *HUD) handleDifferentHexSelected(ev event.Typer) {
 
-	switch csm.Stat {
-	case game.PrepStat:
-		hud.showTurnQueue()
-	}
+	// TODO!
+	// invalidate
 }
 
 // Update the HUD. Synchronise the current game state to the Entities that compose it.
 func (hud *HUD) Update(elapsed time.Duration) {
 	var e ecs.Entity
 
+	e = hud.mgr.AnyTagged(liveActorsTag)
+	if e != 0 && hud.mgr.HasTag(e, invalidatedTag) {
+		hud.repaintLiveActors()
+	}
 	e = hud.mgr.AnyTagged(timePassingTag)
 	if e != 0 && hud.mgr.HasTag(e, invalidatedTag) {
 		hud.repaintTimePassingIcon()
@@ -173,6 +187,66 @@ func (hud *HUD) Update(elapsed time.Duration) {
 	e = hud.mgr.AnyTagged(turnQueueTag)
 	if e != 0 && hud.mgr.HasTag(e, invalidatedTag) {
 		hud.repaintTurnQueue()
+	}
+}
+
+const maxLiveActors int = 25
+
+func (hud *HUD) showLiveActors() {
+	for _, e := range hud.mgr.Tagged(liveActorsTag) {
+		hud.mgr.DestroyEntity(e)
+	}
+
+	for i := 0; i < maxLiveActors; i++ {
+		e := hud.mgr.NewEntity()
+
+		hud.mgr.Tag(e, liveActorsTag)
+		hud.mgr.Tag(e, invalidatedTag)
+	}
+}
+
+func (hud *HUD) hideLiveActors() {
+	for _, e := range hud.mgr.Tagged(liveActorsTag) {
+		hud.mgr.DestroyEntity(e)
+	}
+}
+
+func (hud *HUD) repaintLiveActors() {
+	entities := hud.mgr.Get([]string{"Actor"})
+	for i, slot := range hud.mgr.Tagged(liveActorsTag) {
+		if i < len(entities) {
+			spr := game.Sprite{
+				Texture: "cursors.png",
+			}
+			actor := hud.mgr.Component(entities[i], "Actor").(*game.Actor)
+			switch actor.Size {
+			case game.SMALL:
+				spr.X = 0
+				spr.Y = 0
+				spr.W = 24
+				spr.H = 16
+			case game.MEDIUM:
+				spr.X = 0
+				spr.Y = 32
+				spr.W = 58
+				spr.H = 32
+			case game.LARGE:
+				spr.X = 0
+				spr.Y = 64
+				spr.W = 58
+				spr.H = 48
+			}
+			hud.mgr.AddComponent(slot, &spr)
+			hud.mgr.AddComponent(slot, &game.Leash{
+				Owner:       entities[i],
+				LayerOffset: -1,
+			})
+		} else {
+			// hide cursor
+			hud.mgr.RemoveComponent(slot, &game.Sprite{})
+			hud.mgr.RemoveComponent(slot, &game.Position{})
+			hud.mgr.RemoveComponent(slot, &game.Leash{})
+		}
 	}
 }
 

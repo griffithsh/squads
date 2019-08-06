@@ -520,6 +520,23 @@ func (cm *Manager) Interaction(x, y int) {
 func (cm *Manager) MousePosition(x, y int) {
 	wx, wy := cm.camera.ScreenToWorld(x, y)
 
+	if cm.state == SelectingTargetState {
+		// When we're selecting a target, we need to highlight some hexes to
+		// show where we're targeting.
+		// If the change in position means we're positioned over a new hex,
+		// then publish a DifferentHexSelected event.
+
+		// The consumer needs to make a decision about what to repaint now that
+		// the hex that the mouse is hovering over has changed. It might be a
+		// path of hexes because we're selecting a place to move to, or it might
+		// be a glob of hexes because we're targeting an AoE fireball spell etc.
+		h := cm.field.At(int(wx), int(wy))
+		cm.bus.Publish(&DifferentHexSelected{
+			M: h.M,
+			N: h.N,
+		})
+	}
+
 	// Update local cached values
 	cm.x = x
 	cm.y = y

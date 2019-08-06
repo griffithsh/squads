@@ -22,6 +22,7 @@
     - [x] Add RenderOffset to replace it
     - [x] Floating Animation - makes the entity hover up and down (for a floating cursor?)
 - [ ] Medium and Large Actor art
+- [x] Actors always have a boundary line to demarcate the hexes they occupy
 - [ ] Facing (for backstab damage)
 - [ ] Profession and Sex for every Actor and a mapping between those and a set of animations
 - [ ] Animations at a game-concept level
