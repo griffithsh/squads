@@ -10,7 +10,7 @@
 - [x] Add debouncing of click events to main - Interaction should be called once per click
 - [x] Add an "End Turn" button to the HUD
 - [x] Preparation, ActionPoints, and anything else needed for turns-based combat
-- [x] HUD shows updated information about Action Points remaining for the current actor.
+- [x] HUD shows updated information about Action Points remaining for the current actor
 - [x] HUD shows a skills section
 - [x] HUD shows updated information about turn order of the actors
 - [x] A way to generate starting positions for every actor
@@ -21,15 +21,17 @@
     - [x] Merge SpriteOffset into Sprite
     - [x] Add RenderOffset to replace it
     - [x] Floating Animation - makes the entity hover up and down (for a floating cursor?)
-- [ ] Medium and Large Actor art
+- [x] Add Move and cancel buttons to go in and out of move mode
 - [x] Actors always have a boundary line to demarcate the hexes they occupy
+- [ ] Negative coordinates should no longer wrap absolutely positioned Sprites - bottom or right-aligned renderable should be positioned via the HUDs copy of the screen center
 - [ ] Facing (for backstab damage)
 - [ ] Profession and Sex for every Actor and a mapping between those and a set of animations
 - [ ] Animations at a game-concept level
-- [x] Add Move and cancel buttons to go in and out of move mode
+- [ ] Medium and Large Actor art
 - [ ] Intent Queue(?) for AI Actors
 
 ## MAYDO
+- [ ] Structuralise the way systems are registered with an ecs.World, so that all things that update can be found in a consistent place
 - [ ] Other Animation types
   - [ ] Jump Animation - makes the entity go up then down, then auto-ends
   - [ ] Shake animation - makes the entity shake left and right (like for taking hits?)
