@@ -48,7 +48,6 @@ type Manager struct {
 	screenW, screenH float64 // most recent dimensions of the window
 
 	// actors ActorSystem...?
-	cursors *game.CursorSystem
 	intents *game.IntentSystem
 }
 
@@ -68,7 +67,6 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 		camera: camera,
 		// state:   TODO: some-uninitialised-state
 		hud:     NewHUD(mgr, bus, camera.GetW(), camera.GetH()),
-		cursors: game.NewCursorSystem(mgr),
 		intents: game.NewIntentSystem(mgr, bus, f),
 	}
 	cm.setState(PreparingState)
@@ -514,8 +512,6 @@ func (cm *Manager) Interaction(x, y int) {
 		cm.mgr.AddComponent(actor, &i)
 
 		cm.setState(ExecutingState)
-
-		cm.cursors.Clear()
 	}
 }
 
@@ -524,47 +520,11 @@ func (cm *Manager) Interaction(x, y int) {
 func (cm *Manager) MousePosition(x, y int) {
 	wx, wy := cm.camera.ScreenToWorld(x, y)
 
+	// Update local cached values
 	cm.x = x
 	cm.y = y
 	cm.wx = wx
 	cm.wy = wy
-
-	if cm.state == SelectingTargetState {
-		cm.cursors.Clear()
-		e := cm.actorAwaitingInput()
-		if e == 0 {
-			return
-		}
-		a := cm.mgr.Component(e, "Actor").(*game.Actor)
-		position := cm.mgr.Component(e, "Position").(*game.Position)
-
-		switch a.Size {
-		case game.SMALL:
-			h := cm.field.At(int(wx), int(wy))
-			if h == nil {
-				break
-			}
-			cm.cursors.Add(h.X(), h.Y(), a.Size)
-			cm.cursors.Add(position.Center.X, position.Center.Y, a.Size)
-
-		case game.MEDIUM:
-			h := cm.field.At4(int(wx), int(wy))
-			if h == nil {
-				break
-			}
-			cm.cursors.Add(h.X(), h.Y(), a.Size)
-			cm.cursors.Add(position.Center.X, position.Center.Y, a.Size)
-
-		case game.LARGE:
-			h := cm.field.At7(int(wx), int(wy))
-			if h == nil {
-				break
-			}
-			cm.cursors.Add(h.X(), h.Y(), a.Size)
-			cm.cursors.Add(position.Center.X, position.Center.Y, a.Size)
-		}
-	}
-
 }
 
 func (cm *Manager) actorAwaitingInput() ecs.Entity {
