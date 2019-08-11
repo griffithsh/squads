@@ -35,13 +35,14 @@ const (
 // team is knocked out.
 type Manager struct {
 	// Manager should own systems that are only relevant to Combat. A Turns coordinator, a preparation timer
-	mgr    *ecs.World
-	bus    *event.Bus
-	field  *geom.Field
-	nav    *game.Navigator
-	camera *game.Camera
-	state  State
-	hud    *HUD
+	mgr     *ecs.World
+	bus     *event.Bus
+	field   *geom.Field
+	nav     *game.Navigator
+	camera  *game.Camera
+	state   State
+	hud     *HUD
+	cursors *CursorManager
 
 	x, y             int     // where the mouse last was in screen coordinates
 	wx, wy           float64 // where the mouse last was in world coordinates
@@ -67,6 +68,7 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 		camera: camera,
 		// state:   TODO: some-uninitialised-state
 		hud:     NewHUD(mgr, bus, camera.GetW(), camera.GetH()),
+		cursors: NewCursorManager(mgr, bus, f),
 		intents: game.NewIntentSystem(mgr, bus, f),
 	}
 	cm.setState(PreparingState)
@@ -450,6 +452,7 @@ func (cm *Manager) Run(elapsed time.Duration) {
 
 	cm.intents.Update()
 	cm.hud.Update(elapsed)
+	cm.cursors.Update(elapsed)
 }
 
 // checkHUD for interactions at x,y. Although this might sit better as a method

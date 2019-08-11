@@ -58,7 +58,6 @@ TurnQueue[]
 
 var (
 	combatHUDTag            = "COMBAT_HUD"
-	liveActorsTag           = combatHUDTag + ".LIVE_ACTORS"
 	timePassingTag          = combatHUDTag + ".TIME_PASSING"
 	currentActorTag         = combatHUDTag + ".CURRENT_ACTOR"
 	currentActorHovererTag  = currentActorTag + ".HOVERER"
@@ -119,7 +118,6 @@ func (hud *HUD) handleCombatBegan(event.Typer) {
 	hud.mgr.Tag(e, combatHUDTag)
 
 	hud.showTurnQueue()
-	hud.showLiveActors()
 }
 
 func (hud *HUD) handleCombatStatModified(ev event.Typer) {
@@ -164,10 +162,6 @@ func (hud *HUD) handleDifferentHexSelected(ev event.Typer) {
 func (hud *HUD) Update(elapsed time.Duration) {
 	var e ecs.Entity
 
-	e = hud.mgr.AnyTagged(liveActorsTag)
-	if e != 0 && hud.mgr.HasTag(e, invalidatedTag) {
-		hud.repaintLiveActors()
-	}
 	e = hud.mgr.AnyTagged(timePassingTag)
 	if e != 0 && hud.mgr.HasTag(e, invalidatedTag) {
 		hud.repaintTimePassingIcon()
@@ -187,66 +181,6 @@ func (hud *HUD) Update(elapsed time.Duration) {
 	e = hud.mgr.AnyTagged(turnQueueTag)
 	if e != 0 && hud.mgr.HasTag(e, invalidatedTag) {
 		hud.repaintTurnQueue()
-	}
-}
-
-const maxLiveActors int = 25
-
-func (hud *HUD) showLiveActors() {
-	for _, e := range hud.mgr.Tagged(liveActorsTag) {
-		hud.mgr.DestroyEntity(e)
-	}
-
-	for i := 0; i < maxLiveActors; i++ {
-		e := hud.mgr.NewEntity()
-
-		hud.mgr.Tag(e, liveActorsTag)
-		hud.mgr.Tag(e, invalidatedTag)
-	}
-}
-
-func (hud *HUD) hideLiveActors() {
-	for _, e := range hud.mgr.Tagged(liveActorsTag) {
-		hud.mgr.DestroyEntity(e)
-	}
-}
-
-func (hud *HUD) repaintLiveActors() {
-	entities := hud.mgr.Get([]string{"Actor"})
-	for i, slot := range hud.mgr.Tagged(liveActorsTag) {
-		if i < len(entities) {
-			spr := game.Sprite{
-				Texture: "cursors.png",
-			}
-			actor := hud.mgr.Component(entities[i], "Actor").(*game.Actor)
-			switch actor.Size {
-			case game.SMALL:
-				spr.X = 0
-				spr.Y = 0
-				spr.W = 24
-				spr.H = 16
-			case game.MEDIUM:
-				spr.X = 0
-				spr.Y = 32
-				spr.W = 58
-				spr.H = 32
-			case game.LARGE:
-				spr.X = 0
-				spr.Y = 64
-				spr.W = 58
-				spr.H = 48
-			}
-			hud.mgr.AddComponent(slot, &spr)
-			hud.mgr.AddComponent(slot, &game.Leash{
-				Owner:       entities[i],
-				LayerOffset: -1,
-			})
-		} else {
-			// hide cursor
-			hud.mgr.RemoveComponent(slot, &game.Sprite{})
-			hud.mgr.RemoveComponent(slot, &game.Position{})
-			hud.mgr.RemoveComponent(slot, &game.Leash{})
-		}
 	}
 }
 
