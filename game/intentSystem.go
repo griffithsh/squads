@@ -47,12 +47,10 @@ func (s *IntentSystem) Update() {
 
 		s.mgr.RemoveComponent(e, intent)
 
-		obstacles := s.obstaclesFor(e)
-
 		var start, goal geom.Key
-		var exists func(geom.Key) bool
-		var costs func(geom.Key) float64
 		var stepToWaypoint func(geom.NavigateStep) Waypoint
+		exists := ExistsFuncFactory(s.field, a.Size)
+		costs := CostsFuncFactory(s.field, s.mgr, e)
 
 		switch a.Size {
 		case SMALL:
@@ -65,22 +63,6 @@ func (s *IntentSystem) Update() {
 			}
 			start = geom.Key{M: startHex.M, N: startHex.N}
 			goal = geom.Key{M: goalHex.M, N: goalHex.N}
-			exists = func(k geom.Key) bool {
-				return s.field.Get(k.M, k.N) != nil
-			}
-			costs = func(k geom.Key) float64 {
-				hex := s.field.Get(k.M, k.N)
-
-				if hex == nil {
-					return math.Inf(0)
-				}
-				for _, o := range obstacles {
-					if o.M == hex.M && o.N == hex.N {
-						return o.Cost
-					}
-				}
-				return 1.0
-			}
 			stepToWaypoint = func(step geom.NavigateStep) Waypoint {
 				h := s.field.Get(step.M, step.N)
 				return Waypoint{
@@ -98,28 +80,6 @@ func (s *IntentSystem) Update() {
 			}
 			start = geom.Key{M: startHex.M, N: startHex.N}
 			goal = geom.Key{M: goalHex.M, N: goalHex.N}
-			exists = func(k geom.Key) bool {
-				return s.field.Get4(k.M, k.N) != nil
-			}
-			costs = func(k geom.Key) float64 {
-				hex := s.field.Get4(k.M, k.N)
-
-				if hex == nil {
-					return math.Inf(0)
-				}
-				cost := 1.0
-				for _, hex := range hex.Hexes() {
-					for _, o := range obstacles {
-						if o.M == hex.M && o.N == hex.N {
-							if math.IsInf(o.Cost, 0) {
-								return math.Inf(0)
-							}
-							cost = cost * o.Cost
-						}
-					}
-				}
-				return cost
-			}
 			stepToWaypoint = func(step geom.NavigateStep) Waypoint {
 				h := s.field.Get4(step.M, step.N)
 				return Waypoint{
@@ -137,28 +97,6 @@ func (s *IntentSystem) Update() {
 			}
 			start = geom.Key{M: startHex.M, N: startHex.N}
 			goal = geom.Key{M: goalHex.M, N: goalHex.N}
-			exists = func(k geom.Key) bool {
-				return s.field.Get7(k.M, k.N) != nil
-			}
-			costs = func(k geom.Key) float64 {
-				hex := s.field.Get7(k.M, k.N)
-
-				if hex == nil {
-					return math.Inf(0)
-				}
-				cost := 1.0
-				for _, hex := range hex.Hexes() {
-					for _, o := range obstacles {
-						if o.M == hex.M && o.N == hex.N {
-							if math.IsInf(o.Cost, 0) {
-								return math.Inf(0)
-							}
-							cost = cost * o.Cost
-						}
-					}
-				}
-				return cost
-			}
 			stepToWaypoint = func(step geom.NavigateStep) Waypoint {
 				h := s.field.Get7(step.M, step.N)
 				return Waypoint{
@@ -195,21 +133,46 @@ func (s *IntentSystem) Update() {
 	}
 }
 
-// obstaclesFor provides the obstacles that exist in the world that will impede
-// (or potentially speed up) the navigation of a character.
-func (s *IntentSystem) obstaclesFor(actor ecs.Entity) []ContextualObstacle {
+// ExistsFunc is a function that will return whether a logical hex exists for
+// the given M,N coordinates, in a specific context.
+type ExistsFunc func(geom.Key) bool
+
+// ExistsFuncFactory constructs ExistsFuncs from a context.
+func ExistsFuncFactory(f *geom.Field, sz ActorSize) ExistsFunc {
+	switch sz {
+	case MEDIUM:
+		return func(k geom.Key) bool {
+			return f.Get4(k.M, k.N) != nil
+		}
+	case LARGE:
+		return func(k geom.Key) bool {
+			return f.Get7(k.M, k.N) != nil
+		}
+	default:
+		return func(k geom.Key) bool {
+			return f.Get(k.M, k.N) != nil
+		}
+	}
+}
+
+// CostsFunc is a function that will return the cost of moving to M,N in a specific context.
+type CostsFunc func(geom.Key) float64
+
+// CostsFuncFactory constructs a CostsFunc that returns the costs of moving to
+// an M,N for an Entity from a context.
+func CostsFuncFactory(f *geom.Field, mgr *ecs.World, actor ecs.Entity) CostsFunc {
 	var obstacles []ContextualObstacle
-	for _, e := range s.mgr.Get([]string{"Obstacle"}) {
+	for _, e := range mgr.Get([]string{"Obstacle"}) {
 		// An Actor is not an obstacle to itself.
 		if e == actor {
 			continue
 		}
-		obstacle := s.mgr.Component(e, "Obstacle").(*Obstacle)
+		obstacle := mgr.Component(e, "Obstacle").(*Obstacle)
 
 		switch obstacle.ObstacleType {
 		// case SmallActor: // SmallActor handled as default
 		case MediumActor:
-			hex := s.field.Get4(obstacle.M, obstacle.N)
+			hex := f.Get4(obstacle.M, obstacle.N)
 
 			if hex == nil {
 				continue
@@ -225,7 +188,7 @@ func (s *IntentSystem) obstaclesFor(actor ecs.Entity) []ContextualObstacle {
 			}
 
 		case LargeActor:
-			hex := s.field.Get7(obstacle.M, obstacle.N)
+			hex := f.Get7(obstacle.M, obstacle.N)
 
 			if hex == nil {
 				continue
@@ -241,7 +204,7 @@ func (s *IntentSystem) obstaclesFor(actor ecs.Entity) []ContextualObstacle {
 			}
 
 		default:
-			hex := s.field.Get(obstacle.M, obstacle.N)
+			hex := f.Get(obstacle.M, obstacle.N)
 
 			if hex == nil {
 				continue
@@ -255,5 +218,62 @@ func (s *IntentSystem) obstaclesFor(actor ecs.Entity) []ContextualObstacle {
 			})
 		}
 	}
-	return obstacles
+	a := mgr.Component(actor, "Actor").(*Actor)
+	switch a.Size {
+	case MEDIUM:
+		return func(k geom.Key) float64 {
+			hex := f.Get7(k.M, k.N)
+
+			if hex == nil {
+				return math.Inf(0)
+			}
+			cost := 1.0
+			for _, hex := range hex.Hexes() {
+				for _, o := range obstacles {
+					if o.M == hex.M && o.N == hex.N {
+						if math.IsInf(o.Cost, 0) {
+							return math.Inf(0)
+						}
+						cost = cost * o.Cost
+					}
+				}
+			}
+			return cost
+		}
+	case LARGE:
+		return func(k geom.Key) float64 {
+			hex := f.Get7(k.M, k.N)
+
+			if hex == nil {
+				return math.Inf(0)
+			}
+			cost := 1.0
+			for _, hex := range hex.Hexes() {
+				for _, o := range obstacles {
+					if o.M == hex.M && o.N == hex.N {
+						if math.IsInf(o.Cost, 0) {
+							return math.Inf(0)
+						}
+						cost = cost * o.Cost
+					}
+				}
+			}
+			return cost
+		}
+	default:
+		return func(k geom.Key) float64 {
+			hex := f.Get(k.M, k.N)
+
+			if hex == nil {
+				return math.Inf(0)
+			}
+			for _, o := range obstacles {
+				if o.M == hex.M && o.N == hex.N {
+					return o.Cost
+				}
+			}
+			return 1.0
+		}
+	}
+
 }
