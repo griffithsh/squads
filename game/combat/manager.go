@@ -1,6 +1,7 @@
 package combat
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"sort"
@@ -173,37 +174,25 @@ func (cm *Manager) Begin() {
 		for _, e := range mgr.Get([]string{"Obstacle"}) {
 			o := mgr.Component(e, "Obstacle").(*game.Obstacle)
 
-			if o.ObstacleType == game.MediumActor {
-				// Hex4 logic
-				for _, h := range cm.field.Get4(o.M, o.N).Hexes() {
-					blockages[geom.Key{M: h.M, N: h.N}] = struct{}{}
-				}
-			} else if o.ObstacleType == game.LargeActor {
-				// Hex7 logic
-				for _, h := range cm.field.Get7(o.M, o.N).Hexes() {
-					blockages[geom.Key{M: h.M, N: h.N}] = struct{}{}
-				}
-			} else {
-				// NB assuming everything is an obstacle, even ... I don't know, shallow water? Bushes?
-				blockages[geom.Key{M: o.M, N: o.N}] = struct{}{}
+			h := game.AdaptFieldObstacle(cm.field, o.ObstacleType).Get(o.M, o.N)
+			if h == nil {
+				panic(fmt.Sprintf("there is no hex where Obstacle(%d,%s) is present (%d,%d)", e, o.ObstacleType, o.M, o.N))
+			}
+
+			// FIXME: We're making the assumption again here that all obstacles
+			// are total obstacles. Even conceptually things like shallow water
+			// or bushes that should only impede movement slightly.
+			for _, h := range h.Hexes() {
+				blockages[h.Key()] = struct{}{}
 			}
 		}
 
-		// occupy is the list of Hexes an Actor with sz and m,n will occupy.
-		occupy := []*geom.Hex{cm.field.Get(m, n)} // Default is SMALL
-		if sz == game.MEDIUM {
-			h := cm.field.Get4(m, n)
-			if h == nil {
-				return true
-			}
-			occupy = h.Hexes()
-		} else if sz == game.LARGE {
-			h := cm.field.Get7(m, n)
-			if h == nil {
-				return true
-			}
-			occupy = h.Hexes()
+		hex := game.AdaptField(cm.field, sz).Get(m, n)
+		if hex == nil {
+			return true
 		}
+		// occupy is the list of Hexes an Actor with sz and m,n will occupy.
+		occupy := hex.Hexes()
 
 		for _, h := range occupy {
 			if h == nil {
@@ -239,53 +228,30 @@ func (cm *Manager) Begin() {
 			if isBlocked(h.M, h.N, actor.Size, cm.mgr) {
 				continue
 			}
-			switch actor.Size {
-			case game.SMALL:
-				start := cm.field.Get(h.M, h.N)
-				cm.mgr.AddComponent(e, &game.Position{
-					Center: game.Center{
-						X: start.X(),
-						Y: start.Y(),
-					},
-					Layer: 10,
-				})
 
-				cm.mgr.AddComponent(e, &game.Obstacle{
-					M:            h.M,
-					N:            h.N,
-					ObstacleType: game.SmallActor,
-				})
-			case game.MEDIUM:
-				start := cm.field.Get4(h.M, h.N)
-				cm.mgr.AddComponent(e, &game.Position{
-					Center: game.Center{
-						X: start.X(),
-						Y: start.Y(),
-					},
-					Layer: 10,
-				})
+			f := game.AdaptField(cm.field, actor.Size)
+			start := f.Get(h.M, h.N)
+			cm.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: start.X(),
+					Y: start.Y(),
+				},
+				Layer: 10,
+			})
 
-				cm.mgr.AddComponent(e, &game.Obstacle{
-					M:            h.M,
-					N:            h.N,
-					ObstacleType: game.MediumActor,
-				})
-			case game.LARGE:
-				start := cm.field.Get7(h.M, h.N)
-				cm.mgr.AddComponent(e, &game.Position{
-					Center: game.Center{
-						X: start.X(),
-						Y: start.Y(),
-					},
-					Layer: 10,
-				})
-
-				cm.mgr.AddComponent(e, &game.Obstacle{
-					M:            h.M,
-					N:            h.N,
-					ObstacleType: game.LargeActor,
-				})
+			o := game.Obstacle{
+				M:            h.M,
+				N:            h.N,
+				ObstacleType: game.SmallActor,
 			}
+			switch actor.Size {
+			case game.MEDIUM:
+				o.ObstacleType = game.MediumActor
+			case game.LARGE:
+				o.ObstacleType = game.LargeActor
+			}
+			cm.mgr.AddComponent(e, &o)
+
 			break
 		}
 
@@ -536,32 +502,17 @@ func (cm *Manager) MousePosition(x, y int) {
 		// be a glob of hexes because we're targeting an AoE fireball spell etc.
 		actor := cm.mgr.Component(ecs.Must(cm.mgr.Single([]string{"TurnToken", "Actor"})), "Actor").(*game.Actor)
 		var newSelected *geom.Key
-		switch actor.Size {
-		case game.MEDIUM:
-			h := cm.field.At4(int(wx), int(wy))
-			if h != nil {
-				newSelected = &geom.Key{
-					M: h.M,
-					N: h.N,
-				}
-			}
-		case game.LARGE:
-			h := cm.field.At7(int(wx), int(wy))
-			if h != nil {
-				newSelected = &geom.Key{
-					M: h.M,
-					N: h.N,
-				}
-			}
-		default:
-			h := cm.field.At(int(wx), int(wy))
-			if h != nil {
-				newSelected = &geom.Key{
-					M: h.M,
-					N: h.N,
-				}
+
+		f := game.AdaptField(cm.field, actor.Size)
+		h := f.At(int(wx), int(wy))
+		if h != nil {
+			k := h.Key()
+			newSelected = &geom.Key{
+				M: k.M,
+				N: k.N,
 			}
 		}
+
 		if newSelected != nil && cm.selectedHex != nil {
 			if *newSelected != *cm.selectedHex {
 				cm.selectedHex = newSelected
@@ -603,21 +554,10 @@ func (cm *Manager) syncActorObstacle(evt game.CombatActorMovementConcluded) {
 	obstacle := cm.mgr.Component(evt.Entity, "Obstacle").(*game.Obstacle)
 	position := cm.mgr.Component(evt.Entity, "Position").(*game.Position)
 
-	switch actor.Size {
-	case game.MEDIUM:
-		h := cm.field.At4(int(position.Center.X), int(position.Center.Y))
-		obstacle.M = h.M
-		obstacle.N = h.N
-	case game.LARGE:
-		h := cm.field.At7(int(position.Center.X), int(position.Center.Y))
-		obstacle.M = h.M
-		obstacle.N = h.N
-	default:
-		h := cm.field.At(int(position.Center.X), int(position.Center.Y))
-		obstacle.M = h.M
-		obstacle.N = h.N
-	}
-
+	h := game.AdaptField(cm.field, actor.Size).At(int(position.Center.X), int(position.Center.Y))
+	k := h.Key()
+	obstacle.M = k.M
+	obstacle.N = k.N
 }
 
 func (cm *Manager) handleMovementConcluded(t event.Typer) {

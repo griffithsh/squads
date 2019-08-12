@@ -545,3 +545,104 @@ func xyToMN(x, y, m, n int) (int, int) {
 		panic("lookup table contained a value other than -1, 0, or 1: incoherant state not handled")
 	}
 }
+
+// LogicalField is a representation of a Field that provides LogicalHexes from
+// calls to At() and Get().
+type LogicalField interface {
+	At(x, y int) LogicalHex
+	Get(m, n int) LogicalHex
+}
+
+// LogicalHex is a Hex that does not specify its size. It might be a Hex, Hex4,
+// or Hex7.
+type LogicalHex interface {
+	Hexes() []*Hex
+	X() float64
+	Y() float64
+	Key() Key
+}
+
+// Field1 is a specialization of Field that provides At and Get for single
+// Hexes.
+type Field1 struct {
+	f *Field
+}
+
+// NewField1 creates a new Field1.
+func NewField1(f *Field) *Field1 {
+	return &Field1{f: f}
+}
+
+// At converts world coordinates to a LogicalHex if it exists in the Field.
+func (f1 *Field1) At(x, y int) LogicalHex {
+	h := f1.f.At(x, y)
+	if h == nil {
+		return nil
+	}
+	return h
+}
+
+// Get returns the LogicalHex at M,N if it exists in the Field.
+func (f1 *Field1) Get(m, n int) LogicalHex {
+	h := f1.f.Get(m, n)
+	if h == nil {
+		return nil
+	}
+	return h
+}
+
+// Field4 is a specialization of Field that provides At and Get for Hex4s.
+type Field4 struct {
+	f *Field
+}
+
+// NewField4 creates a new Field4.
+func NewField4(f *Field) *Field4 {
+	return &Field4{f: f}
+}
+
+// At converts world coordinates to a LogicalHex if it exists in the Field.
+func (f4 *Field4) At(x, y int) LogicalHex {
+	h := f4.f.At4(x, y)
+	if h == nil {
+		return nil
+	}
+	return h
+}
+
+// Get returns the LogicalHex at M,N if it exists in the Field.
+func (f4 *Field4) Get(m, n int) LogicalHex {
+	h := f4.f.Get4(m, n)
+	if h == nil {
+		return nil
+	}
+	return h
+}
+
+// Field7 is a specialization of Field that provides At and Get for Hex7s.
+type Field7 struct {
+	f *Field
+}
+
+// NewField7 creates a new Field7.
+func NewField7(f *Field) *Field7 {
+	return &Field7{f: f}
+}
+
+// At converts world coordinates to a LogicalHex if it exists in the Field.
+func (f7 *Field7) At(x, y int) LogicalHex {
+	h := f7.f.At7(x, y)
+	if h == nil {
+		return nil
+	}
+	return h
+}
+
+// Get returns the LogicalHex at M,N if it exists in the Field.
+func (f7 *Field7) Get(m, n int) LogicalHex {
+	h := f7.f.Get7(m, n)
+	if h == nil {
+		return nil
+	}
+	return h
+}

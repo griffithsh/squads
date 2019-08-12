@@ -18,9 +18,9 @@ func (h *Hex4) Y() float64 {
 	return yStride + float64(yStride*h.N) + yStride
 }
 
-// Neighbors of this Hex.
-func (h *Hex4) Neighbors() []*Hex4 {
-	return h.neighbors
+// Key returns the M,N coordinates of this Hex4.
+func (h *Hex4) Key() Key {
+	return Key{h.M, h.N}
 }
 
 // Hexes returns the Hexes that compose this Hex4.

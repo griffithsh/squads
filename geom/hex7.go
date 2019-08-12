@@ -18,9 +18,9 @@ func (h *Hex7) Y() float64 {
 	return yStride + float64(yStride*h.N)
 }
 
-// Neighbors of this Hex7.
-func (h *Hex7) Neighbors() []*Hex7 {
-	return h.neighbors
+// Key returns the M,N coordinates of this Hex7.
+func (h *Hex7) Key() Key {
+	return Key{h.M, h.N}
 }
 
 // Hexes returns the Hexes that compose this Hex7.

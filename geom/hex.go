@@ -25,7 +25,14 @@ func (h *Hex) Y() float64 {
 	return yStride + float64(yStride*h.N)
 }
 
-// Neighbors of this Hex.
-func (h *Hex) Neighbors() []*Hex {
-	return h.neighbors
+// Key returns the M,N coordinates of this Hex.
+func (h *Hex) Key() Key {
+	return Key{h.M, h.N}
+}
+
+// Hexes returns the Hexes that compose this Hex. In all cases this is simply
+// the hex itself. This method is implemented so that it can share a common
+// interface with the composite Hex types Hex4 and Hex7.
+func (h *Hex) Hexes() []*Hex {
+	return []*Hex{h}
 }

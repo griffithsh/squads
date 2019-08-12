@@ -31,6 +31,7 @@
 - [ ] Intent Queue(?) for AI Actors
 
 ## MAYDO
+- [x] Move Hex, Hex4, Hex7 split up to Field1, Field4, Field7, so that they can all return LogicalHex for At(), Get() etc.
 - [ ] Structuralise the way systems are registered with an ecs.World, so that all things that update can be found in a consistent place
 - [ ] Other Animation types
   - [ ] Jump Animation - makes the entity go up then down, then auto-ends

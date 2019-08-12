@@ -167,18 +167,13 @@ func (cm *CursorManager) repaintPathNavigationCursor() {
 	stats := cm.mgr.Component(entities[0], "CombatStats").(*game.CombatStats)
 	pos := cm.mgr.Component(entities[0], "Position").(*game.Position)
 
+	f := game.AdaptField(cm.field, actor.Size)
+
 	var start, goal geom.Key
-	switch actor.Size {
-	case game.MEDIUM:
-		sh := cm.field.At4(int(pos.Center.X), int(pos.Center.Y))
-		start = geom.Key{M: sh.M, N: sh.N}
-	case game.LARGE:
-		sh := cm.field.At7(int(pos.Center.X), int(pos.Center.Y))
-		start = geom.Key{M: sh.M, N: sh.N}
-	default:
-		sh := cm.field.At(int(pos.Center.X), int(pos.Center.Y))
-		start = geom.Key{M: sh.M, N: sh.N}
-	}
+
+	sh := f.At(int(pos.Center.X), int(pos.Center.Y))
+	start = sh.Key()
+
 	exists := game.ExistsFuncFactory(cm.field, actor.Size)
 	costs := game.CostsFuncFactory(cm.field, cm.mgr, entities[0])
 
@@ -197,56 +192,11 @@ func (cm *CursorManager) repaintPathNavigationCursor() {
 	goal = *cm.selectedKey
 	steps, err = geom.Navigate(start, goal, exists, costs)
 	if err != nil {
-		switch actor.Size {
-		case game.MEDIUM:
-			h4 := cm.field.Get4(goal.M, goal.N)
-			if h4 == nil {
-				goto repaintLabel
-			}
-			for _, h := range h4.Hexes() {
-				c = append(c, comps{
-					s: game.Sprite{
-						Texture: "cursors.png",
-
-						X: 24, Y: 16,
-						W: 24, H: 16,
-					},
-					p: game.Position{
-						Center: game.Center{
-							X: h.X(),
-							Y: h.Y(),
-						},
-						Layer: 10,
-					},
-				})
-			}
-		case game.LARGE:
-			h7 := cm.field.Get7(goal.M, goal.N)
-			if h7 == nil {
-				goto repaintLabel
-			}
-			for _, h := range h7.Hexes() {
-				c = append(c, comps{
-					s: game.Sprite{
-						Texture: "cursors.png",
-
-						X: 24, Y: 16,
-						W: 24, H: 16,
-					},
-					p: game.Position{
-						Center: game.Center{
-							X: h.X(),
-							Y: h.Y(),
-						},
-						Layer: 10,
-					},
-				})
-			}
-		default:
-			h := cm.field.Get(goal.M, goal.N)
-			if h == nil {
-				goto repaintLabel
-			}
+		h := f.Get(goal.M, goal.N)
+		if h == nil {
+			goto repaintLabel
+		}
+		for _, h := range h.Hexes() {
 			c = append(c, comps{
 				s: game.Sprite{
 					Texture: "cursors.png",
@@ -267,61 +217,11 @@ func (cm *CursorManager) repaintPathNavigationCursor() {
 	}
 
 	for _, step := range steps {
-		switch actor.Size {
-		case game.MEDIUM:
-			h4 := cm.field.Get4(step.M, step.N)
-			for _, h := range h4.Hexes() {
-				if _, ok := used[h]; ok {
-					continue
-				}
-				used[h] = struct{}{}
-				c = append(c, comps{
-					s: game.Sprite{
-						Texture: "cursors.png",
-
-						X: 0, Y: 16,
-						W: 24, H: 16,
-					},
-					p: game.Position{
-						Center: game.Center{
-							X: h.X(),
-							Y: h.Y(),
-						},
-						Layer: 10,
-					},
-				})
-				if int(step.Cost) > stats.ActionPoints {
-					c[len(c)-1].s.X = 48
-				}
+		h := f.Get(step.M, step.N)
+		for _, h := range h.Hexes() {
+			if _, ok := used[h]; ok {
+				continue
 			}
-		case game.LARGE:
-			h7 := cm.field.Get7(step.M, step.N)
-			for _, h := range h7.Hexes() {
-				if _, ok := used[h]; ok {
-					continue
-				}
-				used[h] = struct{}{}
-				c = append(c, comps{
-					s: game.Sprite{
-						Texture: "cursors.png",
-
-						X: 0, Y: 16,
-						W: 24, H: 16,
-					},
-					p: game.Position{
-						Center: game.Center{
-							X: h.X(),
-							Y: h.Y(),
-						},
-						Layer: 10,
-					},
-				})
-				if int(step.Cost) > stats.ActionPoints {
-					c[len(c)-1].s.X = 48
-				}
-			}
-		default:
-			h := cm.field.Get(step.M, step.N)
 			used[h] = struct{}{}
 			c = append(c, comps{
 				s: game.Sprite{
