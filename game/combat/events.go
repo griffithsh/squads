@@ -1,6 +1,9 @@
 package combat
 
-import "github.com/griffithsh/squads/event"
+import (
+	"github.com/griffithsh/squads/event"
+	"github.com/griffithsh/squads/geom"
+)
 
 // StateTransition occurs when the combat's state changes
 type StateTransition struct {
@@ -15,7 +18,7 @@ func (StateTransition) Type() event.Type {
 // DifferentHexSelected occurs when the user has selected a different hex - i.e.
 // via mousing over.
 type DifferentHexSelected struct {
-	M,N int
+	K *geom.Key
 }
 
 // Type of the Event.

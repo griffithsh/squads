@@ -44,9 +44,10 @@ type Manager struct {
 	hud     *HUD
 	cursors *CursorManager
 
-	x, y             int     // where the mouse last was in screen coordinates
-	wx, wy           float64 // where the mouse last was in world coordinates
-	screenW, screenH float64 // most recent dimensions of the window
+	x, y             int       // where the mouse last was in screen coordinates
+	wx, wy           float64   // where the mouse last was in world coordinates
+	screenW, screenH float64   // most recent dimensions of the window
+	selectedHex      *geom.Key // most recent hex selected
 
 	// actors ActorSystem...?
 	intents *game.IntentSystem
@@ -533,11 +534,50 @@ func (cm *Manager) MousePosition(x, y int) {
 		// the hex that the mouse is hovering over has changed. It might be a
 		// path of hexes because we're selecting a place to move to, or it might
 		// be a glob of hexes because we're targeting an AoE fireball spell etc.
-		h := cm.field.At(int(wx), int(wy))
-		cm.bus.Publish(&DifferentHexSelected{
-			M: h.M,
-			N: h.N,
-		})
+		actor := cm.mgr.Component(ecs.Must(cm.mgr.Single([]string{"TurnToken", "Actor"})), "Actor").(*game.Actor)
+		var newSelected *geom.Key
+		switch actor.Size {
+		case game.MEDIUM:
+			h := cm.field.At4(int(wx), int(wy))
+			if h != nil {
+				newSelected = &geom.Key{
+					M: h.M,
+					N: h.N,
+				}
+			}
+		case game.LARGE:
+			h := cm.field.At7(int(wx), int(wy))
+			if h != nil {
+				newSelected = &geom.Key{
+					M: h.M,
+					N: h.N,
+				}
+			}
+		default:
+			h := cm.field.At(int(wx), int(wy))
+			if h != nil {
+				newSelected = &geom.Key{
+					M: h.M,
+					N: h.N,
+				}
+			}
+		}
+		if newSelected != nil && cm.selectedHex != nil {
+			if *newSelected != *cm.selectedHex {
+				cm.selectedHex = newSelected
+
+				cm.bus.Publish(&DifferentHexSelected{
+					K: cm.selectedHex,
+				})
+
+			}
+		} else if newSelected != cm.selectedHex {
+			cm.selectedHex = newSelected
+
+			cm.bus.Publish(&DifferentHexSelected{
+				K: cm.selectedHex,
+			})
+		}
 	}
 
 	// Update local cached values

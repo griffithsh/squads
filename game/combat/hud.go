@@ -97,7 +97,6 @@ func NewHUD(mgr *ecs.World, bus *event.Bus, screenX int, screenY int) *HUD {
 	bus.Subscribe(game.CombatBegan{}.Type(), hud.handleCombatBegan)
 	bus.Subscribe(game.CombatStatModified{}.Type(), hud.handleCombatStatModified)
 	bus.Subscribe(StateTransition{}.Type(), hud.handleCombatStateTransition)
-	bus.Subscribe(DifferentHexSelected{}.Type(), hud.handleDifferentHexSelected)
 
 	return &hud
 }
@@ -150,12 +149,6 @@ func (hud *HUD) handleCombatStateTransition(ev event.Typer) {
 	} else {
 		hud.hideTimePassingIcon()
 	}
-}
-
-func (hud *HUD) handleDifferentHexSelected(ev event.Typer) {
-
-	// TODO!
-	// invalidate
 }
 
 // Update the HUD. Synchronise the current game state to the Entities that compose it.
