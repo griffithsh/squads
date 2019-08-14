@@ -255,7 +255,7 @@ func (hud *HUD) hideCurrentActor() {
 }
 
 func (hud *HUD) repaintCurrentActor() {
-	parent := hud.mgr.AnyTagged(currentActorHovererTag)
+	parent := hud.mgr.AnyTagged(currentActorTag)
 	if parent == 0 {
 		return
 	}
