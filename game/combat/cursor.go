@@ -111,12 +111,12 @@ func (cm *CursorManager) repaintLiveActors() {
 				spr.W = 24
 				spr.H = 16
 			case game.MEDIUM:
-				spr.X = 0
+				spr.X = 58
 				spr.Y = 32
 				spr.W = 58
 				spr.H = 32
 			case game.LARGE:
-				spr.X = 0
+				spr.X = 58
 				spr.Y = 64
 				spr.W = 58
 				spr.H = 48

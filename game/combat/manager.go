@@ -191,6 +191,7 @@ func (cm *Manager) Begin() {
 		if hex == nil {
 			return true
 		}
+
 		// occupy is the list of Hexes an Actor with sz and m,n will occupy.
 		occupy := hex.Hexes()
 
