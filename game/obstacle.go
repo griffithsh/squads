@@ -3,6 +3,8 @@ package game
 // ObstacleType is an enum.
 type ObstacleType int
 
+//go:generate stringer -type=ObstacleType
+
 // ObstacleTypes represent the thing that is the obstacle. These might be static
 // obstacle types, like a Tree or Rock, or another Actor could be an Obstacle
 // too.
