@@ -45,6 +45,8 @@ type Manager struct {
 	hud     *HUD
 	cursors *CursorManager
 
+	incrementAccumulator float64
+
 	x, y             int       // where the mouse last was in screen coordinates
 	wx, wy           float64   // where the mouse last was in world coordinates
 	screenW, screenH float64   // most recent dimensions of the window
@@ -323,7 +325,10 @@ func (cm *Manager) Run(elapsed time.Duration) {
 	switch cm.state {
 	case PreparingState:
 		// Use the elapsed time as a base for the preparation increment.
-		increment := int(elapsed.Seconds() * 500)
+		const prepPerSec float64 = 500
+		cm.incrementAccumulator += elapsed.Seconds() * prepPerSec
+		increment := int(cm.incrementAccumulator)
+		cm.incrementAccumulator -= float64(increment)
 
 		// But if any Actor requires less than that, then only use that amount
 		// instead, so that no actor overshoots its PreparationThreshold.
