@@ -62,6 +62,16 @@ func (CancelSkillRequested) Type() event.Type {
 	return "game.CancelSkillRequested"
 }
 
+// CombatActorMovementCommenced occurs when an actor has begun their movement.
+type CombatActorMovementCommenced struct {
+	Entity ecs.Entity
+}
+
+// Type of the Event.
+func (CombatActorMovementCommenced) Type() event.Type {
+	return "game.CombatActorMovementCommenced"
+}
+
 // CombatActorMovementConcluded occurs when an actor has finished their movement.
 type CombatActorMovementConcluded struct {
 	Entity ecs.Entity

@@ -50,8 +50,8 @@ type Manager struct {
 	screenW, screenH float64   // most recent dimensions of the window
 	selectedHex      *geom.Key // most recent hex selected
 
-	// actors ActorSystem...?
-	intents *game.IntentSystem
+	intents      *game.IntentSystem
+	performances *PerformanceSystem
 }
 
 // NewManager should accept two opposing squads of characters, a list of
@@ -69,9 +69,10 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 		nav:    game.NewNavigator(bus),
 		camera: camera,
 		// state:   TODO: some-uninitialised-state
-		hud:     NewHUD(mgr, bus, camera.GetW(), camera.GetH()),
-		cursors: NewCursorManager(mgr, bus, f),
-		intents: game.NewIntentSystem(mgr, bus, f),
+		hud:          NewHUD(mgr, bus, camera.GetW(), camera.GetH()),
+		cursors:      NewCursorManager(mgr, bus, f),
+		intents:      game.NewIntentSystem(mgr, bus, f),
+		performances: NewPerformanceSystem(mgr, bus),
 	}
 	cm.setState(PreparingState)
 
@@ -256,47 +257,8 @@ func (cm *Manager) Begin() {
 			break
 		}
 
-		// Add Sprites for Actors.
-		if actor.Size == game.SMALL {
-			cm.mgr.AddComponent(e, &game.Sprite{
-				Texture: "figure.png",
-				X:       0,
-				Y:       0,
-				W:       24,
-				H:       48,
-				OffsetY: -16,
-			})
-			fa := game.FrameAnimation{
-				Frames: []game.Sprite{
-					game.Sprite{
-						Texture: "figure.png",
-						X:       0,
-						Y:       0,
-						W:       24,
-						H:       48,
-						OffsetY: -16,
-					},
-					game.Sprite{
-						Texture: "figure.png",
-						X:       48,
-						Y:       0,
-						W:       24,
-						H:       48,
-						OffsetY: -16,
-					},
-					game.Sprite{
-						Texture: "figure.png",
-						X:       24,
-						Y:       0,
-						W:       24,
-						H:       48,
-						OffsetY: -16,
-					},
-				},
-				Timings: []time.Duration{1500 * time.Millisecond, 300 * time.Millisecond, 300 * time.Millisecond},
-			}
-			cm.mgr.AddComponent(e, fa.Randomise())
-		} else if actor.Size == game.MEDIUM {
+		// Temporarily hack in some Sprites for Actors.
+		if actor.Size == game.MEDIUM {
 			cm.mgr.AddComponent(e, &game.Sprite{
 				Texture: "wolf.png",
 				X:       0,
@@ -326,7 +288,7 @@ func (cm *Manager) Begin() {
 	}
 
 	// Announce that the Combat has begun.
-	cm.bus.Publish(game.CombatBegan{})
+	cm.bus.Publish(&game.CombatBegan{})
 }
 
 // End should be called at the resolution of a combat encounter. It removes
@@ -419,6 +381,7 @@ func (cm *Manager) Run(elapsed time.Duration) {
 	}
 
 	cm.intents.Update()
+	cm.performances.Update(cm.mgr, elapsed)
 	cm.hud.Update(elapsed)
 	cm.cursors.Update(elapsed)
 }
@@ -550,7 +513,7 @@ func (cm *Manager) actorAwaitingInput() ecs.Entity {
 
 // syncActorObstacle updates the an Actor's Obstacle to be synchronised with its
 // position. It should be called when an Actor has completed a move.
-func (cm *Manager) syncActorObstacle(evt game.CombatActorMovementConcluded) {
+func (cm *Manager) syncActorObstacle(evt *game.CombatActorMovementConcluded) {
 	actor := cm.mgr.Component(evt.Entity, "Actor").(*game.Actor)
 	obstacle := cm.mgr.Component(evt.Entity, "Obstacle").(*game.Obstacle)
 	position := cm.mgr.Component(evt.Entity, "Position").(*game.Position)
@@ -563,7 +526,7 @@ func (cm *Manager) syncActorObstacle(evt game.CombatActorMovementConcluded) {
 
 func (cm *Manager) handleMovementConcluded(t event.Typer) {
 	// FIXME: Should Obstacle movement be handled by an "obstacle" system instead?
-	cm.syncActorObstacle(t.(game.CombatActorMovementConcluded))
+	cm.syncActorObstacle(t.(*game.CombatActorMovementConcluded))
 
 	cm.setState(AwaitingInputState)
 	cm.MousePosition(cm.x, cm.y)

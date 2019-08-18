@@ -57,7 +57,7 @@ func (s *IntentSystem) Update() {
 		goalHex := f.At(int(intent.X), int(intent.Y))
 		if startHex == nil || goalHex == nil {
 			// Don't navigate.
-			s.Publish(CombatActorMovementConcluded{Entity: e})
+			s.Publish(&CombatActorMovementConcluded{Entity: e})
 			continue
 		}
 		start = startHex.Key()
@@ -73,7 +73,7 @@ func (s *IntentSystem) Update() {
 		steps, err := geom.Navigate(start, goal, exists, costs)
 		if err != nil {
 			fmt.Printf("Navigate: %v\n", err)
-			s.Publish(CombatActorMovementConcluded{Entity: e})
+			s.Publish(&CombatActorMovementConcluded{Entity: e})
 			continue
 		}
 

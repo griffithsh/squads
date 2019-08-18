@@ -27,6 +27,8 @@
 - [ ] Facing (for backstab damage)
 - [ ] Profession and Sex for every Actor and a mapping between those and a set of animations
 - [ ] Animations at a game-concept level
+  - [ ] A _Performance_ System?
+        Actors Perform Movement, Striking with a weapon, Spellcasting, Hurt, Victory, and Dying
 - [ ] Medium and Large Actor art
 - [ ] Intent Queue(?) for AI Actors
 

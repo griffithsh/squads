@@ -36,6 +36,8 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			// First move is a little slow.
 			mover.Speed = 0.5
 
+			nav.Publish(&CombatActorMovementCommenced{Entity: e})
+
 			// Start-of-move tasks...
 			mover.Elapsed = 0
 			mover.Duration = time.Duration(speed / mover.Speed)
@@ -61,7 +63,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			// Are we done?
 			if len(mover.Moves) == 0 {
 				mgr.RemoveComponent(e, mover)
-				nav.Publish(CombatActorMovementConcluded{Entity: e})
+				nav.Publish(&CombatActorMovementConcluded{Entity: e})
 				continue
 			}
 
@@ -74,6 +76,8 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			case 1:
 				mover.Speed = 0.30
 			}
+
+			nav.Publish(&CombatActorMovementCommenced{Entity: e})
 
 			// Start-of-move tasks...
 			mover.Elapsed -= mover.Duration
