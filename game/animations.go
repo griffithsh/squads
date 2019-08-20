@@ -84,7 +84,7 @@ type AnimationSystem struct{}
 
 // Update all Animated Entities.
 func (as *AnimationSystem) Update(mgr *ecs.World, elapsed time.Duration) {
-	for _, e := range mgr.Get([]string{"FrameAnimation", "Sprite"}) {
+	for _, e := range mgr.Get([]string{"FrameAnimation"}) {
 		anim := mgr.Component(e, "FrameAnimation").(*FrameAnimation)
 
 		anim.Pointer += elapsed

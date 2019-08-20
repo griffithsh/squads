@@ -24,11 +24,10 @@
 - [x] Add Move and cancel buttons to go in and out of move mode
 - [x] Actors always have a boundary line to demarcate the hexes they occupy
 - [ ] Negative coordinates should no longer wrap absolutely positioned Sprites - bottom or right-aligned renderable should be positioned via the HUDs copy of the screen center
-- [ ] Facing (for backstab damage)
-- [ ] Profession and Sex for every Actor and a mapping between those and a set of animations
-- [ ] Animations at a game-concept level
-  - [ ] A _Performance_ System?
-        Actors Perform Movement, Striking with a weapon, Spellcasting, Hurt, Victory, and Dying
+- [x] Facing (for backstab damage)
+- [x] Profession and Sex for every Actor and a mapping between those and a set of animations
+- [x] Animations at a game-concept level
+  - [x] A _Performance_ System
 - [ ] Medium and Large Actor art
 - [ ] Intent Queue(?) for AI Actors
 

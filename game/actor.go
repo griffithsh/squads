@@ -1,6 +1,6 @@
 package game
 
-//go:generate stringer -type=ActorSize
+//go:generate stringer -output=./actor_string.go -type=ActorSize,ActorProfession,ActorSex,ActorPerformance
 
 // ActorSize enumerates Sizes for Actors.
 type ActorSize int
@@ -13,6 +13,34 @@ const (
 	LARGE
 )
 
+type ActorProfession int
+
+const (
+	Villager ActorProfession = iota
+	Wolf
+	Giant
+)
+
+type ActorSex int
+
+const (
+	Male ActorSex = iota
+	Female
+)
+
+type ActorPerformance int
+
+const (
+	PerformIdle ActorPerformance = iota
+	PerformMove
+	PerformSkill1
+	PerformSkill2
+	PerformSkill3
+	PerformHurt
+	PerformDying
+	PerformVictory
+)
+
 // Actor is a component that can be commanded to do things. Or maybe it's just an animator?
 type Actor struct {
 	// Things that don't affect gameplay.
@@ -21,8 +49,10 @@ type Actor struct {
 	BigIcon   Sprite // (52x52)
 
 	// Intrinsic to the Actor
-	Size ActorSize
-	// Sex
+	Size        ActorSize
+	Profession  ActorProfession
+	Sex         ActorSex
+	Performance ActorPerformance
 
 	PreparationThreshold int // Preparation required to take a turn
 	ActionPoints         int

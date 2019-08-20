@@ -259,29 +259,6 @@ func (cm *Manager) Begin() {
 			break
 		}
 
-		// Temporarily hack in some Sprites for Actors.
-		if actor.Size == game.MEDIUM {
-			cm.mgr.AddComponent(e, &game.Sprite{
-				Texture: "wolf.png",
-				X:       0,
-				Y:       0,
-				W:       58,
-				H:       48,
-				OffsetY: -4,
-			})
-		} else if actor.Size == game.LARGE {
-			cm.mgr.AddComponent(e, &game.Sprite{
-				Texture: "figure.png",
-				X:       0,
-				Y:       0,
-				W:       24,
-				H:       48,
-				OffsetY: -32,
-			})
-			// FIXME: Add real art for Large Actor, not scaled.
-			cm.mgr.AddComponent(e, &game.Scale{X: 2, Y: 2})
-		}
-
 		cm.mgr.AddComponent(e, &game.CombatStats{
 			CurrentPreparation: 0,
 			ActionPoints:       actor.ActionPoints,

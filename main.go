@@ -129,6 +129,8 @@ func setup(w, h int) (*system, error) {
 	mgr.AddComponent(e, &game.Actor{
 		Name:                 "Samithee",
 		Size:                 game.SMALL,
+		Sex:                  game.Male,
+		Profession:           game.Villager,
 		PreparationThreshold: 701,
 		ActionPoints:         100,
 		SmallIcon: game.Sprite{
@@ -152,6 +154,8 @@ func setup(w, h int) (*system, error) {
 	mgr.AddComponent(e, &game.Actor{
 		Name:                 "Timjamen",
 		Size:                 game.SMALL,
+		Sex:                  game.Male,
+		Profession:           game.Villager,
 		PreparationThreshold: 699,
 		ActionPoints:         100,
 		SmallIcon: game.Sprite{
@@ -177,6 +181,8 @@ func setup(w, h int) (*system, error) {
 	mgr.AddComponent(e, &game.Actor{
 		Name:                 "Wolf",
 		Size:                 game.MEDIUM,
+		Sex:                  game.Male,
+		Profession:           game.Wolf,
 		PreparationThreshold: 1103,
 		ActionPoints:         80,
 		SmallIcon: game.Sprite{
@@ -200,6 +206,8 @@ func setup(w, h int) (*system, error) {
 	mgr.AddComponent(e, &game.Actor{
 		Name:                 "Giant",
 		Size:                 game.LARGE,
+		Sex:                  game.Male,
+		Profession:           game.Giant,
 		PreparationThreshold: 1301,
 		ActionPoints:         120,
 		SmallIcon: game.Sprite{
