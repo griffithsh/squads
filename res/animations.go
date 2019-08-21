@@ -25,7 +25,7 @@ var All = map[string]Animation{
 		{"figure.png", 48, 48, 24, 48, 0, -16, 150 * time.Millisecond},
 	}},
 	"Giant": {[]Frame{
-		{"giant.png", 0, 0, 48, 96, 0, -32, 1 * time.Second},
+		{"giant.png", 0, 0, 48, 96, 0, -16, 1 * time.Second},
 	}},
 	"Wolf": {[]Frame{
 		{"wolf.png", 0, 0, 58, 48, 0, -4, 1 * time.Second},

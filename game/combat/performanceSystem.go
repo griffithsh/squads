@@ -121,8 +121,47 @@ type animationId struct {
 // links is the declaration map between animationId and string keys present in
 // res.All.
 var links = map[animationId]string{
-	animationId{game.Villager, game.Male, game.PerformIdle, geom.N}: "Villager-Male-Idle",
-	animationId{game.Villager, game.Male, game.PerformIdle, geom.S}: "Villager-Male-Idle",
+	animationId{game.Villager, game.Male, game.PerformIdle, geom.N}:  "Villager-Male-Idle",
+	animationId{game.Villager, game.Male, game.PerformIdle, geom.S}:  "Villager-Male-Idle",
+	animationId{game.Villager, game.Male, game.PerformIdle, geom.SE}: "Villager-Male-Idle",
+	animationId{game.Villager, game.Male, game.PerformIdle, geom.SW}: "Villager-Male-Idle",
+	animationId{game.Villager, game.Male, game.PerformIdle, geom.NE}: "Villager-Male-Idle",
+	animationId{game.Villager, game.Male, game.PerformIdle, geom.NW}: "Villager-Male-Idle",
+
+	animationId{game.Villager, game.Male, game.PerformMove, geom.N}:  "Villager-Male-Move",
+	animationId{game.Villager, game.Male, game.PerformMove, geom.S}:  "Villager-Male-Move",
+	animationId{game.Villager, game.Male, game.PerformMove, geom.SE}: "Villager-Male-Move",
+	animationId{game.Villager, game.Male, game.PerformMove, geom.SW}: "Villager-Male-Move",
+	animationId{game.Villager, game.Male, game.PerformMove, geom.NE}: "Villager-Male-Move",
+	animationId{game.Villager, game.Male, game.PerformMove, geom.NW}: "Villager-Male-Move",
+
+	animationId{game.Wolf, game.Male, game.PerformIdle, geom.N}:  "Wolf",
+	animationId{game.Wolf, game.Male, game.PerformIdle, geom.S}:  "Wolf",
+	animationId{game.Wolf, game.Male, game.PerformIdle, geom.SE}: "Wolf",
+	animationId{game.Wolf, game.Male, game.PerformIdle, geom.SW}: "Wolf",
+	animationId{game.Wolf, game.Male, game.PerformIdle, geom.NE}: "Wolf",
+	animationId{game.Wolf, game.Male, game.PerformIdle, geom.NW}: "Wolf",
+
+	animationId{game.Wolf, game.Male, game.PerformMove, geom.N}:  "Wolf",
+	animationId{game.Wolf, game.Male, game.PerformMove, geom.S}:  "Wolf",
+	animationId{game.Wolf, game.Male, game.PerformMove, geom.SE}: "Wolf",
+	animationId{game.Wolf, game.Male, game.PerformMove, geom.SW}: "Wolf",
+	animationId{game.Wolf, game.Male, game.PerformMove, geom.NE}: "Wolf",
+	animationId{game.Wolf, game.Male, game.PerformMove, geom.NW}: "Wolf",
+
+	animationId{game.Giant, game.Male, game.PerformIdle, geom.N}:  "Giant",
+	animationId{game.Giant, game.Male, game.PerformIdle, geom.S}:  "Giant",
+	animationId{game.Giant, game.Male, game.PerformIdle, geom.SE}: "Giant",
+	animationId{game.Giant, game.Male, game.PerformIdle, geom.SW}: "Giant",
+	animationId{game.Giant, game.Male, game.PerformIdle, geom.NE}: "Giant",
+	animationId{game.Giant, game.Male, game.PerformIdle, geom.NW}: "Giant",
+
+	animationId{game.Wolf, game.Male, game.PerformMove, geom.N}:  "Wolf",
+	animationId{game.Wolf, game.Male, game.PerformMove, geom.S}:  "Wolf",
+	animationId{game.Wolf, game.Male, game.PerformMove, geom.SE}: "Wolf",
+	animationId{game.Wolf, game.Male, game.PerformMove, geom.SW}: "Wolf",
+	animationId{game.Wolf, game.Male, game.PerformMove, geom.NE}: "Wolf",
+	animationId{game.Wolf, game.Male, game.PerformMove, geom.NW}: "Wolf",
 }
 
 // final map between animationId and game.FrameAnimation.
