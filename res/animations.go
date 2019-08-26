@@ -30,4 +30,10 @@ var All = map[string]Animation{
 	"Wolf": {[]Frame{
 		{"wolf.png", 0, 0, 58, 48, 0, -4, 1 * time.Second},
 	}},
+	"Skeleton-Idle-S": {[]Frame{
+		{"skeleton.png", 0, 0, 24, 48, 0, -16, 800 * time.Millisecond},
+		{"skeleton.png", 24, 0, 24, 48, 0, -16, 450 * time.Millisecond},
+		{"skeleton.png", 48, 0, 24, 48, 0, -16, 800 * time.Millisecond},
+		{"skeleton.png", 72, 0, 24, 48, 0, -16, 450 * time.Millisecond},
+	}},
 }

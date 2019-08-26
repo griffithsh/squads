@@ -227,6 +227,31 @@ func setup(w, h int) (*system, error) {
 	})
 	mgr.AddComponent(e, t)
 
+	e = mgr.NewEntity()
+	mgr.AddComponent(e, &game.Actor{
+		Name:                 "Dumble",
+		Size:                 game.SMALL,
+		Sex:                  game.Male,
+		Profession:           game.Skeleton,
+		PreparationThreshold: 1850,
+		ActionPoints:         60,
+		SmallIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       104,
+			Y:       76,
+			W:       0,
+			H:       0,
+		},
+		BigIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       104,
+			Y:       24,
+			W:       0,
+			H:       0,
+		},
+	})
+	mgr.AddComponent(e, t)
+
 	// Start combat!
 	s.combat.Begin( /* a thing that has enough information to construct a Field and the enemies you'll face in the combat */ )
 

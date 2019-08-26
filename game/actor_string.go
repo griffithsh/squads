@@ -30,11 +30,12 @@ func _() {
 	_ = x[Villager-0]
 	_ = x[Wolf-1]
 	_ = x[Giant-2]
+	_ = x[Skeleton-3]
 }
 
-const _ActorProfession_name = "VillagerWolfGiant"
+const _ActorProfession_name = "VillagerWolfGiantSkeleton"
 
-var _ActorProfession_index = [...]uint8{0, 8, 12, 17}
+var _ActorProfession_index = [...]uint8{0, 8, 12, 17, 25}
 
 func (i ActorProfession) String() string {
 	if i < 0 || i >= ActorProfession(len(_ActorProfession_index)-1) {

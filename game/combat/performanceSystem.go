@@ -162,6 +162,13 @@ var links = map[animationId]string{
 	animationId{game.Wolf, game.Male, game.PerformMove, geom.SW}: "Wolf",
 	animationId{game.Wolf, game.Male, game.PerformMove, geom.NE}: "Wolf",
 	animationId{game.Wolf, game.Male, game.PerformMove, geom.NW}: "Wolf",
+
+	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.N}:  "Skeleton-Idle-S",
+	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.S}:  "Skeleton-Idle-S",
+	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.SE}: "Skeleton-Idle-S",
+	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.SW}: "Skeleton-Idle-S",
+	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.NE}: "Skeleton-Idle-S",
+	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.NW}: "Skeleton-Idle-S",
 }
 
 // final map between animationId and game.FrameAnimation.

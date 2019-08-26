@@ -19,6 +19,7 @@ const (
 	Villager ActorProfession = iota
 	Wolf
 	Giant
+	Skeleton
 )
 
 type ActorSex int
