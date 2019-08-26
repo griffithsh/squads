@@ -363,7 +363,7 @@ func (cm *Manager) Run(elapsed time.Duration) {
 	}
 
 	cm.intents.Update()
-	cm.performances.Update(cm.mgr, elapsed)
+	cm.performances.Update(elapsed)
 	cm.hud.Update(elapsed)
 	cm.cursors.Update(elapsed)
 }
