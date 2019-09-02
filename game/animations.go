@@ -77,6 +77,30 @@ func (*HoverAnimation) Type() string {
 	return "HoverAnimation"
 }
 
+// AnimationSpeed changes the rate at which Animtions are animated. A value of
+// 1.0 is normal speed, and a value of 0.0 would mean that the animation never
+// progresses from the first frame. 0.5 would animate at half speed.
+type AnimationSpeed struct {
+	Speed float64
+}
+
+// Type of this Component.
+func (*AnimationSpeed) Type() string {
+	return "AnimationSpeed"
+}
+
+// getAnimationElapsed is a way of slowing an animation based on its AnimationSpeed.
+func getAnimationElapsed(mgr *ecs.World, e ecs.Entity, elapsed time.Duration) time.Duration {
+	c := mgr.Component(e, "AnimationSpeed")
+	if c == nil {
+		return elapsed
+	}
+	speed := c.(*AnimationSpeed)
+
+	// FIXME: There has to be a better way of multiplying elapsed by speed?
+	return time.Nanosecond * time.Duration(float64(elapsed.Nanoseconds())*speed.Speed)
+}
+
 // AnimationSystem animates the visual Components of Entities. It's not
 // responsible for translating or mapping game concepts like "casting a spell"
 // to the assignment of appropriate animation Components for that Entity.
@@ -86,7 +110,7 @@ type AnimationSystem struct{}
 func (as *AnimationSystem) Update(mgr *ecs.World, elapsed time.Duration) {
 	for _, e := range mgr.Get([]string{"FrameAnimation"}) {
 		anim := mgr.Component(e, "FrameAnimation").(*FrameAnimation)
-
+		elapsed := getAnimationElapsed(mgr, e, elapsed)
 		anim.Pointer += elapsed
 
 		i := anim.Index()
@@ -99,6 +123,7 @@ func (as *AnimationSystem) Update(mgr *ecs.World, elapsed time.Duration) {
 	}
 
 	for _, e := range mgr.Get([]string{"HoverAnimation"}) {
+		elapsed := getAnimationElapsed(mgr, e, elapsed)
 		anim := mgr.Component(e, "HoverAnimation").(*HoverAnimation)
 
 		if anim.YTranslate > 0 {
