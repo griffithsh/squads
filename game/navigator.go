@@ -31,7 +31,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 		facer := mgr.Component(e, "Facer").(*Facer)
 		oldFace := facer.Face
 
-		if len(mover.Moves) > 0 && mover.Moves[0].X == pos.Center.X && mover.Moves[0].Y == pos.Center.X {
+		if len(mover.Moves) > 0 && mover.Moves[0].X == pos.Center.X && mover.Moves[0].Y == pos.Center.Y {
 			// Pop the first move, because it's the current position.
 			mover.Moves = mover.Moves[1:]
 
