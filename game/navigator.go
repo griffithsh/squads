@@ -28,6 +28,8 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 	for _, e := range entities {
 		mover := mgr.Component(e, "Mover").(*Mover)
 		pos := mgr.Component(e, "Position").(*Position)
+		facer := mgr.Component(e, "Facer").(*Facer)
+		oldFace := facer.Face
 
 		if len(mover.Moves) > 0 && mover.Moves[0].X == pos.Center.X && mover.Moves[0].Y == pos.Center.X {
 			// Pop the first move, because it's the current position.
@@ -36,8 +38,6 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			// First move is a little slow.
 			mover.Speed = 0.5
 
-			nav.Publish(&CombatActorMovementCommenced{Entity: e})
-
 			// Start-of-move tasks...
 			mover.Elapsed = 0
 			mover.Duration = time.Duration(speed / mover.Speed)
@@ -45,10 +45,18 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			mover.dy = mover.Moves[0].Y - pos.Center.Y
 			mover.x = pos.Center.X
 			mover.y = pos.Center.Y
-			if facer, ok := mgr.Component(e, "Facer").(*Facer); ok {
-				if dir, err := geom.Direction(mover.dx, mover.dy); err == nil {
-					facer.Face = dir
-				}
+			if dir, err := geom.Direction(mover.dx, mover.dy); err == nil {
+				facer.Face = dir
+			}
+
+			if oldFace == facer.Face || 0 != mover.Speed {
+				nav.Publish(&CombatActorMoving{
+					Entity:    e,
+					NewSpeed:  mover.Speed,
+					OldSpeed:  0,
+					NewFacing: facer.Face,
+					OldFacing: oldFace,
+				})
 			}
 
 		} else if mover.Elapsed >= mover.Duration {
@@ -62,11 +70,19 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 
 			// Are we done?
 			if len(mover.Moves) == 0 {
+				nav.Publish(&CombatActorMoving{
+					Entity:    e,
+					NewSpeed:  0,
+					OldSpeed:  mover.Speed,
+					NewFacing: facer.Face,
+					OldFacing: oldFace,
+				})
 				mgr.RemoveComponent(e, mover)
 				nav.Publish(&CombatActorMovementConcluded{Entity: e})
 				continue
 			}
 
+			oldSpeed := mover.Speed
 			// The last few moves are slower than normal.
 			switch len(mover.Moves) {
 			default:
@@ -77,8 +93,6 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 				mover.Speed = 0.30
 			}
 
-			nav.Publish(&CombatActorMovementCommenced{Entity: e})
-
 			// Start-of-move tasks...
 			mover.Elapsed -= mover.Duration
 			mover.Duration = time.Duration(speed / mover.Speed)
@@ -86,10 +100,18 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			mover.dy = float64(mover.Moves[0].Y) - pos.Center.Y
 			mover.x = pos.Center.X
 			mover.y = pos.Center.Y
-			if facer, ok := mgr.Component(e, "Facer").(*Facer); ok {
-				if dir, err := geom.Direction(mover.dx, mover.dy); err == nil {
-					facer.Face = dir
-				}
+			if dir, err := geom.Direction(mover.dx, mover.dy); err == nil {
+				facer.Face = dir
+			}
+
+			if oldFace == facer.Face || oldSpeed != mover.Speed {
+				nav.Publish(&CombatActorMoving{
+					Entity:    e,
+					NewSpeed:  mover.Speed,
+					OldSpeed:  oldSpeed,
+					NewFacing: facer.Face,
+					OldFacing: oldFace,
+				})
 			}
 
 		} else {

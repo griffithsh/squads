@@ -41,8 +41,7 @@ func NewPerformanceSystem(mgr *ecs.World, bus *event.Bus) *PerformanceSystem {
 		mgr: mgr,
 	}
 
-	bus.Subscribe(game.CombatActorMovementCommenced{}.Type(), ps.handleActorMoving)
-	bus.Subscribe(game.CombatActorMovementConcluded{}.Type(), ps.handleActorStopped)
+	bus.Subscribe(game.CombatActorMoving{}.Type(), ps.handleActorMoving)
 
 	return &ps
 }
@@ -93,22 +92,27 @@ func notFound() game.FrameAnimation {
 }
 
 func (ps *PerformanceSystem) handleActorMoving(t event.Typer) {
-	ev := t.(*game.CombatActorMovementCommenced)
+	ev := t.(*game.CombatActorMoving)
 	e := ev.Entity
 	actor := ps.mgr.Component(e, "Actor").(*game.Actor)
 	facer := ps.mgr.Component(e, "Facer").(*game.Facer)
 
-	fa := get(animationId{actor.Profession, actor.Sex, game.PerformMove, facer.Face})
-	ps.mgr.AddComponent(e, &fa)
-}
+	// If the facing has changed, then we need to edit the FrameAnimation.
+	if ev.OldFacing != ev.NewFacing {
+		fmt.Println("changed direction from", ev.OldFacing, "to", ev.NewFacing)
+		fa := get(animationId{actor.Profession, actor.Sex, game.PerformMove, facer.Face})
+		ps.mgr.AddComponent(e, &fa)
+	}
 
-// handleActorStopped only needs to remove the Sprite from the Entity, because
-// Update should add the Idle animation for any Actor without a Sprite.
-func (ps *PerformanceSystem) handleActorStopped(t event.Typer) {
-	ev := t.(*game.CombatActorMovementConcluded)
-	e := ev.Entity
-
-	ps.mgr.RemoveComponent(e, &game.Sprite{})
+	// If the entity has stopped moving, then we must delete the sprite so that
+	// Update can add the Idle animation in.
+	if ev.NewSpeed == 0 {
+		ps.mgr.RemoveComponent(e, &game.Sprite{})
+		fmt.Println("changed speed!", ev.OldSpeed, "to", ev.NewSpeed)
+	} else if ev.OldSpeed != ev.NewSpeed {
+		// TODO: If the speed has changed, then we need to ...?
+		fmt.Println("changed speed!", ev.OldSpeed, "to", ev.NewSpeed)
+	}
 }
 
 type animationId struct {

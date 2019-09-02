@@ -23,16 +23,17 @@
     - [x] Floating Animation - makes the entity hover up and down (for a floating cursor?)
 - [x] Add Move and cancel buttons to go in and out of move mode
 - [x] Actors always have a boundary line to demarcate the hexes they occupy
-- [ ] Negative coordinates should no longer wrap absolutely positioned Sprites - bottom or right-aligned renderable should be positioned via the HUDs copy of the screen center
 - [x] Facing (for backstab damage)
 - [x] Profession and Sex for every Actor and a mapping between those and a set of animations
 - [x] Animations at a game-concept level
   - [x] A _Performance_ System
+- [ ] Moving animations sped up and slowed down by the Entity's Mover's speed
 - [ ] Medium and Large Actor art
 - [ ] Intent Queue(?) for AI Actors
 
 ## MAYDO
 - [x] Move Hex, Hex4, Hex7 split up to Field1, Field4, Field7, so that they can all return LogicalHex for At(), Get() etc.
+- [ ] Negative coordinates should no longer wrap absolutely positioned Sprites - bottom or right-aligned renderable should be positioned via the HUDs copy of the screen center
 - [ ] Structuralise the way systems are registered with an ecs.World, so that all things that update can be found in a consistent place
 - [ ] Other Animation types
   - [ ] Jump Animation - makes the entity go up then down, then auto-ends
