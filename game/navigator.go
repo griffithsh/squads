@@ -60,7 +60,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			if dir, err := geom.Direction(mover.dx, mover.dy); err == nil {
 				facer.Face = dir
 			}
-			if oldFace == facer.Face || 0 != mover.Speed {
+			if oldFace != facer.Face || 0 != mover.Speed {
 				nav.Publish(&CombatActorMoving{
 					Entity:    e,
 					NewSpeed:  mover.Speed,
@@ -115,7 +115,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			if dir, err := geom.Direction(mover.dx, mover.dy); err == nil {
 				facer.Face = dir
 			}
-			if oldFace == facer.Face || oldSpeed != mover.Speed {
+			if oldFace != facer.Face || oldSpeed != mover.Speed {
 				nav.Publish(&CombatActorMoving{
 					Entity:    e,
 					NewSpeed:  mover.Speed,
