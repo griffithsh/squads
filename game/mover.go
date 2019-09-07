@@ -11,7 +11,7 @@ type Waypoint struct {
 // Mover is a component that can move.
 type Mover struct {
 	Moves    []Waypoint
-	Duration time.Duration // Duration is how long this Mover will require to complete the move to the next Hex.
+	Duration time.Duration // Duration is how long this Mover will require to complete a move to the next Hex.
 	Elapsed  time.Duration // Elapsed time since started the move to the next Hex.
 	Speed    float64       // Speed is how fast we're moving
 

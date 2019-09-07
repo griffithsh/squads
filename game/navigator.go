@@ -20,23 +20,35 @@ func NewNavigator(bus *event.Bus) *Navigator {
 	}
 }
 
+var professionSpeeds = map[ActorProfession]time.Duration{
+	Wolf:     150 * time.Millisecond,
+	Skeleton: 700 * time.Millisecond,
+	Giant:    1000 * time.Millisecond,
+}
+
 // Update Movers.
 func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 	entities := mgr.Get([]string{"Mover", "Actor", "Position"})
 
-	speed := float64(time.Millisecond * 150)
 	for _, e := range entities {
 		mover := mgr.Component(e, "Mover").(*Mover)
 		pos := mgr.Component(e, "Position").(*Position)
 		facer := mgr.Component(e, "Facer").(*Facer)
+		actor := mgr.Component(e, "Actor").(*Actor)
+
 		oldFace := facer.Face
+
+		speed := float64(250 * time.Millisecond)
+		if t, ok := professionSpeeds[actor.Profession]; ok {
+			speed = float64(t)
+		}
 
 		if len(mover.Moves) > 0 && mover.Moves[0].X == pos.Center.X && mover.Moves[0].Y == pos.Center.Y {
 			// Pop the first move, because it's the current position.
 			mover.Moves = mover.Moves[1:]
 
 			// First move is a little slow.
-			mover.Speed = 0.5
+			mover.Speed = 0.75
 
 			// Start-of-move tasks...
 			mover.Elapsed = 0
@@ -48,7 +60,6 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			if dir, err := geom.Direction(mover.dx, mover.dy); err == nil {
 				facer.Face = dir
 			}
-
 			if oldFace == facer.Face || 0 != mover.Speed {
 				nav.Publish(&CombatActorMoving{
 					Entity:    e,
@@ -86,24 +97,24 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			// The last few moves are slower than normal.
 			switch len(mover.Moves) {
 			default:
-				mover.Speed = 0.75
+				// 1.00 = 100% of configured speed.
+				mover.Speed = 1.00
 			case 2:
-				mover.Speed = 0.55
+				mover.Speed = 0.75
 			case 1:
-				mover.Speed = 0.30
+				mover.Speed = 0.50
 			}
 
 			// Start-of-move tasks...
 			mover.Elapsed -= mover.Duration
 			mover.Duration = time.Duration(speed / mover.Speed)
-			mover.dx = float64(mover.Moves[0].X) - pos.Center.X
-			mover.dy = float64(mover.Moves[0].Y) - pos.Center.Y
+			mover.dx = mover.Moves[0].X - pos.Center.X
+			mover.dy = mover.Moves[0].Y - pos.Center.Y
 			mover.x = pos.Center.X
 			mover.y = pos.Center.Y
 			if dir, err := geom.Direction(mover.dx, mover.dy); err == nil {
 				facer.Face = dir
 			}
-
 			if oldFace == facer.Face || oldSpeed != mover.Speed {
 				nav.Publish(&CombatActorMoving{
 					Entity:    e,
