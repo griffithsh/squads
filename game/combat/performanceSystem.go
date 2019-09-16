@@ -99,19 +99,24 @@ func (ps *PerformanceSystem) handleActorMoving(t event.Typer) {
 
 	// If the facing has changed, then we need to edit the FrameAnimation.
 	if ev.OldFacing != ev.NewFacing {
-		fmt.Println("changed direction from", ev.OldFacing, "to", ev.NewFacing)
 		fa := get(animationId{actor.Profession, actor.Sex, game.PerformMove, facer.Face})
 		ps.mgr.AddComponent(e, &fa)
 	}
 
-	// If the entity has stopped moving, then we must delete the sprite so that
-	// Update can add the Idle animation in.
 	if ev.NewSpeed == 0 {
+		// If the entity has stopped moving, then we must delete the sprite so
+		// that Update can add the Idle animation in.
 		ps.mgr.RemoveComponent(e, &game.Sprite{})
-		fmt.Println("changed speed!", ev.OldSpeed, "to", ev.NewSpeed)
+		ps.mgr.RemoveComponent(e, &game.AnimationSpeed{})
 	} else if ev.OldSpeed != ev.NewSpeed {
-		// TODO: If the speed has changed, then we need to ...?
-		fmt.Println("changed speed!", ev.OldSpeed, "to", ev.NewSpeed)
+		// Otherwise the speed has changed ...
+		ps.mgr.AddComponent(e, &game.AnimationSpeed{
+			Speed: ev.NewSpeed,
+		})
+		if ev.OldSpeed == 0 {
+			fa := get(animationId{actor.Profession, actor.Sex, game.PerformMove, facer.Face})
+			ps.mgr.AddComponent(e, &fa)
+		}
 	}
 }
 
