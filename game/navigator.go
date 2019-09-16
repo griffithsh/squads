@@ -22,7 +22,7 @@ func NewNavigator(bus *event.Bus) *Navigator {
 
 var professionSpeeds = map[ActorProfession]time.Duration{
 	Wolf:     150 * time.Millisecond,
-	Skeleton: 700 * time.Millisecond,
+	Skeleton: 800 * time.Millisecond,
 	Giant:    1000 * time.Millisecond,
 }
 

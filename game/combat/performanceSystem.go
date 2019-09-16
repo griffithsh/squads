@@ -167,12 +167,19 @@ var links = map[animationId]string{
 	animationId{game.Wolf, game.Male, game.PerformMove, geom.NE}: "Wolf",
 	animationId{game.Wolf, game.Male, game.PerformMove, geom.NW}: "Wolf",
 
-	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.N}:  "Skeleton-Idle-S",
+	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.N}:  "Skeleton-Idle-N",
 	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.S}:  "Skeleton-Idle-S",
-	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.SE}: "Skeleton-Idle-S",
-	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.SW}: "Skeleton-Idle-S",
-	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.NE}: "Skeleton-Idle-S",
-	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.NW}: "Skeleton-Idle-S",
+	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.SE}: "Skeleton-Idle-SE",
+	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.SW}: "Skeleton-Idle-SW",
+	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.NE}: "Skeleton-Idle-NE",
+	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.NW}: "Skeleton-Idle-NW",
+
+	animationId{game.Skeleton, game.Male, game.PerformMove, geom.N}:  "Skeleton-Move-N",
+	animationId{game.Skeleton, game.Male, game.PerformMove, geom.S}:  "Skeleton-Move-S",
+	animationId{game.Skeleton, game.Male, game.PerformMove, geom.SE}: "Skeleton-Move-SE",
+	animationId{game.Skeleton, game.Male, game.PerformMove, geom.SW}: "Skeleton-Move-SW",
+	animationId{game.Skeleton, game.Male, game.PerformMove, geom.NE}: "Skeleton-Move-NE",
+	animationId{game.Skeleton, game.Male, game.PerformMove, geom.NW}: "Skeleton-Move-NW",
 }
 
 // final map between animationId and game.FrameAnimation.
