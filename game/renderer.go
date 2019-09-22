@@ -37,8 +37,18 @@ type entity struct {
 // components can also be returned.
 func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 	raw := mgr.Get([]string{"Sprite", "Position"})
-	entities := make([]entity, len(raw))
-	for i, e := range raw {
+
+	// Filter out any Hidden Entities.
+	visible := make([]ecs.Entity, 0, len(raw))
+	for _, e := range raw {
+		if mgr.Component(e, "Hidden") != nil {
+			continue
+		}
+		visible = append(visible, e)
+	}
+
+	entities := make([]entity, len(visible))
+	for i, e := range visible {
 		entities[i] = entity{
 			s: mgr.Component(e, "Sprite").(*Sprite),
 			p: mgr.Component(e, "Position").(*Position),
