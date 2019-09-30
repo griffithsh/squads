@@ -79,6 +79,8 @@ type HUD struct {
 	layer            int
 	centerX, centerY float64 // center of the game's window, or half the width and height.
 	lastCombatState  State
+
+	hidden bool
 }
 
 // NewHUD construct a HUD.
@@ -101,9 +103,42 @@ func NewHUD(mgr *ecs.World, bus *event.Bus, screenX int, screenY int) *HUD {
 	return &hud
 }
 
+// Show is the opposite of Hide. It shows anything that should be shown based on the current state.
+func (hud *HUD) Show() {
+	if hud.lastCombatState == AwaitingInputState || hud.lastCombatState == SelectingTargetState {
+		hud.showSkills()
+		hud.showCurrentActor()
+		hud.showCurrentActorStats()
+	}
+
+	if hud.lastCombatState == PreparingState {
+		hud.showTimePassingIcon()
+	}
+
+	hud.showTurnQueue()
+
+	hud.hidden = false
+}
+
+// Hide the hud and everything in it, and ignore events that would show parts of
+// the hud until Show() is called.
+func (hud *HUD) Hide() {
+	hud.hideSkills()
+	hud.hideCurrentActor()
+	hud.hideCurrentActorStats()
+	hud.hideTimePassingIcon()
+	hud.hideTurnQueue()
+
+	hud.hidden = true
+}
+
 func (hud *HUD) handleWindowSizeChanged(e event.Typer) {
 	wsc := e.(*game.WindowSizeChanged)
 	hud.centerX, hud.centerY = float64(wsc.NewW)/2, float64(wsc.NewH)/2
+
+	if hud.hidden {
+		return
+	}
 
 	if hud.mgr.AnyTagged(timePassingTag) == 0 {
 		return
@@ -116,10 +151,18 @@ func (hud *HUD) handleCombatBegan(event.Typer) {
 	e := hud.mgr.NewEntity()
 	hud.mgr.Tag(e, combatHUDTag)
 
+	if hud.hidden {
+		return
+	}
+
 	hud.showTurnQueue()
 }
 
 func (hud *HUD) handleCombatStatModified(ev event.Typer) {
+	if hud.hidden {
+		return
+	}
+
 	csm := ev.(*game.CombatStatModified)
 
 	switch csm.Stat {
@@ -129,6 +172,10 @@ func (hud *HUD) handleCombatStatModified(ev event.Typer) {
 }
 
 func (hud *HUD) handleCombatStateTransition(ev event.Typer) {
+	if hud.hidden {
+		return
+	}
+
 	cst := ev.(*StateTransition)
 	hud.lastCombatState = cst.New
 

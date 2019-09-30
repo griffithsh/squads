@@ -1,6 +1,6 @@
 package event
 
-// Type enumerates directions.
+// Type enumerates Events.
 type Type string
 
 // Type implements the Typer interface, so that simple events without data can be Published.

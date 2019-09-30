@@ -14,17 +14,20 @@ import (
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/game/combat"
+	"github.com/griffithsh/squads/game/overworld"
 	"github.com/hajimehoshi/ebiten"
 )
 
 type system struct {
-	bus          *event.Bus
-	render       *game.Renderer
-	anim         *game.AnimationSystem
-	fonts        *game.FontSystem
-	hierarchy    *ecs.ParentSystem
-	leash        *game.LeashSystem
-	combat       *combat.Manager
+	bus       *event.Bus
+	render    *game.Renderer
+	anim      *game.AnimationSystem
+	fonts     *game.FontSystem
+	hierarchy *ecs.ParentSystem
+	leash     *game.LeashSystem
+
+	combat    *combat.Manager
+
 	mgr          *ecs.World
 	camera       *game.Camera
 	lastMouse    image.Point

@@ -27,15 +27,21 @@
 - [x] Profession and Sex for every Actor and a mapping between those and a set of animations
 - [x] Animations at a game-concept level
   - [x] A _Performance_ System
-- [ ] Moving animations sped up and slowed down by the Entity's Mover's speed
-- [ ] Medium and Large Actor art
-- [ ] Intent Queue(?) for AI Actors
+- [x] Moving animations sped up and slowed down by the Entity's Mover's speed
+- [ ] Computer-controlled Teams
+- [ ] Transitions between Combat, the Overworld, a village/embark mode, and a main menu/splash screen
+  - [ ] Combat can signal its completion
+  - [ ] Main menu can load a saved game
 
 ## MAYDO
+- [ ] TurnToken is a field of the combat manager
+- [ ] Medium and Large Actor art
+- [ ] Intent Queue(?) for AI Actors
 - [x] Move Hex, Hex4, Hex7 split up to Field1, Field4, Field7, so that they can all return LogicalHex for At(), Get() etc.
 - [ ] Negative coordinates should no longer wrap absolutely positioned Sprites - bottom or right-aligned renderable should be positioned via the HUDs copy of the screen center
 - [ ] Structuralise the way systems are registered with an ecs.World, so that all things that update can be found in a consistent place
 - [ ] Other Animation types
+  - [ ] Fix the way hover animation goes wild when the game loses focus
   - [ ] Jump Animation - makes the entity go up then down, then auto-ends
   - [ ] Shake animation - makes the entity shake left and right (like for taking hits?)
   - [ ] Float-away animation - (like for damage amount floaters)

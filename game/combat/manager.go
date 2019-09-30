@@ -54,6 +54,8 @@ type Manager struct {
 
 	intents      *game.IntentSystem
 	performances *PerformanceSystem
+
+	paused bool
 }
 
 // NewManager should accept two opposing squads of characters, a list of
@@ -75,6 +77,8 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 		cursors:      NewCursorManager(mgr, bus, f),
 		intents:      game.NewIntentSystem(mgr, bus, f),
 		performances: NewPerformanceSystem(mgr, bus),
+
+		paused: false,
 	}
 	cm.setState(PreparingState)
 
@@ -218,6 +222,13 @@ func (cm *Manager) Begin() {
 	// Upgrade all Actors with components for combat.
 	entities := cm.mgr.Get([]string{"Actor"})
 	for _, e := range entities {
+		// This shows something that is perhaps an architectural flaw - who
+		// does the Actor really belong to here? Having a list of Actors is
+		// relevant when we want to show a combat board and when we want to
+		// serialise a savegame. Is it appropriate that the combat really
+		// "owns" the Actors?
+		cm.mgr.Tag(e, "combat")
+
 		actor := cm.mgr.Component(e, "Actor").(*game.Actor)
 		team := cm.mgr.Component(e, "Team").(*Team)
 
@@ -270,8 +281,25 @@ func (cm *Manager) Begin() {
 	cm.bus.Publish(&game.CombatBegan{})
 }
 
+// Pause toggles the paused state of the Manager, hiding renderable Entities.
+func (cm *Manager) Pause() {
+	if cm.paused {
+		for _, e := range cm.mgr.Tagged("combat") {
+			cm.mgr.RemoveComponent(e, &game.Hidden{})
+			cm.hud.Show()
+		}
+	} else {
+		for _, e := range cm.mgr.Tagged("combat") {
+			cm.mgr.AddComponent(e, &game.Hidden{})
+			cm.hud.Hide()
+		}
+	}
+
+	cm.paused = !cm.paused
+}
+
 // End should be called at the resolution of a combat encounter. It removes
-// combat-specific Components.
+// combat-specific Components and Entities.
 func (cm *Manager) End() {
 	// TODO: When there are summoned units, then in Manager.End(), we will need
 	// to remove them. Potentialy a new Component called "Impermanent", or
@@ -299,6 +327,10 @@ func (cm *Manager) End() {
 
 // Run a frame of this Combat.
 func (cm *Manager) Run(elapsed time.Duration) {
+	if cm.paused {
+		return
+	}
+
 	switch cm.state {
 	case PreparingState:
 		// Use the elapsed time as a base for the preparation increment.
@@ -414,6 +446,9 @@ func (cm *Manager) checkHUD(x, y int) bool {
 // Interaction is the way to notify the Combat Manager that a mouse click or
 // touch event occurred.
 func (cm *Manager) Interaction(x, y int) {
+	if cm.paused {
+		return
+	}
 	if cm.state == AwaitingInputState {
 		cm.checkHUD(x, y)
 	} else if cm.state == SelectingTargetState {
@@ -543,6 +578,7 @@ func (cm *Manager) addGrass() {
 		for m := 0; m < M; m++ {
 			h := cm.field.Get(m, n)
 			e := cm.mgr.NewEntity()
+			cm.mgr.Tag(e, "combat")
 
 			cm.mgr.AddComponent(e, &game.Sprite{
 				Texture: "terrain.png",
@@ -574,6 +610,7 @@ func (cm *Manager) addTrees() {
 			h := cm.field.Get(m, n)
 			if i%17 == 1 || i%23 == 1 {
 				e := cm.mgr.NewEntity()
+				cm.mgr.Tag(e, "combat")
 				cm.mgr.AddComponent(e, &game.Sprite{
 					Texture: "trees.png",
 					X:       0,

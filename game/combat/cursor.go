@@ -84,6 +84,7 @@ func (cm *CursorManager) showLiveActors() {
 
 	for i := 0; i < maxLiveActors; i++ {
 		e := cm.mgr.NewEntity()
+		cm.mgr.Tag(e, "combat")
 
 		cm.mgr.Tag(e, liveActorsTag)
 		cm.mgr.Tag(e, invalidatedCursorsTag)
@@ -145,6 +146,7 @@ func (cm *CursorManager) showPathNavigationCursor() {
 
 	for i := 0; i < maxPathNavigationCursors; i++ {
 		e := cm.mgr.NewEntity()
+		cm.mgr.Tag(e, "combat")
 
 		cm.mgr.Tag(e, pathNavigationTag)
 		cm.mgr.Tag(e, invalidatedCursorsTag)
