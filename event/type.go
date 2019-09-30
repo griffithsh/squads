@@ -15,3 +15,12 @@ type Typer interface {
 
 // Subscriber is anything that is subscribed to an event type.
 type Subscriber func(Typer)
+
+/*
+Could this be useful?
+
+func identifier(v interface{}) string {
+	t := reflect.TypeOf(v)
+	return fmt.Sprintf("%s.%s",t.PkgPath(),t.Name())
+}
+*/
