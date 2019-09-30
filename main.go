@@ -180,6 +180,7 @@ func setup(w, h int) (*system, error) {
 	})
 	mgr.AddComponent(e, t)
 
+	// FIXME: remove these "baddies" from this func, should be provided by a factory-like thing.
 	e = mgr.NewEntity()
 	t = combat.NewTeam()
 
