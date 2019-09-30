@@ -27,6 +27,7 @@ type system struct {
 	leash     *game.LeashSystem
 
 	combat    *combat.Manager
+	overworld *overworld.Manager
 
 	mgr          *ecs.World
 	camera       *game.Camera
@@ -113,10 +114,11 @@ func setup(w, h int) (*system, error) {
 
 	camera := game.NewCamera(w, h, bus)
 	s := system{
-		bus:    bus,
-		render: game.NewRenderer(),
-		anim:   &game.AnimationSystem{},
-		combat: combat.NewManager(mgr, camera, bus),
+		bus:       bus,
+		render:    game.NewRenderer(),
+		anim:      &game.AnimationSystem{},
+		combat:    combat.NewManager(mgr, camera, bus),
+		overworld: overworld.NewManager(mgr, bus),
 
 		mgr:    mgr,
 		camera: camera,
@@ -256,7 +258,9 @@ func setup(w, h int) (*system, error) {
 	mgr.AddComponent(e, t)
 
 	// Start combat!
-	s.combat.Begin( /* a thing that has enough information to construct a Field and the enemies you'll face in the combat */ )
+	s.overworld.Begin( /* a thing that has enough information to construct a Field and the enemies you'll face in the combat */ )
+	s.overworld.Pause()
+	s.combat.Begin()
 
 	last = time.Now()
 
@@ -297,6 +301,10 @@ func (s *system) run(screen *ebiten.Image) error {
 	} else if ebiten.IsKeyPressed(ebiten.Key2) {
 		s.setScreenSize(1024, 768)
 	}
+	if ebiten.IsKeyPressed(ebiten.KeyTab) {
+		s.combat.Pause()
+		s.overworld.Pause()
+	}
 
 	x, y := ebiten.CursorPosition()
 
@@ -320,6 +328,8 @@ func (s *system) run(screen *ebiten.Image) error {
 	controlCamera(s.camera, elapsed, ctrl)
 
 	s.combat.Run(elapsed)
+	s.overworld.Run(elapsed)
+
 	s.fonts.Update()
 	s.hierarchy.Update()
 	s.leash.Update(s.mgr, elapsed)
