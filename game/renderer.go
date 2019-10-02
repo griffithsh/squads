@@ -109,8 +109,9 @@ func (r *Renderer) picForTexture(filename string) (*ebiten.Image, error) {
 }
 
 // Render all sprites in the world to the Target. We need to know where in the
-// world we are focused, as well as how zoomed in we are.
-func (r *Renderer) Render(screen *ebiten.Image, x, y, zoom, w, h float64, mgr *ecs.World) error {
+// world we are focused, as well as how zoomed in we are, and the dimensions of
+// the screen.
+func (r *Renderer) Render(screen *ebiten.Image, mgr *ecs.World, x, y, zoom, w, h float64) error {
 	entities := r.getEntities(mgr)
 
 	screen.Fill(color.NRGBA{40, 34, 31, 0xff})

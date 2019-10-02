@@ -339,7 +339,7 @@ func (s *system) run(screen *ebiten.Image) error {
 	w, h := float64(screen.Bounds().Max.X-screen.Bounds().Min.X), float64(screen.Bounds().Max.Y-screen.Bounds().Min.Y)
 
 	// Render all entities in the World.
-	if err := s.render.Render(screen, s.camera.GetX(), s.camera.GetY(), s.camera.GetZoom(), w, h, s.mgr); err != nil {
+	if err := s.render.Render(screen, s.mgr, s.camera.GetX(), s.camera.GetY(), s.camera.GetZoom(), w, h); err != nil {
 		panic(err)
 	}
 
