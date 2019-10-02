@@ -80,6 +80,9 @@ type HUD struct {
 	centerX, centerY float64 // center of the game's window, or half the width and height.
 	lastCombatState  State
 
+	// Whose turn is it?
+	turnToken ecs.Entity
+
 	hidden bool
 }
 
@@ -99,6 +102,7 @@ func NewHUD(mgr *ecs.World, bus *event.Bus, screenX int, screenY int) *HUD {
 	bus.Subscribe(game.CombatBegan{}.Type(), hud.handleCombatBegan)
 	bus.Subscribe(game.CombatStatModified{}.Type(), hud.handleCombatStatModified)
 	bus.Subscribe(StateTransition{}.Type(), hud.handleCombatStateTransition)
+	bus.Subscribe(ActorTurnChanged{}.Type(), hud.handleActorTurnChanged)
 
 	return &hud
 }
@@ -196,6 +200,11 @@ func (hud *HUD) handleCombatStateTransition(ev event.Typer) {
 	} else {
 		hud.hideTimePassingIcon()
 	}
+}
+
+func (hud *HUD) handleActorTurnChanged(ev event.Typer) {
+	atc := ev.(*ActorTurnChanged)
+	hud.turnToken = atc.Entity
 }
 
 // Update the HUD. Synchronise the current game state to the Entities that compose it.
@@ -309,10 +318,11 @@ func (hud *HUD) repaintCurrentActor() {
 
 	// Repaint the hovering arrow that points to the current actor.
 	e := hud.mgr.AnyTagged(currentActorHovererTag)
-	ex, ok := hud.mgr.Single([]string{"Actor", "TurnToken"})
-	if !ok {
+	ex := hud.turnToken
+	if ex == 0 {
 		return
 	}
+
 	pos := hud.mgr.Component(ex, "Position").(*game.Position)
 
 	hud.mgr.AddComponent(e, &game.Sprite{
@@ -331,7 +341,7 @@ func (hud *HUD) repaintCurrentActor() {
 
 	// Repaint the current Actor's portrait.
 	e = hud.mgr.AnyTagged(currentActorPortraitTag)
-	actor := hud.mgr.Component(ecs.Must(hud.mgr.Single([]string{"Actor", "TurnToken"})), "Actor").(*game.Actor)
+	actor := hud.mgr.Component(hud.turnToken, "Actor").(*game.Actor)
 
 	hud.mgr.AddComponent(e, &actor.BigIcon)
 
@@ -404,7 +414,7 @@ func (hud *HUD) repaintCurrentActorStats() {
 	parent := hud.mgr.AnyTagged(currentActorStatsTag)
 	children := hud.mgr.Component(parent, "Children").(*ecs.Children)
 
-	e := ecs.Must(hud.mgr.Single([]string{"Actor", "CombatStats", "TurnToken"}))
+	e := hud.turnToken
 	actor := hud.mgr.Component(e, "Actor").(*game.Actor)
 	stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
 	labels := []string{

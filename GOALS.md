@@ -34,7 +34,7 @@
   - [ ] Main menu can load a saved game
 
 ## MAYDO
-- [ ] TurnToken is a field of the combat manager
+- [x] TurnToken is a field of the combat manager
 - [ ] Medium and Large Actor art
 - [ ] Intent Queue(?) for AI Actors
 - [x] Move Hex, Hex4, Hex7 split up to Field1, Field4, Field7, so that they can all return LogicalHex for At(), Get() etc.

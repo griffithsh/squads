@@ -45,6 +45,9 @@ type Manager struct {
 	hud     *HUD
 	cursors *CursorManager
 
+	// Whose turn is it?
+	turnToken ecs.Entity
+
 	incrementAccumulator float64
 
 	x, y             int       // where the mouse last was in screen coordinates
@@ -314,7 +317,6 @@ func (cm *Manager) End() {
 		"Obstacle",
 		"CombatStats",
 		"Facer",
-		"TurnToken",
 	}
 	for _, e := range cm.mgr.Get([]string{"Actor"}) {
 		for _, comp := range removals {
@@ -386,7 +388,8 @@ func (cm *Manager) Run(elapsed time.Duration) {
 			s.CurrentPreparation = 0
 			cm.bus.Publish(ev)
 
-			cm.mgr.AddComponent(e, &game.TurnToken{})
+			cm.turnToken = e
+			cm.bus.Publish(&ActorTurnChanged{Entity: cm.turnToken})
 			cm.setState(AwaitingInputState)
 		}
 
@@ -455,12 +458,11 @@ func (cm *Manager) Interaction(x, y int) {
 		if handled := cm.checkHUD(x, y); handled {
 			return
 		}
-		actor := cm.actorAwaitingInput()
 
 		wx, wy := cm.camera.ScreenToWorld(x, y)
 
 		i := game.MoveIntent{X: wx, Y: wy}
-		cm.mgr.AddComponent(actor, &i)
+		cm.mgr.AddComponent(cm.turnToken, &i)
 
 		cm.setState(ExecutingState)
 	}
@@ -481,7 +483,7 @@ func (cm *Manager) MousePosition(x, y int) {
 		// the hex that the mouse is hovering over has changed. It might be a
 		// path of hexes because we're selecting a place to move to, or it might
 		// be a glob of hexes because we're targeting an AoE fireball spell etc.
-		actor := cm.mgr.Component(ecs.Must(cm.mgr.Single([]string{"TurnToken", "Actor"})), "Actor").(*game.Actor)
+		actor := cm.mgr.Component(cm.turnToken, "Actor").(*game.Actor)
 		var newSelected *geom.Key
 
 		f := game.AdaptField(cm.field, actor.Size)
@@ -519,15 +521,6 @@ func (cm *Manager) MousePosition(x, y int) {
 	cm.wy = wy
 }
 
-func (cm *Manager) actorAwaitingInput() ecs.Entity {
-	entities := cm.mgr.Get([]string{"Actor", "TurnToken"})
-	if len(entities) == 0 {
-		// FIXME: this is a flow error - there should always be an entity
-		return 0
-	}
-	return entities[0]
-}
-
 // syncActorObstacle updates the an Actor's Obstacle to be synchronised with its
 // position. It should be called when an Actor has completed a move.
 func (cm *Manager) syncActorObstacle(evt *game.CombatActorMovementConcluded) {
@@ -550,16 +543,14 @@ func (cm *Manager) handleMovementConcluded(t event.Typer) {
 }
 
 func (cm *Manager) handleEndTurnRequested(event.Typer) {
-	// Remove TurnToken from all actors.
-	for _, e := range cm.mgr.Get([]string{"Actor", "TurnToken"}) {
-		// Reset to maximum AP.
-		actor := cm.mgr.Component(e, "Actor").(*game.Actor)
-		stats := cm.mgr.Component(e, "CombatStats").(*game.CombatStats)
-		stats.ActionPoints = actor.ActionPoints
+	// Reset to maximum AP.
+	actor := cm.mgr.Component(cm.turnToken, "Actor").(*game.Actor)
+	stats := cm.mgr.Component(cm.turnToken, "CombatStats").(*game.CombatStats)
+	stats.ActionPoints = actor.ActionPoints
 
-		// And then remove TurnToken.
-		cm.mgr.RemoveComponent(e, cm.mgr.Component(e, "TurnToken"))
-	}
+	// Remove turnToken
+	cm.turnToken = 0
+	cm.bus.Publish(&ActorTurnChanged{Entity: cm.turnToken})
 
 	cm.setState(PreparingState)
 }

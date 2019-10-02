@@ -27,6 +27,9 @@ type CursorManager struct {
 	bus         *event.Bus
 	field       *geom.Field
 	selectedKey *geom.Key
+
+	// Whose turn is it?
+	turnToken ecs.Entity
 }
 
 // NewCursorManager creates a new CursorManager.
@@ -41,6 +44,8 @@ func NewCursorManager(mgr *ecs.World, bus *event.Bus, f *geom.Field) *CursorMana
 	bus.Subscribe(game.CombatBegan{}.Type(), cm.handleCombatBegan)
 	bus.Subscribe(DifferentHexSelected{}.Type(), cm.handleDifferentHexSelected)
 	bus.Subscribe(StateTransition{}.Type(), cm.handleCombatStateTransition)
+	t := ActorTurnChanged{}.Type()
+	bus.Subscribe(t, cm.handleActorTurnChanged)
 
 	return &cm
 }
@@ -59,6 +64,11 @@ func (cm *CursorManager) handleDifferentHexSelected(ev event.Typer) {
 
 func (cm *CursorManager) handleCombatStateTransition(ev event.Typer) {
 	cm.hidePathNavigationCursor()
+}
+
+func (cm *CursorManager) handleActorTurnChanged(ev event.Typer) {
+	atc := ev.(*ActorTurnChanged)
+	cm.turnToken = atc.Entity
 }
 
 // Update the CursorManager, repainting invalidated Cursors.
@@ -160,14 +170,9 @@ func (cm *CursorManager) hidePathNavigationCursor() {
 }
 
 func (cm *CursorManager) repaintPathNavigationCursor() {
-	entities := cm.mgr.Get([]string{"TurnToken", "Actor", "Position", "CombatStats"})
-	if len(entities) != 1 {
-		// this really should not happen, right?
-		return
-	}
-	actor := cm.mgr.Component(entities[0], "Actor").(*game.Actor)
-	stats := cm.mgr.Component(entities[0], "CombatStats").(*game.CombatStats)
-	pos := cm.mgr.Component(entities[0], "Position").(*game.Position)
+	actor := cm.mgr.Component(cm.turnToken, "Actor").(*game.Actor)
+	stats := cm.mgr.Component(cm.turnToken, "CombatStats").(*game.CombatStats)
+	pos := cm.mgr.Component(cm.turnToken, "Position").(*game.Position)
 
 	f := game.AdaptField(cm.field, actor.Size)
 
@@ -177,7 +182,7 @@ func (cm *CursorManager) repaintPathNavigationCursor() {
 	start = sh.Key()
 
 	exists := game.ExistsFuncFactory(cm.field, actor.Size)
-	costs := game.CostsFuncFactory(cm.field, cm.mgr, entities[0])
+	costs := game.CostsFuncFactory(cm.field, cm.mgr, cm.turnToken)
 
 	type comps struct {
 		p game.Position

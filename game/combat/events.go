@@ -1,6 +1,10 @@
 package combat
 
 import (
+	"fmt"
+	"reflect"
+
+	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/geom"
 )
@@ -24,4 +28,15 @@ type DifferentHexSelected struct {
 // Type of the Event.
 func (DifferentHexSelected) Type() event.Type {
 	return "combat.DifferentHexSelected"
+}
+
+// ActorTurnChanged occurs when the Actor whose turn it is changes.
+type ActorTurnChanged struct {
+	Entity ecs.Entity
+}
+
+// Type of the Event.
+func (v ActorTurnChanged) Type() event.Type {
+	t := reflect.TypeOf(v)
+	return event.Type(fmt.Sprintf("%s.%s", t.PkgPath(), t.Name()))
 }
