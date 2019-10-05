@@ -41,12 +41,11 @@ type Manager struct {
 	field   *geom.Field
 	nav     *game.Navigator
 	camera  *game.Camera
-	state   State
 	hud     *HUD
 	cursors *CursorManager
 
-	// Whose turn is it?
-	turnToken ecs.Entity
+	turnToken ecs.Entity // Whose turn is it?
+	state     State
 
 	incrementAccumulator float64
 

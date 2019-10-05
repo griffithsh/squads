@@ -21,7 +21,7 @@ var (
 // CursorManager controls the visibility of cursors in a game combat. Cursors
 // are visual highlights applied to Hexes. Examples might be permanent boundary
 // markers of every Actor, or temporary red/green blockouts when selecting a
-// place to target a skill.
+// place to target a skill. All Cursor Entities are tagged with "combat".
 type CursorManager struct {
 	mgr         *ecs.World
 	bus         *event.Bus

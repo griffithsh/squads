@@ -50,10 +50,12 @@ type Actor struct {
 	BigIcon   Sprite // (52x52)
 
 	// Intrinsic to the Actor
-	Size        ActorSize
-	Profession  ActorProfession
-	Sex         ActorSex
-	Performance ActorPerformance
+	Size       ActorSize
+	Profession ActorProfession
+	Sex        ActorSex
+
+	// Current Performance
+	// Performance ActorPerformance
 
 	PreparationThreshold int // Preparation required to take a turn
 	ActionPoints         int

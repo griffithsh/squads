@@ -2,6 +2,7 @@ package ui
 
 // Interactive tags Components that can be interacted with in some way.
 type Interactive struct {
+	W, H    int
 	Trigger func()
 	Hover   func()
 }
