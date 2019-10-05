@@ -15,7 +15,7 @@ type Manager struct {
 	mgr *ecs.World
 	bus *event.Bus
 
-	paused bool
+	dormant bool
 }
 
 // NewManager creates a new overworld Manager.
@@ -24,7 +24,7 @@ func NewManager(mgr *ecs.World, bus *event.Bus) *Manager {
 		mgr: mgr,
 		bus: bus,
 
-		paused: false,
+		dormant: false,
 	}
 }
 
@@ -48,20 +48,26 @@ func (m *Manager) Begin() {
 	})
 }
 
-// Pause toggles the paused state of the overworld Manager. When paused, nothing
-// is rendered, and player interactions are discarded.
-func (m *Manager) Pause() {
-	if m.paused {
+// Enable the overworld Manager, responding to input and rendering the state of
+// the overworld.
+func (m *Manager) Enable() {
+	if m.dormant {
 		for _, e := range m.mgr.Tagged("overworld") {
 			m.mgr.RemoveComponent(e, &game.Hidden{})
 		}
-	} else {
+		m.dormant = false
+	}
+}
+
+// Disable the overworld Manager, ignoring input and not rendering the state of
+// the overworld.
+func (m *Manager) Disable() {
+	if !m.dormant {
 		for _, e := range m.mgr.Tagged("overworld") {
 			m.mgr.AddComponent(e, &game.Hidden{})
 		}
+		m.dormant = true
 	}
-
-	m.paused = !m.paused
 }
 
 // End should be called when the current overworld map is complete, and the
@@ -75,7 +81,7 @@ func (m *Manager) End() {
 
 // Interaction handles an interaction from the player at x,y.
 func (m *Manager) Interaction(x, y int) {
-	if m.paused {
+	if m.dormant {
 		return
 	}
 	// accept input from hardware abstraction layer
@@ -83,7 +89,7 @@ func (m *Manager) Interaction(x, y int) {
 
 // MousePosition handles a change in the mouse position from the player.
 func (m *Manager) MousePosition(x, y int) {
-	if m.paused {
+	if m.dormant {
 		return
 	}
 	// accept input from hardware abstraction layer
@@ -91,7 +97,7 @@ func (m *Manager) MousePosition(x, y int) {
 
 // Run the Manager.
 func (m *Manager) Run(elapsed time.Duration) {
-	if m.paused {
+	if m.dormant {
 		return
 	}
 	// todo

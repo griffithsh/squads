@@ -259,9 +259,10 @@ func setup(w, h int) (*system, error) {
 	mgr.AddComponent(e, t)
 
 	// Start combat!
-	s.overworld.Begin( /* a thing that has enough information to construct a Field and the enemies you'll face in the combat */ )
-	s.overworld.Pause()
-	s.combat.Begin()
+	s.combat.Begin( /* a thing that has enough information to construct a Field and the enemies you'll face in the combat */ )
+
+	s.overworld.Begin()
+	s.overworld.Disable()
 
 	last = time.Now()
 
@@ -302,9 +303,16 @@ func (s *system) run(screen *ebiten.Image) error {
 	} else if ebiten.IsKeyPressed(ebiten.Key2) {
 		s.setScreenSize(1024, 768)
 	}
+
+	// Debug code to swap to overworld and back with Tab, Ctrl-Tab
 	if ebiten.IsKeyPressed(ebiten.KeyTab) {
-		s.combat.Pause()
-		s.overworld.Pause()
+		if ebiten.IsKeyPressed(ebiten.KeyControl) {
+			s.combat.Disable()
+			s.overworld.Enable()
+		} else {
+			s.combat.Enable()
+			s.overworld.Disable()
+		}
 	}
 
 	x, y := ebiten.CursorPosition()

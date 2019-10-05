@@ -58,7 +58,7 @@ type Manager struct {
 	intents      *game.IntentSystem
 	performances *PerformanceSystem
 
-	paused bool
+	dormant bool
 }
 
 // NewManager should accept two opposing squads of characters, a list of
@@ -81,7 +81,7 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 		intents:      game.NewIntentSystem(mgr, bus, f),
 		performances: NewPerformanceSystem(mgr, bus),
 
-		paused: false,
+		dormant: false,
 	}
 	cm.setState(PreparingState)
 
@@ -284,21 +284,28 @@ func (cm *Manager) Begin() {
 	cm.bus.Publish(&game.CombatBegan{})
 }
 
-// Pause toggles the paused state of the Manager, hiding renderable Entities.
-func (cm *Manager) Pause() {
-	if cm.paused {
+// Enable the combat Manager, responding to input and rendering the state of the
+// combat.
+func (cm *Manager) Enable() {
+	if cm.dormant {
 		for _, e := range cm.mgr.Tagged("combat") {
 			cm.mgr.RemoveComponent(e, &game.Hidden{})
-			cm.hud.Show()
+			cm.hud.Enable()
 		}
-	} else {
+		cm.dormant = false
+	}
+}
+
+// Disable the combat Manager, ignoring input and not rendering the state of the
+// combat.
+func (cm *Manager) Disable() {
+	if !cm.dormant {
 		for _, e := range cm.mgr.Tagged("combat") {
 			cm.mgr.AddComponent(e, &game.Hidden{})
-			cm.hud.Hide()
+			cm.hud.Disable()
 		}
+		cm.dormant = true
 	}
-
-	cm.paused = !cm.paused
 }
 
 // End should be called at the resolution of a combat encounter. It removes
@@ -329,7 +336,7 @@ func (cm *Manager) End() {
 
 // Run a frame of this Combat.
 func (cm *Manager) Run(elapsed time.Duration) {
-	if cm.paused {
+	if cm.dormant {
 		return
 	}
 
@@ -449,7 +456,7 @@ func (cm *Manager) checkHUD(x, y int) bool {
 // Interaction is the way to notify the Combat Manager that a mouse click or
 // touch event occurred.
 func (cm *Manager) Interaction(x, y int) {
-	if cm.paused {
+	if cm.dormant {
 		return
 	}
 	if cm.state == AwaitingInputState {
