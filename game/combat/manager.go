@@ -177,7 +177,7 @@ func (cm *Manager) Begin() {
 	// working through the semi-shuffled list of results.
 
 	// isBlocked determines if an Actor with an ActorSize of sz can be placed at m,n.
-	isBlocked := func(m, n int, sz game.ActorSize, mgr *ecs.World) bool {
+	isBlocked := func(m, n int, sz game.CharacterSize, mgr *ecs.World) bool {
 		// blockages is a set of Keys that are taken by other things
 		blockages := map[geom.Key]struct{}{}
 		for _, e := range mgr.Get([]string{"Obstacle"}) {
@@ -222,7 +222,7 @@ func (cm *Manager) Begin() {
 	// Druids summon beasts (ground targeted again)
 
 	// Upgrade all Actors with components for combat.
-	entities := cm.mgr.Get([]string{"Actor"})
+	entities := cm.mgr.Get([]string{"Character"})
 	for _, e := range entities {
 		// This shows something that is perhaps an architectural flaw - who
 		// does the Actor really belong to here? Having a list of Actors is
@@ -231,7 +231,7 @@ func (cm *Manager) Begin() {
 		// "owns" the Actors?
 		cm.mgr.Tag(e, "combat")
 
-		actor := cm.mgr.Component(e, "Actor").(*game.Actor)
+		actor := cm.mgr.Component(e, "Character").(*game.Character)
 		team := cm.mgr.Component(e, "Team").(*Team)
 
 		if _, ok := usedStarts[team.ID]; !ok {
@@ -324,7 +324,7 @@ func (cm *Manager) End() {
 		"CombatStats",
 		"Facer",
 	}
-	for _, e := range cm.mgr.Get([]string{"Actor"}) {
+	for _, e := range cm.mgr.Get([]string{"Character"}) {
 		for _, comp := range removals {
 			cm.mgr.RemoveType(e, comp)
 		}
@@ -349,9 +349,9 @@ func (cm *Manager) Run(elapsed time.Duration) {
 
 		// But if any Actor requires less than that, then only use that amount
 		// instead, so that no actor overshoots its PreparationThreshold.
-		for _, e := range cm.mgr.Get([]string{"Actor", "CombatStats"}) {
+		for _, e := range cm.mgr.Get([]string{"Character", "CombatStats"}) {
 			s := cm.mgr.Component(e, "CombatStats").(*game.CombatStats)
-			actor := cm.mgr.Component(e, "Actor").(*game.Actor)
+			actor := cm.mgr.Component(e, "Character").(*game.Character)
 
 			if actor.PreparationThreshold-s.CurrentPreparation < increment {
 				increment = actor.PreparationThreshold - s.CurrentPreparation
@@ -364,9 +364,9 @@ func (cm *Manager) Run(elapsed time.Duration) {
 
 		// Now that we know the increment, we can apply it with confidence that
 		// we will not over-prepare.
-		for _, e := range cm.mgr.Get([]string{"Actor", "CombatStats"}) {
+		for _, e := range cm.mgr.Get([]string{"Character", "CombatStats"}) {
 			s := cm.mgr.Component(e, "CombatStats").(*game.CombatStats)
-			actor := cm.mgr.Component(e, "Actor").(*game.Actor)
+			actor := cm.mgr.Component(e, "Character").(*game.Character)
 
 			s.CurrentPreparation += increment
 			cm.bus.Publish(&game.CombatStatModified{
@@ -489,7 +489,7 @@ func (cm *Manager) MousePosition(x, y int) {
 		// the hex that the mouse is hovering over has changed. It might be a
 		// path of hexes because we're selecting a place to move to, or it might
 		// be a glob of hexes because we're targeting an AoE fireball spell etc.
-		actor := cm.mgr.Component(cm.turnToken, "Actor").(*game.Actor)
+		actor := cm.mgr.Component(cm.turnToken, "Character").(*game.Character)
 		var newSelected *geom.Key
 
 		f := game.AdaptField(cm.field, actor.Size)
@@ -530,7 +530,7 @@ func (cm *Manager) MousePosition(x, y int) {
 // syncActorObstacle updates the an Actor's Obstacle to be synchronised with its
 // position. It should be called when an Actor has completed a move.
 func (cm *Manager) syncActorObstacle(evt *game.CombatActorMovementConcluded) {
-	actor := cm.mgr.Component(evt.Entity, "Actor").(*game.Actor)
+	actor := cm.mgr.Component(evt.Entity, "Character").(*game.Character)
 	obstacle := cm.mgr.Component(evt.Entity, "Obstacle").(*game.Obstacle)
 	position := cm.mgr.Component(evt.Entity, "Position").(*game.Position)
 
@@ -550,7 +550,7 @@ func (cm *Manager) handleMovementConcluded(t event.Typer) {
 
 func (cm *Manager) handleEndTurnRequested(event.Typer) {
 	// Reset to maximum AP.
-	actor := cm.mgr.Component(cm.turnToken, "Actor").(*game.Actor)
+	actor := cm.mgr.Component(cm.turnToken, "Character").(*game.Character)
 	stats := cm.mgr.Component(cm.turnToken, "CombatStats").(*game.CombatStats)
 	stats.ActionPoints = actor.ActionPoints
 

@@ -20,7 +20,7 @@ func NewNavigator(bus *event.Bus) *Navigator {
 	}
 }
 
-var professionSpeeds = map[ActorProfession]time.Duration{
+var professionSpeeds = map[CharacterProfession]time.Duration{
 	Wolf:     150 * time.Millisecond,
 	Skeleton: 800 * time.Millisecond,
 	Giant:    1000 * time.Millisecond,
@@ -28,13 +28,13 @@ var professionSpeeds = map[ActorProfession]time.Duration{
 
 // Update Movers.
 func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
-	entities := mgr.Get([]string{"Mover", "Actor", "Position"})
+	entities := mgr.Get([]string{"Mover", "Character", "Position"})
 
 	for _, e := range entities {
 		mover := mgr.Component(e, "Mover").(*Mover)
 		pos := mgr.Component(e, "Position").(*Position)
 		facer := mgr.Component(e, "Facer").(*Facer)
-		actor := mgr.Component(e, "Actor").(*Actor)
+		actor := mgr.Component(e, "Character").(*Character)
 
 		oldFace := facer.Face
 

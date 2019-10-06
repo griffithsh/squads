@@ -341,7 +341,7 @@ func (hud *HUD) repaintCurrentActor() {
 
 	// Repaint the current Actor's portrait.
 	e = hud.mgr.AnyTagged(currentActorPortraitTag)
-	actor := hud.mgr.Component(hud.turnToken, "Actor").(*game.Actor)
+	actor := hud.mgr.Component(hud.turnToken, "Character").(*game.Character)
 
 	hud.mgr.AddComponent(e, &actor.BigIcon)
 
@@ -415,7 +415,7 @@ func (hud *HUD) repaintCurrentActorStats() {
 	children := hud.mgr.Component(parent, "Children").(*ecs.Children)
 
 	e := hud.turnToken
-	actor := hud.mgr.Component(e, "Actor").(*game.Actor)
+	actor := hud.mgr.Component(e, "Character").(*game.Character)
 	stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
 	labels := []string{
 		"Health:",
@@ -657,21 +657,21 @@ func (hud *HUD) repaintTurnQueue() {
 	}
 
 	var q []v
-	for _, e := range hud.mgr.Get([]string{"Actor", "CombatStats"}) {
-		actor := hud.mgr.Component(e, "Actor").(*game.Actor)
+	for _, e := range hud.mgr.Get([]string{"Character", "CombatStats"}) {
+		char := hud.mgr.Component(e, "Character").(*game.Character)
 		stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
 
-		// An Awkward way of not including the Actor with the TurnToken.
+		// An Awkward way of not including the Character with the TurnToken.
 		if stats.CurrentPreparation == 0 {
 			continue
 		}
 
 		q = append(q, v{
 			e:         e,
-			remaining: actor.PreparationThreshold - stats.CurrentPreparation,
+			remaining: char.PreparationThreshold - stats.CurrentPreparation,
 			current:   stats.CurrentPreparation,
-			max:       actor.PreparationThreshold,
-			icon:      &actor.SmallIcon,
+			max:       char.PreparationThreshold,
+			icon:      &char.SmallIcon,
 		})
 	}
 	sort.Slice(q, func(i, j int) bool {
@@ -685,7 +685,7 @@ func (hud *HUD) repaintTurnQueue() {
 		// actor's portrait icon
 		child := children.Value[i*3]
 
-		// If we have no more Actors for this slot, then hide it.
+		// If we have no more Characters for this slot, then hide it.
 		if i >= len(q) {
 			hud.mgr.RemoveComponent(children.Value[i*3+0], &game.Sprite{})
 			hud.mgr.RemoveComponent(children.Value[i*3+1], &game.Sprite{})

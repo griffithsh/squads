@@ -6,7 +6,7 @@ import (
 
 // AdaptField takes a geom.Field and adapts it to provide At() and Get() for the
 // specified ActorSize.
-func AdaptField(f *geom.Field, sz ActorSize) geom.LogicalField {
+func AdaptField(f *geom.Field, sz CharacterSize) geom.LogicalField {
 	switch sz {
 	case MEDIUM:
 		return geom.NewField4(f)

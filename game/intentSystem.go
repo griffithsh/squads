@@ -37,10 +37,10 @@ type ContextualObstacle struct {
 
 // Update Actors with Intents.
 func (s *IntentSystem) Update() {
-	entities := s.mgr.Get([]string{"Actor", "CombatStats", "MoveIntent", "Position"})
+	entities := s.mgr.Get([]string{"Character", "CombatStats", "MoveIntent", "Position"})
 
 	for _, e := range entities {
-		a := s.mgr.Component(e, "Actor").(*Actor)
+		a := s.mgr.Component(e, "Character").(*Character)
 		stats := s.mgr.Component(e, "CombatStats").(*CombatStats)
 		pos := s.mgr.Component(e, "Position").(*Position)
 		intent := s.mgr.Component(e, "MoveIntent").(*MoveIntent)
@@ -102,7 +102,7 @@ func (s *IntentSystem) Update() {
 type ExistsFunc func(geom.Key) bool
 
 // ExistsFuncFactory constructs ExistsFuncs from a context.
-func ExistsFuncFactory(f *geom.Field, sz ActorSize) ExistsFunc {
+func ExistsFuncFactory(f *geom.Field, sz CharacterSize) ExistsFunc {
 	return func(k geom.Key) bool {
 		return AdaptField(f, sz).Get(k.M, k.N) != nil
 	}
@@ -136,7 +136,7 @@ func CostsFuncFactory(f *geom.Field, mgr *ecs.World, actor ecs.Entity) CostsFunc
 			})
 		}
 	}
-	a := mgr.Component(actor, "Actor").(*Actor)
+	a := mgr.Component(actor, "Character").(*Character)
 
 	return func(k geom.Key) float64 {
 		hex := AdaptField(f, a.Size).Get(k.M, k.N)

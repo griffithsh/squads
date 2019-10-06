@@ -108,13 +108,13 @@ func (cm *CursorManager) hideLiveActors() {
 }
 
 func (cm *CursorManager) repaintLiveActors() {
-	entities := cm.mgr.Get([]string{"Actor"})
+	entities := cm.mgr.Get([]string{"Character"})
 	for i, slot := range cm.mgr.Tagged(liveActorsTag) {
 		if i < len(entities) {
 			spr := game.Sprite{
 				Texture: "cursors.png",
 			}
-			actor := cm.mgr.Component(entities[i], "Actor").(*game.Actor)
+			actor := cm.mgr.Component(entities[i], "Character").(*game.Character)
 			switch actor.Size {
 			case game.SMALL:
 				spr.X = 0
@@ -170,7 +170,7 @@ func (cm *CursorManager) hidePathNavigationCursor() {
 }
 
 func (cm *CursorManager) repaintPathNavigationCursor() {
-	actor := cm.mgr.Component(cm.turnToken, "Actor").(*game.Actor)
+	actor := cm.mgr.Component(cm.turnToken, "Character").(*game.Character)
 	stats := cm.mgr.Component(cm.turnToken, "CombatStats").(*game.CombatStats)
 	pos := cm.mgr.Component(cm.turnToken, "Position").(*game.Position)
 
