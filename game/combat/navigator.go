@@ -90,7 +90,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 					OldFacing: oldFace,
 				})
 				mgr.RemoveComponent(e, mover)
-				nav.Publish(&game.CombatActorMovementConcluded{Entity: e})
+				nav.Publish(&ActorMovementConcluded{Entity: e})
 				continue
 			}
 

@@ -1,7 +1,6 @@
 package game
 
 import (
-	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 )
 
@@ -21,16 +20,6 @@ type CombatBegan struct{}
 // Type of the Event.
 func (CombatBegan) Type() event.Type {
 	return "game.CombatBegan"
-}
-
-// CombatActorMovementConcluded occurs when an actor has finished their movement.
-type CombatActorMovementConcluded struct {
-	Entity ecs.Entity
-}
-
-// Type of the Event.
-func (CombatActorMovementConcluded) Type() event.Type {
-	return "game.CombatActorMovementConcluded"
 }
 
 // CombatAwaitingPlayerInput occurs when an actor needs a command.

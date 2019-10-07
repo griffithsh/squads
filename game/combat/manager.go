@@ -84,7 +84,7 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 	}
 	cm.setState(PreparingState)
 
-	cm.bus.Subscribe(game.CombatActorMovementConcluded{}.Type(), cm.handleMovementConcluded)
+	cm.bus.Subscribe(ActorMovementConcluded{}.Type(), cm.handleMovementConcluded)
 	cm.bus.Subscribe(EndTurnRequested{}.Type(), cm.handleEndTurnRequested)
 	cm.bus.Subscribe(MoveModeRequested{}.Type(), cm.handleMoveModeRequested)
 	cm.bus.Subscribe(CancelSkillRequested{}.Type(), cm.handleCancelSkillRequested)
@@ -524,7 +524,7 @@ func (cm *Manager) MousePosition(x, y int) {
 
 // syncActorObstacle updates the an Actor's Obstacle to be synchronised with its
 // position. It should be called when an Actor has completed a move.
-func (cm *Manager) syncActorObstacle(evt *game.CombatActorMovementConcluded) {
+func (cm *Manager) syncActorObstacle(evt *ActorMovementConcluded) {
 	actor := cm.mgr.Component(evt.Entity, "Actor").(*Actor)
 	obstacle := cm.mgr.Component(evt.Entity, "Obstacle").(*game.Obstacle)
 	position := cm.mgr.Component(evt.Entity, "Position").(*game.Position)
@@ -537,7 +537,7 @@ func (cm *Manager) syncActorObstacle(evt *game.CombatActorMovementConcluded) {
 
 func (cm *Manager) handleMovementConcluded(t event.Typer) {
 	// FIXME: Should Obstacle movement be handled by an "obstacle" system instead?
-	cm.syncActorObstacle(t.(*game.CombatActorMovementConcluded))
+	cm.syncActorObstacle(t.(*ActorMovementConcluded))
 
 	cm.setState(AwaitingInputState)
 	cm.MousePosition(cm.x, cm.y)

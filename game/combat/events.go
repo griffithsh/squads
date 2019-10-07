@@ -92,3 +92,13 @@ type ActorMoving struct {
 func (ActorMoving) Type() event.Type {
 	return "combat.ActorMoving"
 }
+
+// ActorMovementConcluded occurs when an actor has finished their movement.
+type ActorMovementConcluded struct {
+	Entity ecs.Entity
+}
+
+// Type of the Event.
+func (ActorMovementConcluded) Type() event.Type {
+	return "combat.ActorMovementConcluded"
+}
