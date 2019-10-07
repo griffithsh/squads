@@ -1,4 +1,4 @@
-package game
+package combat
 
 import (
 	"fmt"
@@ -6,6 +6,7 @@ import (
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
+	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
 )
 
@@ -37,13 +38,13 @@ type ContextualObstacle struct {
 
 // Update Actors with Intents.
 func (s *IntentSystem) Update() {
-	entities := s.mgr.Get([]string{"Character", "CombatStats", "MoveIntent", "Position"})
+	entities := s.mgr.Get([]string{"Actor", "CombatStats", "MoveIntent", "Position"})
 
 	for _, e := range entities {
-		a := s.mgr.Component(e, "Character").(*Character)
-		stats := s.mgr.Component(e, "CombatStats").(*CombatStats)
-		pos := s.mgr.Component(e, "Position").(*Position)
-		intent := s.mgr.Component(e, "MoveIntent").(*MoveIntent)
+		a := s.mgr.Component(e, "Actor").(*Actor)
+		stats := s.mgr.Component(e, "CombatStats").(*game.CombatStats)
+		pos := s.mgr.Component(e, "Position").(*game.Position)
+		intent := s.mgr.Component(e, "MoveIntent").(*game.MoveIntent)
 
 		s.mgr.RemoveComponent(e, intent)
 
@@ -52,12 +53,12 @@ func (s *IntentSystem) Update() {
 		exists := ExistsFuncFactory(s.field, a.Size)
 		costs := CostsFuncFactory(s.field, s.mgr, e)
 
-		f := AdaptField(s.field, a.Size)
+		f := game.AdaptField(s.field, a.Size)
 		startHex := f.At(int(pos.Center.X), int(pos.Center.Y))
 		goalHex := f.At(int(intent.X), int(intent.Y))
 		if startHex == nil || goalHex == nil {
 			// Don't navigate.
-			s.Publish(&CombatActorMovementConcluded{Entity: e})
+			s.Publish(&game.CombatActorMovementConcluded{Entity: e})
 			continue
 		}
 		start = startHex.Key()
@@ -73,7 +74,7 @@ func (s *IntentSystem) Update() {
 		steps, err := geom.Navigate(start, goal, exists, costs)
 		if err != nil {
 			fmt.Printf("Navigate: %v\n", err)
-			s.Publish(&CombatActorMovementConcluded{Entity: e})
+			s.Publish(&game.CombatActorMovementConcluded{Entity: e})
 			continue
 		}
 
@@ -87,9 +88,9 @@ func (s *IntentSystem) Update() {
 			m.Moves = append(m.Moves, stepToWaypoint(step))
 		}
 		stats.ActionPoints -= cost
-		s.Publish(&CombatStatModified{
+		s.Publish(&game.CombatStatModified{
 			Entity: e,
-			Stat:   ActionStat,
+			Stat:   game.ActionStat,
 			Amount: -cost,
 		})
 
@@ -102,9 +103,9 @@ func (s *IntentSystem) Update() {
 type ExistsFunc func(geom.Key) bool
 
 // ExistsFuncFactory constructs ExistsFuncs from a context.
-func ExistsFuncFactory(f *geom.Field, sz CharacterSize) ExistsFunc {
+func ExistsFuncFactory(f *geom.Field, sz game.CharacterSize) ExistsFunc {
 	return func(k geom.Key) bool {
-		return AdaptField(f, sz).Get(k.M, k.N) != nil
+		return game.AdaptField(f, sz).Get(k.M, k.N) != nil
 	}
 }
 
@@ -120,9 +121,9 @@ func CostsFuncFactory(f *geom.Field, mgr *ecs.World, actor ecs.Entity) CostsFunc
 		if e == actor {
 			continue
 		}
-		obstacle := mgr.Component(e, "Obstacle").(*Obstacle)
+		obstacle := mgr.Component(e, "Obstacle").(*game.Obstacle)
 
-		h := AdaptFieldObstacle(f, obstacle.ObstacleType).Get(obstacle.M, obstacle.N)
+		h := game.AdaptFieldObstacle(f, obstacle.ObstacleType).Get(obstacle.M, obstacle.N)
 		if h == nil {
 			continue
 		}
@@ -136,10 +137,10 @@ func CostsFuncFactory(f *geom.Field, mgr *ecs.World, actor ecs.Entity) CostsFunc
 			})
 		}
 	}
-	a := mgr.Component(actor, "Character").(*Character)
+	a := mgr.Component(actor, "Actor").(*Actor)
 
 	return func(k geom.Key) float64 {
-		hex := AdaptField(f, a.Size).Get(k.M, k.N)
+		hex := game.AdaptField(f, a.Size).Get(k.M, k.N)
 
 		if hex == nil {
 			return math.Inf(0)

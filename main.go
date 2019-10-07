@@ -131,7 +131,7 @@ func setup(w, h int) (*system, error) {
 
 	// Create some Actors that are controlled by mouse clicks
 	e := mgr.NewEntity()
-	mgr.AddComponent(e, &game.Character{
+	mgr.AddComponent(e, &combat.Actor{
 		Name:                 "Samithee",
 		Size:                 game.SMALL,
 		Sex:                  game.Male,
@@ -156,7 +156,7 @@ func setup(w, h int) (*system, error) {
 	mgr.AddComponent(e, t)
 
 	e = mgr.NewEntity()
-	mgr.AddComponent(e, &game.Character{
+	mgr.AddComponent(e, &combat.Actor{
 		Name:                 "Timjamen",
 		Size:                 game.SMALL,
 		Sex:                  game.Male,
@@ -184,7 +184,7 @@ func setup(w, h int) (*system, error) {
 	e = mgr.NewEntity()
 	t = combat.NewTeam()
 
-	mgr.AddComponent(e, &game.Character{
+	mgr.AddComponent(e, &combat.Actor{
 		Name:                 "Wolf",
 		Size:                 game.MEDIUM,
 		Sex:                  game.Male,
@@ -209,7 +209,7 @@ func setup(w, h int) (*system, error) {
 	mgr.AddComponent(e, t)
 
 	e = mgr.NewEntity()
-	mgr.AddComponent(e, &game.Character{
+	mgr.AddComponent(e, &combat.Actor{
 		Name:                 "Giant",
 		Size:                 game.LARGE,
 		Sex:                  game.Male,
@@ -234,7 +234,7 @@ func setup(w, h int) (*system, error) {
 	mgr.AddComponent(e, t)
 
 	e = mgr.NewEntity()
-	mgr.AddComponent(e, &game.Character{
+	mgr.AddComponent(e, &combat.Actor{
 		Name:                 "Dumble",
 		Size:                 game.SMALL,
 		Sex:                  game.Male,

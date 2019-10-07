@@ -1,10 +1,11 @@
-package game
+package combat
 
 import (
 	"time"
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
+	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
 )
 
@@ -20,21 +21,21 @@ func NewNavigator(bus *event.Bus) *Navigator {
 	}
 }
 
-var professionSpeeds = map[CharacterProfession]time.Duration{
-	Wolf:     150 * time.Millisecond,
-	Skeleton: 800 * time.Millisecond,
-	Giant:    1000 * time.Millisecond,
+var professionSpeeds = map[game.CharacterProfession]time.Duration{
+	game.Wolf:     150 * time.Millisecond,
+	game.Skeleton: 800 * time.Millisecond,
+	game.Giant:    1000 * time.Millisecond,
 }
 
 // Update Movers.
 func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
-	entities := mgr.Get([]string{"Mover", "Character", "Position"})
+	entities := mgr.Get([]string{"Mover", "Actor", "Position"})
 
 	for _, e := range entities {
 		mover := mgr.Component(e, "Mover").(*Mover)
-		pos := mgr.Component(e, "Position").(*Position)
-		facer := mgr.Component(e, "Facer").(*Facer)
-		actor := mgr.Component(e, "Character").(*Character)
+		pos := mgr.Component(e, "Position").(*game.Position)
+		facer := mgr.Component(e, "Facer").(*game.Facer)
+		actor := mgr.Component(e, "Actor").(*Actor)
 
 		oldFace := facer.Face
 
@@ -61,7 +62,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 				facer.Face = dir
 			}
 			if oldFace != facer.Face || 0 != mover.Speed {
-				nav.Publish(&CombatActorMoving{
+				nav.Publish(&game.CombatActorMoving{
 					Entity:    e,
 					NewSpeed:  mover.Speed,
 					OldSpeed:  0,
@@ -81,7 +82,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 
 			// Are we done?
 			if len(mover.Moves) == 0 {
-				nav.Publish(&CombatActorMoving{
+				nav.Publish(&game.CombatActorMoving{
 					Entity:    e,
 					NewSpeed:  0,
 					OldSpeed:  mover.Speed,
@@ -89,7 +90,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 					OldFacing: oldFace,
 				})
 				mgr.RemoveComponent(e, mover)
-				nav.Publish(&CombatActorMovementConcluded{Entity: e})
+				nav.Publish(&game.CombatActorMovementConcluded{Entity: e})
 				continue
 			}
 
@@ -116,7 +117,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 				facer.Face = dir
 			}
 			if oldFace != facer.Face || oldSpeed != mover.Speed {
-				nav.Publish(&CombatActorMoving{
+				nav.Publish(&game.CombatActorMoving{
 					Entity:    e,
 					NewSpeed:  mover.Speed,
 					OldSpeed:  oldSpeed,

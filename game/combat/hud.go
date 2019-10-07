@@ -341,7 +341,7 @@ func (hud *HUD) repaintCurrentActor() {
 
 	// Repaint the current Actor's portrait.
 	e = hud.mgr.AnyTagged(currentActorPortraitTag)
-	actor := hud.mgr.Component(hud.turnToken, "Character").(*game.Character)
+	actor := hud.mgr.Component(hud.turnToken, "Actor").(*Actor)
 
 	hud.mgr.AddComponent(e, &actor.BigIcon)
 
@@ -415,7 +415,7 @@ func (hud *HUD) repaintCurrentActorStats() {
 	children := hud.mgr.Component(parent, "Children").(*ecs.Children)
 
 	e := hud.turnToken
-	actor := hud.mgr.Component(e, "Character").(*game.Character)
+	actor := hud.mgr.Component(e, "Actor").(*Actor)
 	stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
 	labels := []string{
 		"Health:",
@@ -657,8 +657,8 @@ func (hud *HUD) repaintTurnQueue() {
 	}
 
 	var q []v
-	for _, e := range hud.mgr.Get([]string{"Character", "CombatStats"}) {
-		char := hud.mgr.Component(e, "Character").(*game.Character)
+	for _, e := range hud.mgr.Get([]string{"Actor", "CombatStats"}) {
+		actor := hud.mgr.Component(e, "Actor").(*Actor)
 		stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
 
 		// An Awkward way of not including the Character with the TurnToken.
@@ -668,10 +668,10 @@ func (hud *HUD) repaintTurnQueue() {
 
 		q = append(q, v{
 			e:         e,
-			remaining: char.PreparationThreshold - stats.CurrentPreparation,
+			remaining: actor.PreparationThreshold - stats.CurrentPreparation,
 			current:   stats.CurrentPreparation,
-			max:       char.PreparationThreshold,
-			icon:      &char.SmallIcon,
+			max:       actor.PreparationThreshold,
+			icon:      &actor.SmallIcon,
 		})
 	}
 	sort.Slice(q, func(i, j int) bool {

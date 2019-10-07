@@ -46,20 +46,23 @@ const (
 // is over.
 type Character struct {
 	// Things that don't affect gameplay.
-	Name      string
-	SmallIcon Sprite // (26x26)
-	BigIcon   Sprite // (52x52)
+	Name string
+	// SmallIcon Sprite // (26x26)
+	// BigIcon   Sprite // (52x52)
 
 	// Intrinsic to the Character
 	Size       CharacterSize
 	Profession CharacterProfession
 	Sex        CharacterSex
 
-	// Current Performance
-	// Performance CharacterPerformance
-
 	PreparationThreshold int // Preparation required to take a turn
 	ActionPoints         int
+
+	Level                uint
+	StrengthPerLevel     float64
+	DexterityPerLevel    float64
+	IntelligencePerLevel float64
+	VitalityPerLevel     float64
 }
 
 // Type of this Component.

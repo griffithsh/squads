@@ -108,13 +108,13 @@ func (cm *CursorManager) hideLiveActors() {
 }
 
 func (cm *CursorManager) repaintLiveActors() {
-	entities := cm.mgr.Get([]string{"Character"})
+	entities := cm.mgr.Get([]string{"Actor"})
 	for i, slot := range cm.mgr.Tagged(liveActorsTag) {
 		if i < len(entities) {
 			spr := game.Sprite{
 				Texture: "cursors.png",
 			}
-			actor := cm.mgr.Component(entities[i], "Character").(*game.Character)
+			actor := cm.mgr.Component(entities[i], "Actor").(*Actor)
 			switch actor.Size {
 			case game.SMALL:
 				spr.X = 0
@@ -170,7 +170,7 @@ func (cm *CursorManager) hidePathNavigationCursor() {
 }
 
 func (cm *CursorManager) repaintPathNavigationCursor() {
-	actor := cm.mgr.Component(cm.turnToken, "Character").(*game.Character)
+	actor := cm.mgr.Component(cm.turnToken, "Actor").(*Actor)
 	stats := cm.mgr.Component(cm.turnToken, "CombatStats").(*game.CombatStats)
 	pos := cm.mgr.Component(cm.turnToken, "Position").(*game.Position)
 
@@ -181,8 +181,8 @@ func (cm *CursorManager) repaintPathNavigationCursor() {
 	sh := f.At(int(pos.Center.X), int(pos.Center.Y))
 	start = sh.Key()
 
-	exists := game.ExistsFuncFactory(cm.field, actor.Size)
-	costs := game.CostsFuncFactory(cm.field, cm.mgr, cm.turnToken)
+	exists := ExistsFuncFactory(cm.field, actor.Size)
+	costs := CostsFuncFactory(cm.field, cm.mgr, cm.turnToken)
 
 	type comps struct {
 		p game.Position

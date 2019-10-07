@@ -49,12 +49,12 @@ func NewPerformanceSystem(mgr *ecs.World, bus *event.Bus) *PerformanceSystem {
 // Update the System.
 func (ps *PerformanceSystem) Update(elapse time.Duration) {
 	// For any actors without a sprite, apply their idling animation
-	for _, e := range ps.mgr.Get([]string{"Character", "Position"}) {
+	for _, e := range ps.mgr.Get([]string{"Actor", "Position"}) {
 		if _, ok := ps.mgr.Component(e, "Sprite").(*game.Sprite); ok {
 			continue
 		}
 
-		actor := ps.mgr.Component(e, "Character").(*game.Character)
+		actor := ps.mgr.Component(e, "Actor").(*Actor)
 		facer := ps.mgr.Component(e, "Facer").(*game.Facer)
 
 		fa := get(animationId{actor.Profession, actor.Sex, game.PerformIdle, facer.Face})
@@ -94,7 +94,7 @@ func notFound() game.FrameAnimation {
 func (ps *PerformanceSystem) handleActorMoving(t event.Typer) {
 	ev := t.(*game.CombatActorMoving)
 	e := ev.Entity
-	actor := ps.mgr.Component(e, "Character").(*game.Character)
+	actor := ps.mgr.Component(e, "Actor").(*Actor)
 	facer := ps.mgr.Component(e, "Facer").(*game.Facer)
 
 	// If the facing has changed, then we need to edit the FrameAnimation.
