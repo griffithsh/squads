@@ -552,6 +552,11 @@ func (hud *HUD) repaintSkills() {
 					W:       24,
 					H:       24,
 				},
+				interactive: &ui.Interactive{
+					Trigger: func() {
+						hud.bus.Publish(&game.CombatConcluded{})
+					},
+				},
 			},
 
 			// End turn

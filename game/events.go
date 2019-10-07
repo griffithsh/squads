@@ -22,6 +22,14 @@ func (CombatBegan) Type() event.Type {
 	return "game.CombatBegan"
 }
 
+// CombatConcluded occurs when a Combat is over.
+type CombatConcluded struct{}
+
+// Type of the Event.
+func (CombatConcluded) Type() event.Type {
+	return "game.CombatConcluded"
+}
+
 // WindowSizeChanged occurs when the size of the window the game is running in
 // changes.
 type WindowSizeChanged struct {

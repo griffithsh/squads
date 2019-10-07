@@ -127,6 +127,13 @@ func setup(w, h int) (*system, error) {
 		hierarchy: ecs.NewParentSystem(mgr),
 		leash:     &game.LeashSystem{},
 	}
+	bus.Subscribe(game.CombatConcluded{}.Type(), func(et event.Typer) {
+		// TODO
+		// ccEvent := et.(*game.CombatConcluded)
+		s.combat.Disable()
+		s.overworld.Enable()
+	})
+
 	t := combat.NewTeam()
 
 	// Create some Actors that are controlled by mouse clicks
