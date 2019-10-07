@@ -272,10 +272,8 @@ func (cm *Manager) Begin() {
 			break
 		}
 
-		cm.mgr.AddComponent(e, &game.CombatStats{
-			CurrentPreparation: 0,
-			ActionPoints:       actor.ActionPoints,
-		})
+		actor.PreparationThreshold.Cur = 0
+		actor.ActionPoints.Cur = actor.ActionPoints.Max
 		cm.mgr.AddComponent(e, &game.Facer{Face: geom.S})
 	}
 
@@ -321,7 +319,6 @@ func (cm *Manager) End() {
 		"Scale",
 		"Position",
 		"Obstacle",
-		"CombatStats",
 		"Facer",
 	}
 	for _, e := range cm.mgr.Get([]string{"Actor"}) {
@@ -349,12 +346,11 @@ func (cm *Manager) Run(elapsed time.Duration) {
 
 		// But if any Actor requires less than that, then only use that amount
 		// instead, so that no actor overshoots its PreparationThreshold.
-		for _, e := range cm.mgr.Get([]string{"Actor", "CombatStats"}) {
-			s := cm.mgr.Component(e, "CombatStats").(*game.CombatStats)
+		for _, e := range cm.mgr.Get([]string{"Actor"}) {
 			actor := cm.mgr.Component(e, "Actor").(*Actor)
 
-			if actor.PreparationThreshold-s.CurrentPreparation < increment {
-				increment = actor.PreparationThreshold - s.CurrentPreparation
+			if actor.PreparationThreshold.Max-actor.PreparationThreshold.Cur < increment {
+				increment = actor.PreparationThreshold.Max - actor.PreparationThreshold.Cur
 			}
 		}
 
@@ -364,18 +360,17 @@ func (cm *Manager) Run(elapsed time.Duration) {
 
 		// Now that we know the increment, we can apply it with confidence that
 		// we will not over-prepare.
-		for _, e := range cm.mgr.Get([]string{"Actor", "CombatStats"}) {
-			s := cm.mgr.Component(e, "CombatStats").(*game.CombatStats)
+		for _, e := range cm.mgr.Get([]string{"Actor"}) {
 			actor := cm.mgr.Component(e, "Actor").(*Actor)
 
-			s.CurrentPreparation += increment
+			actor.PreparationThreshold.Cur += increment
 			cm.bus.Publish(&game.CombatStatModified{
 				Entity: e,
 				Stat:   game.PrepStat,
 				Amount: increment,
 			})
 
-			if s.CurrentPreparation >= actor.PreparationThreshold {
+			if actor.PreparationThreshold.Cur >= actor.PreparationThreshold.Max {
 				prepared = append(prepared, e)
 			}
 		}
@@ -384,14 +379,14 @@ func (cm *Manager) Run(elapsed time.Duration) {
 		// finish preparing at the same time.
 		if len(prepared) > 0 {
 			e := prepared[0]
-			s := cm.mgr.Component(e, "CombatStats").(*game.CombatStats)
+			actor := cm.mgr.Component(e, "Actor").(*Actor)
 
 			ev := &game.CombatStatModified{
 				Entity: e,
 				Stat:   game.PrepStat,
-				Amount: -s.CurrentPreparation,
+				Amount: -actor.PreparationThreshold.Cur,
 			}
-			s.CurrentPreparation = 0
+			actor.PreparationThreshold.Cur = 0
 			cm.bus.Publish(ev)
 
 			cm.turnToken = e
@@ -551,8 +546,7 @@ func (cm *Manager) handleMovementConcluded(t event.Typer) {
 func (cm *Manager) handleEndTurnRequested(event.Typer) {
 	// Reset to maximum AP.
 	actor := cm.mgr.Component(cm.turnToken, "Actor").(*Actor)
-	stats := cm.mgr.Component(cm.turnToken, "CombatStats").(*game.CombatStats)
-	stats.ActionPoints = actor.ActionPoints
+	actor.ActionPoints.Cur = actor.ActionPoints.Max
 
 	// Remove turnToken
 	cm.turnToken = 0

@@ -171,7 +171,6 @@ func (cm *CursorManager) hidePathNavigationCursor() {
 
 func (cm *CursorManager) repaintPathNavigationCursor() {
 	actor := cm.mgr.Component(cm.turnToken, "Actor").(*Actor)
-	stats := cm.mgr.Component(cm.turnToken, "CombatStats").(*game.CombatStats)
 	pos := cm.mgr.Component(cm.turnToken, "Position").(*game.Position)
 
 	f := game.AdaptField(cm.field, actor.Size)
@@ -245,7 +244,7 @@ func (cm *CursorManager) repaintPathNavigationCursor() {
 					Layer: 10,
 				},
 			})
-			if int(step.Cost) > stats.ActionPoints {
+			if int(step.Cost) > actor.ActionPoints.Cur {
 				c[len(c)-1].s.X = 48
 			}
 		}

@@ -28,7 +28,7 @@
 - [x] Animations at a game-concept level
   - [x] A _Performance_ System
 - [x] Moving animations sped up and slowed down by the Entity's Mover's speed
-- [ ] Split Actor concerns out to Character
+- [x] Split Actor concerns out to Character
 - [ ] Transitions between Combat, the Overworld, a village/embark mode, and a main menu/splash screen
   - [ ] Combat can signal its completion, and return the player to the overworld
   - [ ] Main menu can load a saved game, and take the player to the overworld or a combat

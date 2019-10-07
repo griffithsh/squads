@@ -38,11 +38,10 @@ type ContextualObstacle struct {
 
 // Update Actors with Intents.
 func (s *IntentSystem) Update() {
-	entities := s.mgr.Get([]string{"Actor", "CombatStats", "MoveIntent", "Position"})
+	entities := s.mgr.Get([]string{"Actor", "MoveIntent", "Position"})
 
 	for _, e := range entities {
 		a := s.mgr.Component(e, "Actor").(*Actor)
-		stats := s.mgr.Component(e, "CombatStats").(*game.CombatStats)
 		pos := s.mgr.Component(e, "Position").(*game.Position)
 		intent := s.mgr.Component(e, "MoveIntent").(*game.MoveIntent)
 
@@ -81,13 +80,13 @@ func (s *IntentSystem) Update() {
 		m := Mover{}
 		cost := 0
 		for _, step := range steps {
-			if int(step.Cost) > stats.ActionPoints {
+			if int(step.Cost) > a.ActionPoints.Cur {
 				break
 			}
 			cost = int(step.Cost)
 			m.Moves = append(m.Moves, stepToWaypoint(step))
 		}
-		stats.ActionPoints -= cost
+		a.ActionPoints.Cur -= cost
 		s.Publish(&game.CombatStatModified{
 			Entity: e,
 			Stat:   game.ActionStat,

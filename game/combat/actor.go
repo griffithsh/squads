@@ -21,8 +21,8 @@ type Actor struct {
 	Profession game.CharacterProfession
 	Sex        game.CharacterSex
 
-	PreparationThreshold int
-	ActionPoints         int
+	PreparationThreshold CurMax
+	ActionPoints         CurMax
 	Health               CurMax
 
 	Strength     int

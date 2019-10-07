@@ -416,16 +416,15 @@ func (hud *HUD) repaintCurrentActorStats() {
 
 	e := hud.turnToken
 	actor := hud.mgr.Component(e, "Actor").(*Actor)
-	stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
 	labels := []string{
 		"Health:",
 		"?/N", // TODO
 		"Energy:",
 		"?/N", // TODO
 		"Action:",
-		fmt.Sprintf("%d/%d", stats.ActionPoints, actor.ActionPoints),
+		fmt.Sprintf("%d/%d", actor.ActionPoints.Cur, actor.ActionPoints.Max),
 		"Prep:",
-		fmt.Sprintf("%d/%d", stats.CurrentPreparation, actor.PreparationThreshold),
+		fmt.Sprintf("%d/%d", actor.PreparationThreshold.Cur, actor.PreparationThreshold.Max),
 	}
 	for i, child := range children.Value {
 		// Magical x,y coordinates for stats are:
@@ -657,20 +656,19 @@ func (hud *HUD) repaintTurnQueue() {
 	}
 
 	var q []v
-	for _, e := range hud.mgr.Get([]string{"Actor", "CombatStats"}) {
+	for _, e := range hud.mgr.Get([]string{"Actor"}) {
 		actor := hud.mgr.Component(e, "Actor").(*Actor)
-		stats := hud.mgr.Component(e, "CombatStats").(*game.CombatStats)
 
 		// An Awkward way of not including the Character with the TurnToken.
-		if stats.CurrentPreparation == 0 {
+		if actor.PreparationThreshold.Cur == 0 {
 			continue
 		}
 
 		q = append(q, v{
 			e:         e,
-			remaining: actor.PreparationThreshold - stats.CurrentPreparation,
-			current:   stats.CurrentPreparation,
-			max:       actor.PreparationThreshold,
+			remaining: actor.PreparationThreshold.Max - actor.PreparationThreshold.Cur,
+			current:   actor.PreparationThreshold.Cur,
+			max:       actor.PreparationThreshold.Max,
 			icon:      &actor.SmallIcon,
 		})
 	}

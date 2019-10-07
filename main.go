@@ -132,12 +132,16 @@ func setup(w, h int) (*system, error) {
 	// Create some Actors that are controlled by mouse clicks
 	e := mgr.NewEntity()
 	mgr.AddComponent(e, &combat.Actor{
-		Name:                 "Samithee",
-		Size:                 game.SMALL,
-		Sex:                  game.Male,
-		Profession:           game.Villager,
-		PreparationThreshold: 701,
-		ActionPoints:         100,
+		Name:       "Samithee",
+		Size:       game.SMALL,
+		Sex:        game.Male,
+		Profession: game.Villager,
+		PreparationThreshold: combat.CurMax{
+			Max: 701,
+		},
+		ActionPoints: combat.CurMax{
+			Max: 100,
+		},
 		SmallIcon: game.Sprite{
 			Texture: "hud.png",
 			X:       0,
@@ -157,12 +161,17 @@ func setup(w, h int) (*system, error) {
 
 	e = mgr.NewEntity()
 	mgr.AddComponent(e, &combat.Actor{
-		Name:                 "Timjamen",
-		Size:                 game.SMALL,
-		Sex:                  game.Male,
-		Profession:           game.Villager,
-		PreparationThreshold: 699,
-		ActionPoints:         100,
+		Name:       "Timjamen",
+		Size:       game.SMALL,
+		Sex:        game.Male,
+		Profession: game.Villager,
+		PreparationThreshold: combat.CurMax{
+			Max: 699,
+		},
+		ActionPoints: combat.CurMax{
+			Max: 100,
+		},
+
 		SmallIcon: game.Sprite{
 			Texture: "portraits.png",
 			X:       178,
@@ -185,12 +194,16 @@ func setup(w, h int) (*system, error) {
 	t = combat.NewTeam()
 
 	mgr.AddComponent(e, &combat.Actor{
-		Name:                 "Wolf",
-		Size:                 game.MEDIUM,
-		Sex:                  game.Male,
-		Profession:           game.Wolf,
-		PreparationThreshold: 1103,
-		ActionPoints:         80,
+		Name:       "Wolf",
+		Size:       game.MEDIUM,
+		Sex:        game.Male,
+		Profession: game.Wolf,
+		PreparationThreshold: combat.CurMax{
+			Max: 1103,
+		},
+		ActionPoints: combat.CurMax{
+			Max: 80,
+		},
 		SmallIcon: game.Sprite{
 			Texture: "hud.png",
 			X:       52,
@@ -210,12 +223,16 @@ func setup(w, h int) (*system, error) {
 
 	e = mgr.NewEntity()
 	mgr.AddComponent(e, &combat.Actor{
-		Name:                 "Giant",
-		Size:                 game.LARGE,
-		Sex:                  game.Male,
-		Profession:           game.Giant,
-		PreparationThreshold: 1301,
-		ActionPoints:         120,
+		Name:       "Giant",
+		Size:       game.LARGE,
+		Sex:        game.Male,
+		Profession: game.Giant,
+		PreparationThreshold: combat.CurMax{
+			Max: 1301,
+		},
+		ActionPoints: combat.CurMax{
+			Max: 120,
+		},
 		SmallIcon: game.Sprite{
 			Texture: "hud.png",
 			X:       104,
@@ -235,12 +252,16 @@ func setup(w, h int) (*system, error) {
 
 	e = mgr.NewEntity()
 	mgr.AddComponent(e, &combat.Actor{
-		Name:                 "Dumble",
-		Size:                 game.SMALL,
-		Sex:                  game.Male,
-		Profession:           game.Skeleton,
-		PreparationThreshold: 1850,
-		ActionPoints:         60,
+		Name:       "Dumble",
+		Size:       game.SMALL,
+		Sex:        game.Male,
+		Profession: game.Skeleton,
+		PreparationThreshold: combat.CurMax{
+			Max: 1650,
+		},
+		ActionPoints: combat.CurMax{
+			Max: 60,
+		},
 		SmallIcon: game.Sprite{
 			Texture: "hud.png",
 			X:       104,
