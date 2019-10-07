@@ -53,3 +53,12 @@ type StatModified struct {
 func (StatModified) Type() event.Type {
 	return "combat.StatModified"
 }
+
+// EndTurnRequested occurs when the player indicates that they are finished
+// commanding the current Actor.
+type EndTurnRequested struct{}
+
+// Type of the Event.
+func (EndTurnRequested) Type() event.Type {
+	return "combat.EndTurnRequested"
+}
