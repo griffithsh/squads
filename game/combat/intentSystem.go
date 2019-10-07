@@ -87,7 +87,7 @@ func (s *IntentSystem) Update() {
 			m.Moves = append(m.Moves, stepToWaypoint(step))
 		}
 		a.ActionPoints.Cur -= cost
-		s.Publish(&game.CombatStatModified{
+		s.Publish(&StatModified{
 			Entity: e,
 			Stat:   game.ActionStat,
 			Amount: -cost,

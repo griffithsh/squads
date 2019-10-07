@@ -364,7 +364,7 @@ func (cm *Manager) Run(elapsed time.Duration) {
 			actor := cm.mgr.Component(e, "Actor").(*Actor)
 
 			actor.PreparationThreshold.Cur += increment
-			cm.bus.Publish(&game.CombatStatModified{
+			cm.bus.Publish(&StatModified{
 				Entity: e,
 				Stat:   game.PrepStat,
 				Amount: increment,
@@ -381,7 +381,7 @@ func (cm *Manager) Run(elapsed time.Duration) {
 			e := prepared[0]
 			actor := cm.mgr.Component(e, "Actor").(*Actor)
 
-			ev := &game.CombatStatModified{
+			ev := &StatModified{
 				Entity: e,
 				Stat:   game.PrepStat,
 				Amount: -actor.PreparationThreshold.Cur,

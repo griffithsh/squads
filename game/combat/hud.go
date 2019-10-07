@@ -100,7 +100,7 @@ func NewHUD(mgr *ecs.World, bus *event.Bus, screenX int, screenY int) *HUD {
 
 	bus.Subscribe(game.WindowSizeChanged{}.Type(), hud.handleWindowSizeChanged)
 	bus.Subscribe(game.CombatBegan{}.Type(), hud.handleCombatBegan)
-	bus.Subscribe(game.CombatStatModified{}.Type(), hud.handleCombatStatModified)
+	bus.Subscribe(StatModified{}.Type(), hud.handleCombatStatModified)
 	bus.Subscribe(StateTransition{}.Type(), hud.handleCombatStateTransition)
 	bus.Subscribe(ActorTurnChanged{}.Type(), hud.handleActorTurnChanged)
 
@@ -167,7 +167,7 @@ func (hud *HUD) handleCombatStatModified(ev event.Typer) {
 		return
 	}
 
-	csm := ev.(*game.CombatStatModified)
+	csm := ev.(*StatModified)
 
 	switch csm.Stat {
 	case game.PrepStat:

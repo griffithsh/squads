@@ -24,18 +24,6 @@ func (CombatBegan) Type() event.Type {
 	return "game.CombatBegan"
 }
 
-// CombatStatModified occurs when an Actor's current stats changed.
-type CombatStatModified struct {
-	Entity ecs.Entity
-	Stat   StatType
-	Amount int
-}
-
-// Type of the Event.
-func (CombatStatModified) Type() event.Type {
-	return "game.CombatStatModified"
-}
-
 // EndTurnRequested occurs when the player indicates that they are finished
 // commanding the current Actor.
 type EndTurnRequested struct{}
