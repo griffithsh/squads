@@ -80,3 +80,15 @@ type CancelSkillRequested struct{}
 func (CancelSkillRequested) Type() event.Type {
 	return "combat.CancelSkillRequested"
 }
+
+// ActorMoving occurs when an actor has begun their movement.
+type ActorMoving struct {
+	Entity               ecs.Entity
+	NewSpeed, OldSpeed   float64
+	OldFacing, NewFacing geom.DirectionType
+}
+
+// Type of the Event.
+func (ActorMoving) Type() event.Type {
+	return "combat.ActorMoving"
+}

@@ -41,7 +41,7 @@ func NewPerformanceSystem(mgr *ecs.World, bus *event.Bus) *PerformanceSystem {
 		mgr: mgr,
 	}
 
-	bus.Subscribe(game.CombatActorMoving{}.Type(), ps.handleActorMoving)
+	bus.Subscribe(ActorMoving{}.Type(), ps.handleActorMoving)
 
 	return &ps
 }
@@ -92,7 +92,7 @@ func notFound() game.FrameAnimation {
 }
 
 func (ps *PerformanceSystem) handleActorMoving(t event.Typer) {
-	ev := t.(*game.CombatActorMoving)
+	ev := t.(*ActorMoving)
 	e := ev.Entity
 	actor := ps.mgr.Component(e, "Actor").(*Actor)
 	facer := ps.mgr.Component(e, "Facer").(*game.Facer)

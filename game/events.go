@@ -3,7 +3,6 @@ package game
 import (
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
-	"github.com/griffithsh/squads/geom"
 )
 
 type StatType int
@@ -22,18 +21,6 @@ type CombatBegan struct{}
 // Type of the Event.
 func (CombatBegan) Type() event.Type {
 	return "game.CombatBegan"
-}
-
-// CombatActorMoving occurs when an actor has begun their movement.
-type CombatActorMoving struct {
-	Entity               ecs.Entity
-	NewSpeed, OldSpeed   float64
-	OldFacing, NewFacing geom.DirectionType
-}
-
-// Type of the Event.
-func (CombatActorMoving) Type() event.Type {
-	return "game.CombatActorMoving"
 }
 
 // CombatActorMovementConcluded occurs when an actor has finished their movement.

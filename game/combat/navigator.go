@@ -62,7 +62,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 				facer.Face = dir
 			}
 			if oldFace != facer.Face || 0 != mover.Speed {
-				nav.Publish(&game.CombatActorMoving{
+				nav.Publish(&ActorMoving{
 					Entity:    e,
 					NewSpeed:  mover.Speed,
 					OldSpeed:  0,
@@ -82,7 +82,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 
 			// Are we done?
 			if len(mover.Moves) == 0 {
-				nav.Publish(&game.CombatActorMoving{
+				nav.Publish(&ActorMoving{
 					Entity:    e,
 					NewSpeed:  0,
 					OldSpeed:  mover.Speed,
@@ -117,7 +117,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 				facer.Face = dir
 			}
 			if oldFace != facer.Face || oldSpeed != mover.Speed {
-				nav.Publish(&game.CombatActorMoving{
+				nav.Publish(&ActorMoving{
 					Entity:    e,
 					NewSpeed:  mover.Speed,
 					OldSpeed:  oldSpeed,
