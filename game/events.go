@@ -24,15 +24,6 @@ func (CombatBegan) Type() event.Type {
 	return "game.CombatBegan"
 }
 
-// MoveModeRequested occurs when the player indicates that they wish to move the
-// actor awaiting input.
-type MoveModeRequested struct{}
-
-// Type of the Event.
-func (MoveModeRequested) Type() event.Type {
-	return "game.MoveModeRequested"
-}
-
 // CancelSkillRequested occurs when the player indicates they want to cancel
 // targeting of the skill they selected.
 type CancelSkillRequested struct{}

@@ -62,3 +62,12 @@ type EndTurnRequested struct{}
 func (EndTurnRequested) Type() event.Type {
 	return "combat.EndTurnRequested"
 }
+
+// MoveModeRequested occurs when the player indicates that they wish to move the
+// actor awaiting input.
+type MoveModeRequested struct{}
+
+// Type of the Event.
+func (MoveModeRequested) Type() event.Type {
+	return "combat.MoveModeRequested"
+}
