@@ -22,14 +22,6 @@ func (CombatBegan) Type() event.Type {
 	return "game.CombatBegan"
 }
 
-// CombatAwaitingPlayerInput occurs when an actor needs a command.
-type CombatAwaitingPlayerInput struct{}
-
-// Type of the Event.
-func (CombatAwaitingPlayerInput) Type() event.Type {
-	return "game.CombatAwaitingPlayerInput"
-}
-
 // WindowSizeChanged occurs when the size of the window the game is running in
 // changes.
 type WindowSizeChanged struct {
