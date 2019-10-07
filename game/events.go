@@ -24,15 +24,6 @@ func (CombatBegan) Type() event.Type {
 	return "game.CombatBegan"
 }
 
-// CancelSkillRequested occurs when the player indicates they want to cancel
-// targeting of the skill they selected.
-type CancelSkillRequested struct{}
-
-// Type of the Event.
-func (CancelSkillRequested) Type() event.Type {
-	return "game.CancelSkillRequested"
-}
-
 // CombatActorMoving occurs when an actor has begun their movement.
 type CombatActorMoving struct {
 	Entity               ecs.Entity

@@ -71,3 +71,12 @@ type MoveModeRequested struct{}
 func (MoveModeRequested) Type() event.Type {
 	return "combat.MoveModeRequested"
 }
+
+// CancelSkillRequested occurs when the player indicates they want to cancel
+// targeting of the skill they selected.
+type CancelSkillRequested struct{}
+
+// Type of the Event.
+func (CancelSkillRequested) Type() event.Type {
+	return "combat.CancelSkillRequested"
+}

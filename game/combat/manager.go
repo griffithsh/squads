@@ -87,7 +87,7 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 	cm.bus.Subscribe(game.CombatActorMovementConcluded{}.Type(), cm.handleMovementConcluded)
 	cm.bus.Subscribe(EndTurnRequested{}.Type(), cm.handleEndTurnRequested)
 	cm.bus.Subscribe(MoveModeRequested{}.Type(), cm.handleMoveModeRequested)
-	cm.bus.Subscribe(game.CancelSkillRequested{}.Type(), cm.handleCancelSkillRequested)
+	cm.bus.Subscribe(CancelSkillRequested{}.Type(), cm.handleCancelSkillRequested)
 
 	return &cm
 }

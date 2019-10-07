@@ -508,7 +508,7 @@ func (hud *HUD) repaintSkills() {
 			},
 			interactive: &ui.Interactive{
 				Trigger: func() {
-					hud.bus.Publish(&game.CancelSkillRequested{})
+					hud.bus.Publish(&CancelSkillRequested{})
 				},
 			},
 		},
