@@ -4,7 +4,6 @@ import (
 	"fmt"
 	"image"
 	"image/color"
-	"math"
 	"sort"
 
 	"github.com/griffithsh/squads/ecs"
@@ -128,24 +127,13 @@ func (r *Renderer) Render(screen *ebiten.Image, mgr *ecs.World, x, y, zoom, w, h
 				op.GeoM.Scale(e.scale.X, e.scale.Y)
 			}
 
-			// Absolutely positioned entities wrap around, so that it is easy
-			// to specify things that are aligned with the right or bottom of
-			// the screen.
-			wrappedX := math.Mod(e.p.Center.X, w)
-			if wrappedX < 0 {
-				wrappedX = wrappedX + w
-			}
-			wrappedY := math.Mod(e.p.Center.Y, h)
-			if wrappedY < 0 {
-				wrappedY = wrappedY + h
-			}
+			x, y := e.p.Center.X, e.p.Center.Y
 
-			// NB wrapping of position occurs prior to sprite offset.
-			wrappedX += float64(e.s.OffsetX)
-			wrappedY += float64(e.s.OffsetY)
+			x += float64(e.s.OffsetX)
+			y += float64(e.s.OffsetY)
 
 			// Translate for the location of the Entity
-			op.GeoM.Translate(wrappedX, wrappedY)
+			op.GeoM.Translate(x, y)
 
 			// Some sprites may need to be drawn with an offset.
 			if e.offset != nil {

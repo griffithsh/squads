@@ -43,7 +43,7 @@
 - [ ] Medium and Large Actor art
 - [ ] Intent Queue(?) for AI Actors
 - [x] Move Hex, Hex4, Hex7 split up to Field1, Field4, Field7, so that they can all return LogicalHex for At(), Get() etc.
-- [ ] Negative coordinates should no longer wrap absolutely positioned Sprites - bottom or right-aligned renderable should be positioned via the HUDs copy of the screen center
+- [x] Negative coordinates should no longer wrap absolutely positioned Sprites - bottom or right-aligned renderable should be positioned via the HUDs copy of the screen center
 - [ ] Structuralise the way systems are registered with an ecs.World, so that all things that update can be found in a consistent place
 - [ ] Other Animation types
   - [ ] Fix the way hover animation goes wild when the game loses focus

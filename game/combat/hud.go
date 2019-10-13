@@ -587,7 +587,7 @@ func (hud *HUD) repaintSkills() {
 		hud.mgr.AddComponent(child, &game.Position{
 			Center: game.Center{
 				X: (150 + float64(26*x)) * hud.scale,
-				Y: (-42 + float64(26*y)) * hud.scale,
+				Y: hud.centerY*2 + (-42+float64(26*y))*hud.scale,
 			},
 			Layer:    hud.layer,
 			Absolute: true,

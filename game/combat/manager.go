@@ -417,9 +417,7 @@ func (cm *Manager) checkHUD(x, y int) bool {
 		sprite := cm.mgr.Component(e, "Sprite").(*game.Sprite)
 		scale := cm.mgr.Component(e, "Scale").(*game.Scale)
 
-		// Because Absolutely positioned components might have negative
-		// position, we need to modulo them.
-		px, py := cm.camera.Modulo(int(position.Center.X), int(position.Center.Y))
+		px, py := int(position.Center.X), int(position.Center.Y)
 
 		// Is the x,y of the interaction without the bounds of the
 		// Interactive?
