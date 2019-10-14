@@ -30,6 +30,12 @@ const (
 	ThinkingState
 	// PreparingState is when no characters is prepared enough to make a move.
 	PreparingState
+	// FadingIn is when the combat is first starting, or returning from a menu,
+	// and the curtain that obscures the scene change is disappearing.
+	FadingIn
+	//FadingOut is when the combat is going to another scene, and the curtain
+	//that obscures the scene change is appearing.
+	FadingOut
 )
 
 // Manager is a game-mode. It processes turns-based Combat until one or the other
@@ -82,7 +88,6 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 
 		dormant: false,
 	}
-	cm.setState(PreparingState)
 
 	cm.bus.Subscribe(ActorMovementConcluded{}.Type(), cm.handleMovementConcluded)
 	cm.bus.Subscribe(EndTurnRequested{}.Type(), cm.handleEndTurnRequested)
@@ -108,6 +113,17 @@ func (cm *Manager) setState(state State) {
 // Begin should be called at the start of an engagement to set up components
 // necessary for the combat.
 func (cm *Manager) Begin() {
+	cm.setState(FadingIn)
+	e := cm.mgr.NewEntity()
+	cm.mgr.Tag(e, "combat")
+	cm.mgr.AddComponent(e, &game.DiagonalMatrixWipe{
+		Obscuring: false, // ergo revealing
+		W:         1024,
+		H:         768,
+		OnComplete: func() {
+			cm.setState(PreparingState)
+		},
+	})
 	/*
 		At the start of Combat, we need to add a sprite and position component to
 		every actor, because a Combat should be the thing responsible for deciding

@@ -32,7 +32,7 @@
 - [ ] Curtains/fadeouts that close and open when scenes change
   - [x] Combat publishes concluded event, main subscribes, and Disable combat, and calls Enable overworld
   - [ ] A skull/demon head that expands, and swallows the camera
-  - [ ] An angled, rough-edged, side cut?
+  - [x] An angled, rough-edged, side cut?
 - [ ] Transitions between Combat, the Overworld, a village/embark mode, and a main menu/splash screen
   - [ ] Combat can signal its completion, and return the player to the overworld
   - [ ] Main menu can load a saved game, and take the player to the overworld or a combat

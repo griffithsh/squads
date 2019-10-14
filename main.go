@@ -25,6 +25,7 @@ type system struct {
 	fonts     *game.FontSystem
 	hierarchy *ecs.ParentSystem
 	leash     *game.LeashSystem
+	wipes     *game.SceneWipeSystem
 
 	combat    *combat.Manager
 	overworld *overworld.Manager
@@ -126,6 +127,7 @@ func setup(w, h int) (*system, error) {
 		fonts:     game.NewFontSystem(mgr),
 		hierarchy: ecs.NewParentSystem(mgr),
 		leash:     &game.LeashSystem{},
+		wipes:     game.NewSceneWipeSystem(),
 	}
 	bus.Subscribe(game.CombatConcluded{}.Type(), func(et event.Typer) {
 		// TODO
@@ -370,6 +372,7 @@ func (s *system) run(screen *ebiten.Image) error {
 	s.fonts.Update()
 	s.hierarchy.Update()
 	s.leash.Update(s.mgr, elapsed)
+	s.wipes.Update(s.mgr, elapsed)
 	s.anim.Update(s.mgr, elapsed)
 
 	w, h := float64(screen.Bounds().Max.X-screen.Bounds().Min.X), float64(screen.Bounds().Max.Y-screen.Bounds().Min.Y)
