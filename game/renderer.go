@@ -72,14 +72,23 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 		iExtent += float64(entities[i].s.OffsetY)
 		jExtent += float64(entities[j].s.OffsetY)
 
+		ix := int(entities[i].p.Center.X)
+		jx := int(entities[j].p.Center.X)
+
 		if entities[i].offset != nil {
 			iExtent += float64(entities[i].offset.Y)
+			ix += entities[i].offset.X
 		}
 		if entities[j].offset != nil {
 			jExtent += float64(entities[j].offset.Y)
+			jx += entities[j].offset.X
 		}
 		if iExtent != jExtent {
 			return iExtent < jExtent
+		}
+
+		if ix != jx {
+			return ix < jx
 		}
 
 		// TODO: also sort by color? See https://github.com/hajimehoshi/ebiten/wiki/Performance-Tips
