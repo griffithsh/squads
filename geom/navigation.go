@@ -37,33 +37,6 @@ func Navigate(start, goal Key, existsFunc func(Key) bool, costFunc func(Key) flo
 		return math.Pow(x, 2) + math.Pow(y, 2)
 	}
 
-	neighbors := func(M, N int) []Key {
-		result := []Key{
-			Key{M, N - 2}, // North
-			Key{M, N + 2}, // South
-		}
-
-		if N%2 == 0 {
-			// then the E ones have the same M, and the W ones are -1 M
-			result = append(result, []Key{
-				{M - 1, N - 1}, // NW
-				{M - 1, N + 1}, // SW
-				{M, N + 1},     // SE
-				{M, N - 1},     // NE
-			}...)
-		} else {
-			// then the E ones are +1 M, and the W ones have the same M
-			result = append(result, []Key{
-				{M, N - 1},     // NW
-				{M, N + 1},     // SW
-				{M + 1, N + 1}, // SE
-				{M + 1, N - 1}, // NE
-			}...)
-		}
-
-		return result
-	}
-
 	reconstruct := func(origins map[Key]Key, costs map[Key]float64, goal Key) ([]NavigateStep, error) {
 		// Follow back from goal through the origins to a Key that has no origin (i.e, the start).
 		result := []NavigateStep{
