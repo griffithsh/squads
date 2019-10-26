@@ -66,11 +66,6 @@ M,N coordinates are sequenced like this:
 This diagram shows a three by eight Field of Hexes.
 */
 
-// Key is a way of referencing a Hex in a Field.
-type Key struct {
-	M, N int
-}
-
 // Field to play out encounters on. A collection of Hexes.
 type Field struct {
 	stride int // how many hexes are in a row
