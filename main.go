@@ -37,15 +37,6 @@ type system struct {
 }
 
 func main() {
-	// Exercise structure.
-	mgr := ecs.NewWorld()
-	e := mgr.NewEntity()
-	p := &game.Position{}
-	mgr.AddComponent(e, p)
-	mgr.RemoveComponent(e, p)
-	mgr.RemoveType(e, "BananaramaLlamaDingdong")
-	mgr.DestroyEntity(e)
-
 	// dump performance with pprof
 	f, err := os.Create("pprof/cpu.prof")
 	if err != nil {
