@@ -4,8 +4,6 @@ import "github.com/griffithsh/squads/geom"
 
 type Node struct {
 	ID geom.Key
-	// Neighbors by Key
-	Neighbors map[geom.Key]geom.DirectionType
 	// Neighbors by DirectionType
 	Directions map[geom.DirectionType]geom.Key
 }

@@ -38,20 +38,10 @@ func connect(n1 *overworld.Node, n2 *overworld.Node) error {
 	}
 	n1.Directions[dirOfN2] = n2.ID
 
-	if n1.Neighbors == nil {
-		n1.Neighbors = map[geom.Key]geom.DirectionType{}
-	}
-	n1.Neighbors[n2.ID] = dirOfN2
-
 	if n2.Directions == nil {
 		n2.Directions = map[geom.DirectionType]geom.Key{}
 	}
 	n2.Directions[dirOfN1] = n1.ID
-
-	if n2.Neighbors == nil {
-		n2.Neighbors = map[geom.Key]geom.DirectionType{}
-	}
-	n2.Neighbors[n1.ID] = dirOfN1
 
 	return nil
 }
