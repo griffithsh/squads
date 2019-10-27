@@ -381,7 +381,10 @@ func (s *system) run(screen *ebiten.Image) error {
 
 	select {
 	case <-second:
-		fps := time.Second / (accumulated / time.Duration(frames))
+		var fps time.Duration
+		if time.Duration(frames) > 0 {
+			fps = time.Second / (accumulated / time.Duration(frames))
+		}
 		ebiten.SetWindowTitle(fmt.Sprintf("%s | FPS: %d", "Hexagons, Strategy, Entities, Components, and Systems, Oh my!", fps))
 	default:
 	}
