@@ -554,7 +554,13 @@ func (hud *HUD) repaintSkills() {
 				},
 				interactive: &ui.Interactive{
 					Trigger: func() {
-						hud.bus.Publish(&game.CombatConcluded{})
+						hud.mgr.AddComponent(hud.mgr.NewEntity(), &game.DiagonalMatrixWipe{
+							W: int(hud.centerX * 2), H: int(hud.centerY * 2),
+							Obscuring: true,
+							OnComplete: func() {
+								hud.bus.Publish(&game.CombatConcluded{})
+							},
+						})
 					},
 				},
 			},

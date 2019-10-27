@@ -52,6 +52,9 @@ func (m *Manager) Begin() {
 // the overworld.
 func (m *Manager) Enable() {
 	if m.dormant {
+		m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
+			W: 1024, H: 768, // FIXME: need access to screen dimensions
+		})
 		for _, e := range m.mgr.Tagged("overworld") {
 			m.mgr.RemoveComponent(e, &game.Hidden{})
 		}
