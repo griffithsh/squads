@@ -1,6 +1,9 @@
 package combat
 
-import "github.com/griffithsh/squads/game"
+import (
+	"github.com/griffithsh/squads/ecs"
+	"github.com/griffithsh/squads/game"
+)
 
 // CurMax represents a value which has both a Current and Maximum value.
 type CurMax struct {
@@ -9,9 +12,12 @@ type CurMax struct {
 }
 
 // Actor is a transient aggregation of the stats of a Character for the purposes
-// of combat. Actors are created at the beginning of combat and are destroyed at
+// of combat.Actors are created at the beginning of combat and are destroyed at
 // the end of combat.
 type Actor struct {
+	Character ecs.Entity
+	// Hexes occupied? Do we merge with Obstacle?
+
 	Name      string
 	Level     uint
 	SmallIcon game.Sprite // (26x26)

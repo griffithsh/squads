@@ -44,7 +44,7 @@ func (m *Manager) Begin() {
 		Center: game.Center{
 			X: 12, Y: 48,
 		},
-		Layer: 2001,
+		Layer: 101,
 	})
 }
 

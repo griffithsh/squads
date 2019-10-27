@@ -48,10 +48,12 @@ func main() {
 	defer pprof.StopCPUProfile()
 
 	rand.Seed(time.Now().Unix())
-	s, _ := setup(1024, 768)
-	ebiten.Run(s.run, 1024, 768, 1, "Squads")
+	w, h := 1024, 768
+	s, _ := setup(w, h)
+	ebiten.Run(s.run, w, h, 1, "Squads")
 }
 
+// Controls represent debug controls
 type Controls struct {
 	Up, Down, Left, Right,
 	A, B, C, D,
@@ -103,7 +105,6 @@ var last time.Time
 func setup(w, h int) (*system, error) {
 	bus := &event.Bus{}
 	mgr := ecs.NewWorld()
-
 	camera := game.NewCamera(w, h, bus)
 	s := system{
 		bus:       bus,
