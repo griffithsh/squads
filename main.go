@@ -123,7 +123,12 @@ func setup(w, h int) (*system, error) {
 	bus.Subscribe(game.CombatConcluded{}.Type(), func(et event.Typer) {
 		// TODO
 		// ccEvent := et.(*game.CombatConcluded)
+
 		s.combat.Disable()
+
+		// force cascade of deleted components
+		s.hierarchy.Update()
+
 		s.overworld.Enable()
 	})
 
@@ -361,10 +366,10 @@ func (s *system) run(screen *ebiten.Image) error {
 	s.overworld.Run(elapsed)
 
 	s.fonts.Update()
-	s.hierarchy.Update()
 	s.leash.Update(s.mgr, elapsed)
-	s.wipes.Update(s.mgr, elapsed)
 	s.anim.Update(s.mgr, elapsed)
+	s.wipes.Update(s.mgr, elapsed)
+	s.hierarchy.Update()
 
 	w, h := float64(screen.Bounds().Max.X-screen.Bounds().Min.X), float64(screen.Bounds().Max.Y-screen.Bounds().Min.Y)
 

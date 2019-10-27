@@ -70,6 +70,13 @@ func (cs *SceneWipeSystem) Update(mgr *ecs.World, elapsed time.Duration) {
 					X: 3.0, // * 16 = 48
 					Y: 4.0, // * 16 = 64
 				})
+				if !dmw.Obscuring {
+					mgr.AddComponent(block, &Scale{
+						X: 3.0 + float64(numCols), // * 16 = 48
+						Y: 4.0 + float64(numRows), // * 16 = 64
+					})
+
+				}
 
 				anim1 := mgr.NewEntity()
 				mgr.AddComponent(anim1, &Sprite{
