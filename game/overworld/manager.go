@@ -4,6 +4,7 @@ import (
 	"time"
 
 	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/geom"
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
@@ -29,7 +30,7 @@ func NewManager(mgr *ecs.World, bus *event.Bus) *Manager {
 }
 
 // Begin a Manager session.
-func (m *Manager) Begin() {
+func (m *Manager) Begin(d Data) {
 	// Add new entities for the squad, overworld terrain, etc?
 	e := m.mgr.NewEntity()
 	m.mgr.Tag(e, "overworld")
@@ -46,6 +47,61 @@ func (m *Manager) Begin() {
 		},
 		Layer: 101,
 	})
+
+	for _, n := range d.Nodes {
+		e := m.mgr.NewEntity()
+		m.mgr.Tag(e, "overworld")
+		m.mgr.AddComponent(e, &game.Sprite{
+			Texture: "overworld-jumbo-hexes.png",
+
+			X: 0, Y: 0,
+			W: 144, H: 96,
+		})
+		h := geom.Hex{M: n.ID.M, N: n.ID.N}
+		m.mgr.AddComponent(e, &game.Position{
+			Center: game.Center{
+				X: h.X() * 6, Y: h.Y() * 6,
+			},
+			Layer: 1,
+		})
+
+		add := func(x int) {
+			e := m.mgr.NewEntity()
+			m.mgr.Tag(e, "overworld")
+			m.mgr.AddComponent(e, &game.Sprite{
+				Texture: "overworld-jumbo-hexes.png",
+
+				X: x, Y: 0,
+				W: 144, H: 96,
+			})
+			h := geom.Hex{M: n.ID.M, N: n.ID.N}
+			m.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: h.X() * 6, Y: h.Y() * 6,
+				},
+				Layer: 1,
+			})
+		}
+
+		if _, ok := n.Directions[geom.S]; ok {
+			add(1 * 144)
+		}
+		if _, ok := n.Directions[geom.SW]; ok {
+			add(2 * 144)
+		}
+		if _, ok := n.Directions[geom.NW]; ok {
+			add(3 * 144)
+		}
+		if _, ok := n.Directions[geom.N]; ok {
+			add(4 * 144)
+		}
+		if _, ok := n.Directions[geom.NE]; ok {
+			add(5 * 144)
+		}
+		if _, ok := n.Directions[geom.SE]; ok {
+			add(6 * 144)
+		}
+	}
 }
 
 // Enable the overworld Manager, responding to input and rendering the state of

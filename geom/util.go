@@ -27,3 +27,40 @@ func neighbors(M, N int) []Key {
 	return result
 }
 
+// KeySet is a set of Keys.
+type KeySet map[Key]struct{}
+
+// Without creates a new Keyset without the provided Keys to exclude.
+func (ks KeySet) Without(exclude KeySet) KeySet {
+	result := make(KeySet)
+
+	for k := range ks {
+		if _, found := exclude[k]; !found {
+			result[k] = struct{}{}
+		}
+	}
+	return result
+}
+
+// Overlaps create a new KeySet of the set of Keys that are in the original
+// KeySet and the passed KeySet.
+func (ks KeySet) Overlaps(overlaps KeySet) KeySet {
+	result := make(KeySet)
+
+	for k := range ks {
+		if _, ok := overlaps[k]; ok {
+			result[k] = struct{}{}
+		}
+	}
+	return result
+}
+
+// NeighborSet returns the neighbors of a Key as a unique set.
+func NeighborSet(M, N int) KeySet {
+	keys := neighbors(M, N)
+	result := make(KeySet)
+	for _, k := range keys {
+		result[k] = struct{}{}
+	}
+	return result
+}
