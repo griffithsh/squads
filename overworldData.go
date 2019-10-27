@@ -69,12 +69,12 @@ func recurse(rng *rand.Rand, start geom.Key, d *overworld.Data, potentials map[g
 		threshold := 0.0
 		switch len(d.Nodes[start].Directions) {
 		case 0: // 100% chance of this node connecting to anything
-		case 1: // 75% chance of this node connecting to 2 things
-			threshold = 0.25
+		case 1: // 65% chance of this node connecting to 2 things
+			threshold = 0.45
 		case 2:
-			threshold = 0.7
+			threshold = 0.85
 		case 3:
-			threshold = 0.9
+			threshold = 0.925
 		default:
 			threshold = 0.99999
 		}
