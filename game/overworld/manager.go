@@ -1,6 +1,8 @@
 package overworld
 
 import (
+	"math"
+	"math/rand"
 	"time"
 
 	"github.com/griffithsh/squads/game"
@@ -29,9 +31,22 @@ func NewManager(mgr *ecs.World, bus *event.Bus) *Manager {
 	}
 }
 
+// randInHex generates a random point in an overworld hex.
+func randInHex() (float64, float64) {
+	rad := rand.Float64() * math.Pi * 2
+	sin, cos := math.Sincos(rad)
+
+	w, h := 144.0, 96.0
+	factor := 0.2
+	return w * factor * sin, h * factor * cos
+}
+
 // Begin a Manager session.
 func (m *Manager) Begin(d Data) {
 	// Add new entities for the squad, overworld terrain, etc?
+	// TODO
+
+	// Add some random figure to show pan/zoom.
 	e := m.mgr.NewEntity()
 	m.mgr.Tag(e, "overworld")
 	m.mgr.AddComponent(e, &game.Sprite{
@@ -48,6 +63,8 @@ func (m *Manager) Begin(d Data) {
 		Layer: 101,
 	})
 
+	// Show nodes/cities/halts.
+	positions := map[geom.Key]game.Center{}
 	for _, n := range d.Nodes {
 		e := m.mgr.NewEntity()
 		m.mgr.Tag(e, "overworld")
@@ -58,48 +75,64 @@ func (m *Manager) Begin(d Data) {
 			W: 144, H: 96,
 		})
 		h := geom.Hex{M: n.ID.M, N: n.ID.N}
+
+		x, y := randInHex()
+		x = h.X()*6 + x
+		y = h.Y()*6 + y
 		m.mgr.AddComponent(e, &game.Position{
 			Center: game.Center{
-				X: h.X() * 6, Y: h.Y() * 6,
+				X: x, Y: y,
 			},
-			Layer: 1,
+			Layer: 10,
 		})
+		positions[n.ID] = game.Center{X: x, Y: y}
+	}
 
-		add := func(x int) {
+	connect := func(h1, h2 geom.Key) {
+		a := positions[h2].X - positions[h1].X
+		b := positions[h2].Y - positions[h1].Y
+		hypotenuse := math.Sqrt(a*a + b*b)
+		steps := int(math.Round(hypotenuse / 24))
+		if steps <= 1 {
+			steps = 2
+		}
+		for i := 0; i < steps; i++ {
+			if i == 0 {
+				continue
+			}
 			e := m.mgr.NewEntity()
 			m.mgr.Tag(e, "overworld")
 			m.mgr.AddComponent(e, &game.Sprite{
 				Texture: "overworld-jumbo-hexes.png",
 
-				X: x, Y: 0,
+				X: 0, Y: 96,
 				W: 144, H: 96,
 			})
-			h := geom.Hex{M: n.ID.M, N: n.ID.N}
+			x := positions[h1].X + float64(i)*a/float64(steps)
+			y := positions[h1].Y + float64(i)*b/float64(steps)
 			m.mgr.AddComponent(e, &game.Position{
 				Center: game.Center{
-					X: h.X() * 6, Y: h.Y() * 6,
+					X: x,
+					Y: y,
 				},
 				Layer: 1,
 			})
 		}
+	}
 
-		if _, ok := n.Directions[geom.S]; ok {
-			add(1 * 144)
-		}
-		if _, ok := n.Directions[geom.SW]; ok {
-			add(2 * 144)
-		}
-		if _, ok := n.Directions[geom.NW]; ok {
-			add(3 * 144)
-		}
-		if _, ok := n.Directions[geom.N]; ok {
-			add(4 * 144)
-		}
-		if _, ok := n.Directions[geom.NE]; ok {
-			add(5 * 144)
-		}
-		if _, ok := n.Directions[geom.SE]; ok {
-			add(6 * 144)
+	type connectKey struct {
+		M1, N1, M2, N2 int
+	}
+	connected := map[connectKey]struct{}{}
+	for _, n := range d.Nodes {
+		for _, other := range n.Directions {
+			conn := connectKey{other.M, other.N, n.ID.M, n.ID.N}
+			if _, ok := connected[conn]; ok {
+				continue
+			}
+			connected[connectKey{n.ID.M, n.ID.N, other.M, other.N}] = struct{}{}
+
+			connect(n.ID, other)
 		}
 	}
 }
