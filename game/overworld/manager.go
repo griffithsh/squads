@@ -69,10 +69,10 @@ func (m *Manager) Begin(d Data) {
 		e := m.mgr.NewEntity()
 		m.mgr.Tag(e, "overworld")
 		m.mgr.AddComponent(e, &game.Sprite{
-			Texture: "overworld-jumbo-hexes.png",
+			Texture: "overworld-nodes.png",
 
 			X: 0, Y: 0,
-			W: 144, H: 96,
+			W: 24, H: 16,
 		})
 		h := geom.Hex{M: n.ID.M, N: n.ID.N}
 
@@ -103,10 +103,10 @@ func (m *Manager) Begin(d Data) {
 			e := m.mgr.NewEntity()
 			m.mgr.Tag(e, "overworld")
 			m.mgr.AddComponent(e, &game.Sprite{
-				Texture: "overworld-jumbo-hexes.png",
+				Texture: "overworld-nodes.png",
 
-				X: 0, Y: 96,
-				W: 144, H: 96,
+				X: 24, Y: 0,
+				W: 8, H: 6,
 			})
 			x := positions[h1].X + float64(i)*a/float64(steps)
 			y := positions[h1].Y + float64(i)*b/float64(steps)
