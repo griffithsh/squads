@@ -88,38 +88,7 @@ func (m *Manager) Begin(d Data) {
 		positions[n.ID] = game.Center{X: x, Y: y}
 	}
 
-	connect := func(h1, h2 geom.Key) {
-		a := positions[h2].X - positions[h1].X
-		b := positions[h2].Y - positions[h1].Y
-		hypotenuse := math.Sqrt(a*a + b*b)
-		steps := int(math.Round(hypotenuse / 24))
-		if steps <= 1 {
-			steps = 2
-		}
-		for i := 0; i < steps; i++ {
-			if i == 0 {
-				continue
-			}
-			e := m.mgr.NewEntity()
-			m.mgr.Tag(e, "overworld")
-			m.mgr.AddComponent(e, &game.Sprite{
-				Texture: "overworld-nodes.png",
-
-				X: 24, Y: 0,
-				W: 8, H: 6,
-			})
-			x := positions[h1].X + float64(i)*a/float64(steps)
-			y := positions[h1].Y + float64(i)*b/float64(steps)
-			m.mgr.AddComponent(e, &game.Position{
-				Center: game.Center{
-					X: x,
-					Y: y,
-				},
-				Layer: 1,
-			})
-		}
-	}
-
+	// Now show connections between the nodes.
 	type connectKey struct {
 		M1, N1, M2, N2 int
 	}
@@ -132,7 +101,35 @@ func (m *Manager) Begin(d Data) {
 			}
 			connected[connectKey{n.ID.M, n.ID.N, other.M, other.N}] = struct{}{}
 
-			connect(n.ID, other)
+			a := positions[other].X - positions[n.ID].X
+			b := positions[other].Y - positions[n.ID].Y
+			hypotenuse := math.Sqrt(a*a + b*b)
+			steps := int(math.Round(hypotenuse / 24))
+			if steps <= 1 {
+				steps = 2
+			}
+			for i := 0; i < steps; i++ {
+				if i == 0 {
+					continue
+				}
+				e := m.mgr.NewEntity()
+				m.mgr.Tag(e, "overworld")
+				m.mgr.AddComponent(e, &game.Sprite{
+					Texture: "overworld-nodes.png",
+
+					X: 24, Y: 0,
+					W: 8, H: 6,
+				})
+				x := positions[n.ID].X + float64(i)*a/float64(steps)
+				y := positions[n.ID].Y + float64(i)*b/float64(steps)
+				m.mgr.AddComponent(e, &game.Position{
+					Center: game.Center{
+						X: x,
+						Y: y,
+					},
+					Layer: 1,
+				})
+			}
 		}
 	}
 }
