@@ -87,6 +87,24 @@ func (m *Manager) Begin(d Data) {
 			Layer: 10,
 		})
 		positions[n.ID] = game.Center{X: x, Y: y}
+
+		e = m.mgr.NewEntity()
+		m.mgr.Tag(e, "overworld")
+		m.mgr.AddComponent(e, &game.Sprite{
+			Texture: "overworld-grass.png",
+
+			X: 0, Y: 0,
+			W: 144, H: 96,
+		})
+
+		x, y = geom.XY(n.ID.M, n.ID.N, 144, 96)
+
+		m.mgr.AddComponent(e, &game.Position{
+			Center: game.Center{
+				X: x, Y: y,
+			},
+			Layer: 5,
+		})
 	}
 
 	// Now show connections between the nodes.
