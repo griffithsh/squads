@@ -64,3 +64,12 @@ func NeighborSet(M, N int) KeySet {
 	}
 	return result
 }
+
+// XY calculates the X and Y centre of a hexagon.
+func XY(m, n, hexW, hexH int) (float64, float64) {
+	xOffset := hexW - ((hexH - 2) / 2)
+	x := float64(m*2*xOffset) + float64(n%2*xOffset)
+	y := float64(hexH/2) + float64((hexH/2)*n)
+
+	return x, y
+}

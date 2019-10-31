@@ -16,13 +16,14 @@ func (h *Hex) String() string {
 
 // X coordinate of the center of this hexagon.
 func (h *Hex) X() float64 {
-	oddXOffset := xStride / 2
-	return (hexWidth / 2) + float64((xStride*h.M)+(h.N%2*oddXOffset))
+	x, _ := XY(h.M, h.N, hexWidth, hexHeight)
+	return x
 }
 
 // Y coordinate of the center of this hexagon.
 func (h *Hex) Y() float64 {
-	return yStride + float64(yStride*h.N)
+	_, y := XY(h.M, h.N, hexWidth, hexHeight)
+	return y
 }
 
 // Key returns the M,N coordinates of this Hex.
@@ -46,13 +47,14 @@ type Hex4 struct {
 
 // X coordinate of the center of this hexagon.
 func (h *Hex4) X() float64 {
-	oddXOffset := xStride / 2
-	return (hexWidth / 2) + float64((xStride*h.M)+(h.N%2*oddXOffset))
+	x, _ := XY(h.M, h.N, hexWidth, hexHeight)
+	return x
 }
 
 // Y coordinate of the center of this hexagon.
 func (h *Hex4) Y() float64 {
-	return yStride + float64(yStride*h.N) + yStride
+	_, y := XY(h.M, h.N, hexWidth, hexHeight)
+	return y + (hexHeight / 2)
 }
 
 // Key returns the M,N coordinates of this Hex4.
@@ -78,13 +80,14 @@ type Hex7 struct {
 
 // X coordinate of the center of this hexagon.
 func (h *Hex7) X() float64 {
-	oddXOffset := xStride / 2
-	return (hexWidth / 2) + float64((xStride*h.M)+(h.N%2*oddXOffset))
+	x, _ := XY(h.M, h.N, hexWidth, hexHeight)
+	return x
 }
 
 // Y coordinate of the center of this hexagon.
 func (h *Hex7) Y() float64 {
-	return yStride + float64(yStride*h.N)
+	_, y := XY(h.M, h.N, hexWidth, hexHeight)
+	return y
 }
 
 // Key returns the M,N coordinates of this Hex7.

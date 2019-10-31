@@ -74,11 +74,12 @@ func (m *Manager) Begin(d Data) {
 			X: 0, Y: 0,
 			W: 24, H: 16,
 		})
-		h := geom.Hex{M: n.ID.M, N: n.ID.N}
 
-		x, y := randInHex()
-		x = h.X()*6 + x
-		y = h.Y()*6 + y
+		x, y := geom.XY(n.ID.M, n.ID.N, 144, 96)
+
+		rx, ry := randInHex()
+		x = rx + x
+		y = ry + y
 		m.mgr.AddComponent(e, &game.Position{
 			Center: game.Center{
 				X: x, Y: y,
@@ -127,7 +128,7 @@ func (m *Manager) Begin(d Data) {
 						X: x,
 						Y: y,
 					},
-					Layer: 1,
+					Layer: 10,
 				})
 			}
 		}
