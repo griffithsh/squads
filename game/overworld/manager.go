@@ -1,9 +1,12 @@
 package overworld
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"time"
+
+	"github.com/griffithsh/squads/ui"
 
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
@@ -73,6 +76,15 @@ func (m *Manager) Begin(d Data) {
 
 			X: 0, Y: 0,
 			W: 24, H: 16,
+		})
+		f := func(n *Node) func() {
+			return func() {
+				fmt.Printf("click: %v\n", n.ID)
+			}
+		}
+		m.mgr.AddComponent(e, &ui.Interactive2{
+			W: 32, H: 24,
+			Trigger: f(n),
 		})
 
 		x, y := geom.XY(n.ID.M, n.ID.N, 144, 96)

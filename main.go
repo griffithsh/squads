@@ -10,6 +10,8 @@ import (
 	"runtime/pprof"
 	"time"
 
+	"github.com/griffithsh/squads/ui"
+
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
@@ -19,13 +21,14 @@ import (
 )
 
 type system struct {
-	bus       *event.Bus
-	render    *game.Renderer
-	anim      *game.AnimationSystem
-	fonts     *game.FontSystem
-	hierarchy *ecs.ParentSystem
-	leash     *game.LeashSystem
-	wipes     *game.SceneWipeSystem
+	bus          *event.Bus
+	render       *game.Renderer
+	anim         *game.AnimationSystem
+	fonts        *game.FontSystem
+	hierarchy    *ecs.ParentSystem
+	leash        *game.LeashSystem
+	wipes        *game.SceneWipeSystem
+	interactives *ui.InteractiveSystem
 
 	combat    *combat.Manager
 	overworld *overworld.Manager
@@ -116,10 +119,11 @@ func setup(w, h int) (*system, error) {
 		mgr:    mgr,
 		camera: camera,
 
-		fonts:     game.NewFontSystem(mgr),
-		hierarchy: ecs.NewParentSystem(mgr),
-		leash:     &game.LeashSystem{},
-		wipes:     game.NewSceneWipeSystem(),
+		fonts:        game.NewFontSystem(mgr),
+		hierarchy:    ecs.NewParentSystem(mgr),
+		leash:        &game.LeashSystem{},
+		wipes:        game.NewSceneWipeSystem(),
+		interactives: ui.NewInteractiveSystem(mgr, bus),
 	}
 	bus.Subscribe(game.CombatConcluded{}.Type(), func(et event.Typer) {
 		// TODO
@@ -357,6 +361,19 @@ func (s *system) run(screen *ebiten.Image) error {
 	} else if s.wasMouseDown {
 		s.combat.Interaction(x, y)
 		s.wasMouseDown = false
+
+		// Publish an absolute event.
+		s.bus.Publish(&ui.Interact{
+			X:        float64(x),
+			Y:        float64(y),
+			Absolute: true,
+		})
+		// Publish a world event.
+		wx, wy := s.camera.ScreenToWorld(x, y)
+		s.bus.Publish(&ui.Interact{
+			X: wx,
+			Y: wy,
+		})
 	}
 
 	elapsed := time.Since(last)
