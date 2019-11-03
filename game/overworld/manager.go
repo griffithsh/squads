@@ -82,7 +82,7 @@ func (m *Manager) Begin(d Data) {
 				fmt.Printf("click: %v\n", n.ID)
 			}
 		}
-		m.mgr.AddComponent(e, &ui.Interactive2{
+		m.mgr.AddComponent(e, &ui.Interactive{
 			W: 32, H: 24,
 			Trigger: f(n),
 		})

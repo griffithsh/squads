@@ -119,7 +119,7 @@ func (cm *Manager) setState(state State) {
 		// dimensions of the field. The goal here is to catch *any* clicks in
 		// the world, remember?
 		cm.mgr.AddComponent(cm.selectingInteractive, &game.Position{})
-		cm.mgr.AddComponent(cm.selectingInteractive, &ui.Interactive2{
+		cm.mgr.AddComponent(cm.selectingInteractive, &ui.Interactive{
 			W: math.MaxFloat64, H: math.MaxFloat64,
 			Trigger: func() {
 				cm.mgr.AddComponent(cm.turnToken, &game.MoveIntent{X: cm.wx, Y: cm.wy})
@@ -127,7 +127,7 @@ func (cm *Manager) setState(state State) {
 			},
 		})
 	} else if ev.Old == SelectingTargetState {
-		cm.mgr.RemoveComponent(cm.selectingInteractive, &ui.Interactive2{})
+		cm.mgr.RemoveComponent(cm.selectingInteractive, &ui.Interactive{})
 	}
 
 	cm.bus.Publish(&ev)

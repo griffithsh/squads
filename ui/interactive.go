@@ -8,15 +8,15 @@ import (
 	"github.com/griffithsh/squads/game"
 )
 
-// Interactive2 tags Components that can be interacted with in some way.
-type Interactive2 struct {
+// Interactive tags Components that can be interacted with in some way.
+type Interactive struct {
 	W, H    float64
 	Trigger func()
 }
 
 // Type of this Component.
-func (*Interactive2) Type() string {
-	return "Interactive2"
+func (*Interactive) Type() string {
+	return "Interactive"
 }
 
 // InteractiveSystem pumps events through Interactives.
@@ -28,15 +28,15 @@ type InteractiveSystem struct {
 func (is *InteractiveSystem) Handle(ev *Interact) {
 	type tmp struct {
 		e           ecs.Entity
-		interactive *Interactive2
+		interactive *Interactive
 		position    *game.Position
 		scale       *game.Scale
 	}
 	tmps := []tmp{}
-	for _, e := range is.mgr.Get([]string{"Interactive2", "Position"}) {
+	for _, e := range is.mgr.Get([]string{"Interactive", "Position"}) {
 		t := tmp{
 			e:           e,
-			interactive: is.mgr.Component(e, "Interactive2").(*Interactive2),
+			interactive: is.mgr.Component(e, "Interactive").(*Interactive),
 			position:    is.mgr.Component(e, "Position").(*game.Position),
 		}
 		if is.mgr.Component(e, "Scale") != nil {
