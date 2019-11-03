@@ -493,7 +493,7 @@ func (hud *HUD) repaintSkills() {
 
 	type skill struct {
 		sprite      game.Sprite
-		interactive *ui.Interactive
+		interactive *ui.Interactive2
 	}
 
 	skills := map[int]skill{
@@ -506,7 +506,8 @@ func (hud *HUD) repaintSkills() {
 				W:       24,
 				H:       24,
 			},
-			interactive: &ui.Interactive{
+			interactive: &ui.Interactive2{
+				W: 24, H: 24,
 				Trigger: func() {
 					hud.bus.Publish(&CancelSkillRequested{})
 				},
@@ -525,7 +526,8 @@ func (hud *HUD) repaintSkills() {
 					W:       24,
 					H:       24,
 				},
-				interactive: &ui.Interactive{
+				interactive: &ui.Interactive2{
+					W: 24, H: 24,
 					Trigger: func() {
 						hud.bus.Publish(&MoveModeRequested{})
 					},
@@ -552,7 +554,8 @@ func (hud *HUD) repaintSkills() {
 					W:       24,
 					H:       24,
 				},
-				interactive: &ui.Interactive{
+				interactive: &ui.Interactive2{
+					W: 24, H: 24,
 					Trigger: func() {
 						hud.mgr.AddComponent(hud.mgr.NewEntity(), &game.DiagonalMatrixWipe{
 							W: int(hud.centerX * 2), H: int(hud.centerY * 2),
@@ -574,7 +577,8 @@ func (hud *HUD) repaintSkills() {
 					W:       24,
 					H:       24,
 				},
-				interactive: &ui.Interactive{
+				interactive: &ui.Interactive2{
+					W: 24, H: 24,
 					Trigger: func() {
 						hud.bus.Publish(&EndTurnRequested{})
 					},

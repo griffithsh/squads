@@ -50,8 +50,9 @@ type Manager struct {
 	hud     *HUD
 	cursors *CursorManager
 
-	turnToken ecs.Entity // Whose turn is it?
-	state     State
+	turnToken            ecs.Entity // Whose turn is it?
+	selectingInteractive ecs.Entity // catches clicks on the field.
+	state                State
 
 	incrementAccumulator float64
 
@@ -81,10 +82,11 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 		nav:    NewNavigator(bus),
 		camera: camera,
 		// state:   TODO: some-uninitialised-state
-		hud:          NewHUD(mgr, bus, camera.GetW(), camera.GetH()),
-		cursors:      NewCursorManager(mgr, bus, f),
-		intents:      NewIntentSystem(mgr, bus, f),
-		performances: NewPerformanceSystem(mgr, bus),
+		hud:                  NewHUD(mgr, bus, camera.GetW(), camera.GetH()),
+		cursors:              NewCursorManager(mgr, bus, f),
+		selectingInteractive: mgr.NewEntity(),
+		intents:              NewIntentSystem(mgr, bus, f),
+		performances:         NewPerformanceSystem(mgr, bus),
 
 		dormant: false,
 	}
@@ -107,6 +109,27 @@ func (cm *Manager) setState(state State) {
 		New: state,
 	}
 	cm.state = state
+
+	// When entering Selecting Target State, we need to add an Interactive to
+	// cover all areas of the field, so that we can convert those clicks to
+	// MoveIntents.
+	if state == SelectingTargetState {
+		// Using the max float value as the size and a position of 0,0 should
+		// work in all cases, and it's a lot faster than figuring out the actual
+		// dimensions of the field. The goal here is to catch *any* clicks in
+		// the world, remember?
+		cm.mgr.AddComponent(cm.selectingInteractive, &game.Position{})
+		cm.mgr.AddComponent(cm.selectingInteractive, &ui.Interactive2{
+			W: math.MaxFloat64, H: math.MaxFloat64,
+			Trigger: func() {
+				cm.mgr.AddComponent(cm.turnToken, &game.MoveIntent{X: cm.wx, Y: cm.wy})
+				cm.setState(ExecutingState)
+			},
+		})
+	} else if ev.Old == SelectingTargetState {
+		cm.mgr.RemoveComponent(cm.selectingInteractive, &ui.Interactive2{})
+	}
+
 	cm.bus.Publish(&ev)
 }
 
@@ -418,69 +441,6 @@ func (cm *Manager) Run(elapsed time.Duration) {
 	cm.performances.Update(elapsed)
 	cm.hud.Update(elapsed)
 	cm.cursors.Update(elapsed)
-}
-
-// checkHUD for interactions at x,y. Although this might sit better as a method
-// of HUD, getting access to camera for Modulo is more awkward.
-func (cm *Manager) checkHUD(x, y int) bool {
-	for _, e := range cm.mgr.Get([]string{"Interactive", "Position", "Sprite"}) {
-		position := cm.mgr.Component(e, "Position").(*game.Position)
-		// Only going to handle Absolute Components for now I think
-		if !position.Absolute {
-			continue
-		}
-		interactive := cm.mgr.Component(e, "Interactive").(*ui.Interactive)
-		sprite := cm.mgr.Component(e, "Sprite").(*game.Sprite)
-		scale := cm.mgr.Component(e, "Scale").(*game.Scale)
-
-		px, py := int(position.Center.X), int(position.Center.Y)
-
-		// Is the x,y of the interaction without the bounds of the
-		// Interactive?
-		minX := px - int(scale.X*float64(sprite.W)*0.5)
-		if x < minX {
-			continue
-		}
-		maxX := minX + int(float64(sprite.W)*scale.X)
-		if x > maxX {
-			continue
-		}
-		minY := py - int(scale.Y*float64(sprite.H)*0.5)
-		if y < minY {
-			continue
-		}
-		maxY := minY + int(float64(sprite.H)*scale.Y)
-		if y > maxY {
-			continue
-		}
-
-		// Trigger the Interactive and return to prevent other interactions from occurring.
-		interactive.Trigger()
-		return true
-	}
-	return false
-}
-
-// Interaction is the way to notify the Combat Manager that a mouse click or
-// touch event occurred.
-func (cm *Manager) Interaction(x, y int) {
-	if cm.dormant {
-		return
-	}
-	if cm.state == AwaitingInputState {
-		cm.checkHUD(x, y)
-	} else if cm.state == SelectingTargetState {
-		if handled := cm.checkHUD(x, y); handled {
-			return
-		}
-
-		wx, wy := cm.camera.ScreenToWorld(x, y)
-
-		i := game.MoveIntent{X: wx, Y: wy}
-		cm.mgr.AddComponent(cm.turnToken, &i)
-
-		cm.setState(ExecutingState)
-	}
 }
 
 // MousePosition is the way to notify the Combat that the mouse has a new

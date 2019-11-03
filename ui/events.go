@@ -7,8 +7,8 @@ import (
 // Interact happens when the player interacts with the game by clicking with the
 // mouse or tapping on the screen.
 type Interact struct {
-	X, Y     float64
-	Absolute bool
+	X, Y                 float64
+	AbsoluteX, AbsoluteY float64
 }
 
 // Type of the Event.

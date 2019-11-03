@@ -359,20 +359,14 @@ func (s *system) run(screen *ebiten.Image) error {
 	if ebiten.IsMouseButtonPressed(ebiten.MouseButtonLeft) {
 		s.wasMouseDown = true
 	} else if s.wasMouseDown {
-		s.combat.Interaction(x, y)
 		s.wasMouseDown = false
 
-		// Publish an absolute event.
-		s.bus.Publish(&ui.Interact{
-			X:        float64(x),
-			Y:        float64(y),
-			Absolute: true,
-		})
-		// Publish a world event.
 		wx, wy := s.camera.ScreenToWorld(x, y)
 		s.bus.Publish(&ui.Interact{
-			X: wx,
-			Y: wy,
+			AbsoluteX: float64(x),
+			AbsoluteY: float64(y),
+			X:         wx,
+			Y:         wy,
 		})
 	}
 

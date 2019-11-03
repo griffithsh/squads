@@ -1,20 +1,12 @@
 package ui
 
 import (
+	"sort"
+
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
 )
-
-// Interactive tags Components that can be interacted with in some way.
-type Interactive struct {
-	Trigger func()
-}
-
-// Type of this Component.
-func (*Interactive) Type() string {
-	return "Interactive"
-}
 
 // Interactive2 tags Components that can be interacted with in some way.
 type Interactive2 struct {
@@ -34,37 +26,62 @@ type InteractiveSystem struct {
 
 // Handle an Interact event.
 func (is *InteractiveSystem) Handle(ev *Interact) {
+	type tmp struct {
+		e           ecs.Entity
+		interactive *Interactive2
+		position    *game.Position
+		scale       *game.Scale
+	}
+	tmps := []tmp{}
 	for _, e := range is.mgr.Get([]string{"Interactive2", "Position"}) {
-		interactive := is.mgr.Component(e, "Interactive2").(*Interactive2)
-		w, h := interactive.W, interactive.H
-		position := is.mgr.Component(e, "Position").(*game.Position)
+		t := tmp{
+			e:           e,
+			interactive: is.mgr.Component(e, "Interactive2").(*Interactive2),
+			position:    is.mgr.Component(e, "Position").(*game.Position),
+		}
 		if is.mgr.Component(e, "Scale") != nil {
-			scale := is.mgr.Component(e, "Scale").(*game.Scale)
-			w *= scale.X
-			h *= scale.Y
+			t.scale = is.mgr.Component(e, "Scale").(*game.Scale)
+		}
+		tmps = append(tmps, t)
+	}
+	sort.Slice(tmps, func(i, j int) bool {
+		return tmps[i].position.Layer > tmps[j].position.Layer
+	})
+
+	for _, t := range tmps {
+		interactive := t.interactive
+		w, h := interactive.W, interactive.H
+		position := t.position
+		if t.scale != nil {
+			w *= t.scale.X
+			h *= t.scale.Y
 		}
 
-		if ev.Absolute != position.Absolute {
+		// Use the right coordinate framework (world or screen) for this
+		// Interactive.
+		x, y := ev.X, ev.Y
+		if position.Absolute {
+			x, y = ev.AbsoluteX, ev.AbsoluteY
+		}
+
+		if x < position.Center.X-w/2 {
+			continue
+		}
+		if x > position.Center.X+w/2 {
 			continue
 		}
 
-		if ev.X < position.Center.X-w/2 {
+		if y < position.Center.Y-h/2 {
+			continue
+		}
+		if y > position.Center.Y+h/2 {
 			continue
 		}
 
-		if ev.X > position.Center.X+w/2 {
-			continue
-		}
-
-		if ev.Y < position.Center.Y-h/2 {
-			continue
-		}
-
-		if ev.Y > position.Center.Y+h/2 {
-			continue
-		}
-
+		// Only one Interactive should handle this, controlled by the Layer of
+		// their position.
 		interactive.Trigger()
+		return
 	}
 }
 
