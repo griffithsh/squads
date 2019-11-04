@@ -8,10 +8,12 @@ import (
 	"github.com/griffithsh/squads/game"
 )
 
-// Interactive tags Components that can be interacted with in some way.
+// Interactive tags Components that can be interacted with in some way. Trigger
+// is a function that is provided the x,y coordinate of the click either in
+// world or screen coordinates, depending on the Position of the Interactive.
 type Interactive struct {
 	W, H    float64
-	Trigger func()
+	Trigger func(x, y float64)
 }
 
 // Type of this Component.
@@ -80,7 +82,7 @@ func (is *InteractiveSystem) Handle(ev *Interact) {
 
 		// Only one Interactive should handle this, controlled by the Layer of
 		// their position.
-		interactive.Trigger()
+		interactive.Trigger(x, y)
 		return
 	}
 }

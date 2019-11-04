@@ -508,7 +508,7 @@ func (hud *HUD) repaintSkills() {
 			},
 			interactive: &ui.Interactive{
 				W: 24, H: 24,
-				Trigger: func() {
+				Trigger: func(x, y float64) {
 					hud.bus.Publish(&CancelSkillRequested{})
 				},
 			},
@@ -528,7 +528,7 @@ func (hud *HUD) repaintSkills() {
 				},
 				interactive: &ui.Interactive{
 					W: 24, H: 24,
-					Trigger: func() {
+					Trigger: func(x, y float64) {
 						hud.bus.Publish(&MoveModeRequested{})
 					},
 				},
@@ -556,7 +556,7 @@ func (hud *HUD) repaintSkills() {
 				},
 				interactive: &ui.Interactive{
 					W: 24, H: 24,
-					Trigger: func() {
+					Trigger: func(x, y float64) {
 						hud.mgr.AddComponent(hud.mgr.NewEntity(), &game.DiagonalMatrixWipe{
 							W: int(hud.centerX * 2), H: int(hud.centerY * 2),
 							Obscuring: true,
@@ -579,7 +579,7 @@ func (hud *HUD) repaintSkills() {
 				},
 				interactive: &ui.Interactive{
 					W: 24, H: 24,
-					Trigger: func() {
+					Trigger: func(x, y float64) {
 						hud.bus.Publish(&EndTurnRequested{})
 					},
 				},

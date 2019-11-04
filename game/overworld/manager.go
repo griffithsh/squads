@@ -63,9 +63,9 @@ func (m *Manager) Begin(d Data) {
 		})
 		m.mgr.AddComponent(e, &ui.Interactive{
 			W: 32, H: 24,
-			Trigger: func(n *Node) func() {
+			Trigger: func(n *Node) func(x, y float64) {
 				// Closure to capture value of n.
-				return func() {
+				return func(x, y float64) {
 					// TODO:
 
 					// If n.ID is connected to the current node of player's
@@ -77,7 +77,7 @@ func (m *Manager) Begin(d Data) {
 					t := m.mgr.Component(e, "Token").(*Token)
 					neighbors := t.Key.Neighbors()
 					if _, ok := neighbors[n.ID]; ok {
-						fmt.Printf("click: %v\n", n.ID)
+						fmt.Printf("click: %v (%f,%f)\n", n.ID, x, y)
 						// ... move player token to n.ID
 						// ... focus camera on n.ID
 					}

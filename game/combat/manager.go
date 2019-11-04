@@ -121,8 +121,8 @@ func (cm *Manager) setState(state State) {
 		cm.mgr.AddComponent(cm.selectingInteractive, &game.Position{})
 		cm.mgr.AddComponent(cm.selectingInteractive, &ui.Interactive{
 			W: math.MaxFloat64, H: math.MaxFloat64,
-			Trigger: func() {
-				cm.mgr.AddComponent(cm.turnToken, &game.MoveIntent{X: cm.wx, Y: cm.wy})
+			Trigger: func(x, y float64) {
+				cm.mgr.AddComponent(cm.turnToken, &game.MoveIntent{X: x, Y: y})
 				cm.setState(ExecutingState)
 			},
 		})
