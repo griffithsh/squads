@@ -1,7 +1,6 @@
 package overworld
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 	"time"
@@ -83,9 +82,14 @@ func (m *Manager) Begin(d Data) {
 						}
 					}
 					if connected {
-						fmt.Printf("click: %v (%f,%f)\n", n.ID, x, y)
-						// ... move player token to n.ID
-						// ... focus camera on n.ID
+						// Move player token to n.ID.
+						t.Key = n.ID
+						refPos := m.mgr.Component(n.e, "Position").(*game.Position)
+						position := m.mgr.Component(e, "Position").(*game.Position)
+						position.Center = refPos.Center
+
+						// Focus camera on n.ID.
+						// TODO: ...
 					}
 				}
 			}(n),
