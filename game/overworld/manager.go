@@ -49,27 +49,11 @@ func (m *Manager) Begin(d Data) {
 	// Add new entities for the squad, overworld terrain, etc?
 	// TODO
 
-	// Add some random figure to show pan/zoom.
-	e := m.mgr.NewEntity()
-	m.mgr.Tag(e, "overworld")
-	m.mgr.AddComponent(e, &game.Sprite{
-		Texture: "figure.png",
-
-		X: 0, Y: 0,
-		W: 24, H: 48,
-		OffsetY: -6,
-	})
-	m.mgr.AddComponent(e, &game.Position{
-		Center: game.Center{
-			X: 12, Y: 48,
-		},
-		Layer: 101,
-	})
-
 	// Show nodes/cities/halts.
 	positions := map[geom.Key]game.Center{}
 	for _, n := range d.Nodes {
 		e := m.mgr.NewEntity()
+		n.e = e
 		m.mgr.Tag(e, "overworld")
 		m.mgr.AddComponent(e, &game.Sprite{
 			Texture: "overworld-nodes.png",
@@ -77,14 +61,28 @@ func (m *Manager) Begin(d Data) {
 			X: 0, Y: 0,
 			W: 24, H: 16,
 		})
-		f := func(n *Node) func() {
-			return func() {
-				fmt.Printf("click: %v\n", n.ID)
-			}
-		}
 		m.mgr.AddComponent(e, &ui.Interactive{
 			W: 32, H: 24,
-			Trigger: f(n),
+			Trigger: func(n *Node) func() {
+				// Closure to capture value of n.
+				return func() {
+					// TODO:
+
+					// If n.ID is connected to the current node of player's
+					// token ...
+					e, ok := m.mgr.Single([]string{"Token"})
+					if !ok {
+						return
+					}
+					t := m.mgr.Component(e, "Token").(*Token)
+					neighbors := t.Key.Neighbors()
+					if _, ok := neighbors[n.ID]; ok {
+						fmt.Printf("click: %v\n", n.ID)
+						// ... move player token to n.ID
+						// ... focus camera on n.ID
+					}
+				}
+			}(n),
 		})
 
 		x, y := geom.XY(n.ID.M, n.ID.N, 144, 96)
@@ -118,6 +116,38 @@ func (m *Manager) Begin(d Data) {
 			Layer: 5,
 		})
 	}
+
+	var start *Node
+
+	// We're using go's random map iteration to pick *a* starting node.
+	for _, n := range d.Nodes {
+		start = n
+		break
+	}
+
+	// Publish a focus event for the camera.
+	// TODO: ...
+
+	// Add a Token to mark where the player's squad is.
+	position := m.mgr.Component(start.e, "Position").(*game.Position)
+	e := m.mgr.NewEntity()
+	m.mgr.Tag(e, "overworld")
+	m.mgr.AddComponent(e, &game.Sprite{
+		Texture: "figure.png",
+
+		X: 0, Y: 0,
+		W: 24, H: 48,
+		OffsetY: -16,
+	})
+	m.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: position.Center.X, Y: position.Center.Y,
+		},
+		Layer: position.Layer + 1,
+	})
+	m.mgr.AddComponent(e, &Token{
+		Key: start.ID,
+	})
 
 	// Now show connections between the nodes.
 	type connectKey struct {

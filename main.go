@@ -79,7 +79,7 @@ func controls() Controls {
 	}
 }
 
-func controlCamera(c *game.Camera, t time.Duration, ctrl Controls) {
+func debugControlCamera(c *game.Camera, t time.Duration, ctrl Controls) {
 	camSpeed := 500.0 / c.GetZoom()
 	dt := t.Seconds()
 
@@ -374,7 +374,7 @@ func (s *system) run(screen *ebiten.Image) error {
 	last = time.Now()
 
 	ctrl := controls()
-	controlCamera(s.camera, elapsed, ctrl)
+	debugControlCamera(s.camera, elapsed, ctrl)
 
 	s.combat.Run(elapsed)
 	s.overworld.Run(elapsed)
