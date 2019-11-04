@@ -75,8 +75,14 @@ func (m *Manager) Begin(d Data) {
 						return
 					}
 					t := m.mgr.Component(e, "Token").(*Token)
-					neighbors := t.Key.Neighbors()
-					if _, ok := neighbors[n.ID]; ok {
+					var connected bool
+					for _, neighbor := range n.Directions {
+						if neighbor == t.Key {
+							connected = true
+							break
+						}
+					}
+					if connected {
 						fmt.Printf("click: %v (%f,%f)\n", n.ID, x, y)
 						// ... move player token to n.ID
 						// ... focus camera on n.ID
