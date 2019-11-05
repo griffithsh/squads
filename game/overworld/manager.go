@@ -43,6 +43,44 @@ func randInHex() (float64, float64) {
 	return w * factor * sin, h * factor * cos
 }
 
+// newNodeClickHandler creates a new click handler for Node n.
+func (m *Manager) newNodeClickHandler(n *Node) func(x, y float64) {
+	// Closure to capture value of n and provide a function that matches the
+	// signature of ui.Interactive.Trigger.
+	return func(x, y float64) {
+		// We need to know if n - the node we clicked on - is
+		// connected to the node the overworld token is on.
+
+		// Find the Token that belongs to the player's squad.
+		e, ok := m.mgr.Single([]string{"Token"})
+		if !ok {
+			return
+		}
+		t := m.mgr.Component(e, "Token").(*Token)
+		var connected bool
+		for _, neighbor := range n.Directions {
+			if neighbor == t.Key {
+				connected = true
+				break
+			}
+		}
+		if connected {
+			// SetState(Animating?)
+			// Move player token to n.ID.
+			t.Key = n.ID
+			refPos := m.mgr.Component(n.e, "Position").(*game.Position)
+			m.mgr.AddComponent(e, &Traversal{
+				Duration:    900 * time.Millisecond,
+				Destination: refPos.Center,
+				Complete: func() {
+					// Check collisions
+					// SetState(AwaitingInput?)
+				},
+			})
+		}
+	}
+}
+
 // Begin a Manager session.
 func (m *Manager) Begin(d Data) {
 	// Add new entities for the squad, overworld terrain, etc?
@@ -62,37 +100,7 @@ func (m *Manager) Begin(d Data) {
 		})
 		m.mgr.AddComponent(e, &ui.Interactive{
 			W: 32, H: 24,
-			Trigger: func(n *Node) func(x, y float64) {
-				// Closure to capture value of n.
-				return func(x, y float64) {
-					// TODO:
-
-					// If n.ID is connected to the current node of player's
-					// token ...
-					e, ok := m.mgr.Single([]string{"Token"})
-					if !ok {
-						return
-					}
-					t := m.mgr.Component(e, "Token").(*Token)
-					var connected bool
-					for _, neighbor := range n.Directions {
-						if neighbor == t.Key {
-							connected = true
-							break
-						}
-					}
-					if connected {
-						// Move player token to n.ID.
-						t.Key = n.ID
-						refPos := m.mgr.Component(n.e, "Position").(*game.Position)
-						position := m.mgr.Component(e, "Position").(*game.Position)
-						position.Center = refPos.Center
-
-						// Focus camera on n.ID.
-						// TODO: ...
-					}
-				}
-			}(n),
+			Trigger: m.newNodeClickHandler(n),
 		})
 
 		x, y := geom.XY(n.ID.M, n.ID.N, 144, 96)
