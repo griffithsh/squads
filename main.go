@@ -24,6 +24,7 @@ type system struct {
 	bus          *event.Bus
 	render       *game.Renderer
 	anim         *game.AnimationSystem
+	traversals   *overworld.TraversalSystem
 	fonts        *game.FontSystem
 	hierarchy    *ecs.ParentSystem
 	leash        *game.LeashSystem
@@ -110,11 +111,12 @@ func setup(w, h int) (*system, error) {
 	mgr := ecs.NewWorld()
 	camera := game.NewCamera(w, h, bus)
 	s := system{
-		bus:       bus,
-		render:    game.NewRenderer(),
-		anim:      &game.AnimationSystem{},
-		combat:    combat.NewManager(mgr, camera, bus),
-		overworld: overworld.NewManager(mgr, bus),
+		bus:        bus,
+		render:     game.NewRenderer(),
+		anim:       &game.AnimationSystem{},
+		traversals: &overworld.TraversalSystem{},
+		combat:     combat.NewManager(mgr, camera, bus),
+		overworld:  overworld.NewManager(mgr, bus),
 
 		mgr:    mgr,
 		camera: camera,
@@ -382,6 +384,7 @@ func (s *system) run(screen *ebiten.Image) error {
 	s.fonts.Update()
 	s.leash.Update(s.mgr, elapsed)
 	s.anim.Update(s.mgr, elapsed)
+	s.traversals.Update(s.mgr, elapsed)
 	s.wipes.Update(s.mgr, elapsed)
 	s.hierarchy.Update()
 
