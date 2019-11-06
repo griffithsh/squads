@@ -21,6 +21,7 @@ type Manager struct {
 	bus *event.Bus
 
 	dormant bool
+	state   State
 }
 
 // NewManager creates a new overworld Manager.
@@ -30,6 +31,7 @@ func NewManager(mgr *ecs.World, bus *event.Bus) *Manager {
 		bus: bus,
 
 		dormant: false,
+		state:   Uninitialised,
 	}
 }
 
@@ -48,6 +50,10 @@ func (m *Manager) newNodeClickHandler(n *Node) func(x, y float64) {
 	// Closure to capture value of n and provide a function that matches the
 	// signature of ui.Interactive.Trigger.
 	return func(x, y float64) {
+		if m.state != AwaitingInputState {
+			return
+		}
+
 		// We need to know if n - the node we clicked on - is
 		// connected to the node the overworld token is on.
 
@@ -65,24 +71,36 @@ func (m *Manager) newNodeClickHandler(n *Node) func(x, y float64) {
 			}
 		}
 		if connected {
-			// SetState(Animating?)
-			// Move player token to n.ID.
-			t.Key = n.ID
+			m.setState(AnimatingState)
+
 			refPos := m.mgr.Component(n.e, "Position").(*game.Position)
 			m.mgr.AddComponent(e, &Traversal{
-				Duration:    900 * time.Millisecond,
+				Duration:    800 * time.Millisecond,
 				Destination: refPos.Center,
 				Complete: func() {
-					// Check collisions
-					// SetState(AwaitingInput?)
+					t.Key = n.ID
+					m.setState(AwaitingInputState)
+
+					// Check collisions:
+					// Either publish an event about the player's squad arriving
+					// at a new node, or modify a component of the player that
+					// deals with occupying a node, and allow some new System to
+					// handle it. Alternatively, run through all other Entities
+					// with Token Components, looking for one with the same
+					// geom.Key.
 				},
 			})
 		}
 	}
 }
 
+func (m *Manager) setState(new State) {
+	m.state = new
+}
+
 // Begin a Manager session.
 func (m *Manager) Begin(d Data) {
+	m.setState(AwaitingInputState)
 	// Add new entities for the squad, overworld terrain, etc?
 	// TODO
 
