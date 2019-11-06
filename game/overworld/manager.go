@@ -300,14 +300,6 @@ func (m *Manager) End() {
 	}
 }
 
-// Interaction handles an interaction from the player at x,y.
-func (m *Manager) Interaction(x, y int) {
-	if m.dormant {
-		return
-	}
-	// accept input from hardware abstraction layer
-}
-
 // MousePosition handles a change in the mouse position from the player.
 func (m *Manager) MousePosition(x, y int) {
 	if m.dormant {
