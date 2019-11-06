@@ -271,7 +271,7 @@ func (cm *Manager) Begin() {
 		cm.mgr.Tag(e, "combat")
 
 		actor := cm.mgr.Component(e, "Actor").(*Actor)
-		team := cm.mgr.Component(e, "Team").(*Team)
+		team := cm.mgr.Component(e, "Team").(*game.Team)
 
 		if _, ok := usedStarts[team.ID]; !ok {
 			s := levelStarts[len(usedStarts)]

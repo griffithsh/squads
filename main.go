@@ -139,7 +139,7 @@ func setup(w, h int) (*system, error) {
 		s.overworld.Enable()
 	})
 
-	t := combat.NewTeam()
+	t := game.NewTeam()
 
 	// Create some Actors that are controlled by mouse clicks
 	e := mgr.NewEntity()
@@ -203,7 +203,7 @@ func setup(w, h int) (*system, error) {
 
 	// FIXME: remove these "baddies" from this func, should be provided by a factory-like thing.
 	e = mgr.NewEntity()
-	t = combat.NewTeam()
+	t = game.NewTeam()
 
 	mgr.AddComponent(e, &combat.Actor{
 		Name:       "Wolf",
