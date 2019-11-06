@@ -58,10 +58,15 @@ func (m *Manager) newNodeClickHandler(n *Node) func(x, y float64) {
 		// connected to the node the overworld token is on.
 
 		// Find the Token that belongs to the player's squad.
-		e, ok := m.mgr.Single([]string{"Token"})
-		if !ok {
-			return
+		var e ecs.Entity
+		for _, maybe := range m.mgr.Get([]string{"Token", "Team"}) {
+			team := m.mgr.Component(maybe, "Team").(*game.Team)
+			if team.Control == game.LocalControl {
+				e = maybe
+				break
+			}
 		}
+
 		t := m.mgr.Component(e, "Token").(*Token)
 		var connected bool
 		for _, neighbor := range n.Directions {
@@ -168,6 +173,36 @@ func (m *Manager) Begin(d Data) {
 	position := m.mgr.Component(start.e, "Position").(*game.Position)
 	e := m.mgr.NewEntity()
 	m.mgr.Tag(e, "overworld")
+	m.mgr.AddComponent(e, game.NewTeam())
+	m.mgr.AddComponent(e, &game.Sprite{
+		Texture: "figure.png",
+
+		X: 0, Y: 0,
+		W: 24, H: 48,
+		OffsetY: -16,
+	})
+	m.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: position.Center.X, Y: position.Center.Y,
+		},
+		Layer: position.Layer + 1,
+	})
+	m.mgr.AddComponent(e, &Token{
+		Key: start.ID,
+	})
+
+	// We're using go's random map iteration to pick *a* starting node.
+	for _, n := range d.Nodes {
+		start = n
+		break
+	}
+
+	// Add a Token to mark where the baddies squad is.
+	position = m.mgr.Component(start.e, "Position").(*game.Position)
+	e = m.mgr.NewEntity()
+	m.mgr.Tag(e, "overworld")
+	enemies := game.NewTeam()
+	m.mgr.AddComponent(e, enemies)
 	m.mgr.AddComponent(e, &game.Sprite{
 		Texture: "figure.png",
 
