@@ -16,3 +16,13 @@ type TokenMoved struct {
 func (TokenMoved) Type() event.Type {
 	return "overworld.TokenMoved"
 }
+
+type TokensCollided struct {
+	E1, E2 ecs.Entity
+	At     geom.Key
+}
+
+// Type of the Event.
+func (TokensCollided) Type() event.Type {
+	return "overworld.TokensCollided"
+}

@@ -1,6 +1,7 @@
 package overworld
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"time"
@@ -26,13 +27,22 @@ type Manager struct {
 
 // NewManager creates a new overworld Manager.
 func NewManager(mgr *ecs.World, bus *event.Bus) *Manager {
-	return &Manager{
+	m := Manager{
 		mgr: mgr,
 		bus: bus,
 
 		dormant: false,
 		state:   Uninitialised,
 	}
+
+	bus.Subscribe(TokensCollided{}.Type(), m.handleTokensCollided)
+
+	return &m
+}
+
+func (m *Manager) handleTokensCollided(t event.Typer) {
+	ev := t.(*TokensCollided)
+	fmt.Println("Tokens Collided", ev)
 }
 
 // randInHex generates a random point in an overworld hex.
@@ -83,16 +93,13 @@ func (m *Manager) newNodeClickHandler(n *Node) func(x, y float64) {
 				Duration:    800 * time.Millisecond,
 				Destination: refPos.Center,
 				Complete: func() {
+					m.bus.Publish(&TokenMoved{
+						E:    e,
+						From: t.Key,
+						To:   n.ID,
+					})
 					t.Key = n.ID
 					m.setState(AwaitingInputState)
-
-					// Check collisions:
-					// Either publish an event about the player's squad arriving
-					// at a new node, or modify a component of the player that
-					// deals with occupying a node, and allow some new System to
-					// handle it. Alternatively, run through all other Entities
-					// with Token Components, looking for one with the same
-					// geom.Key.
 				},
 			})
 		}
@@ -202,6 +209,7 @@ func (m *Manager) Begin(d Data) {
 	e = m.mgr.NewEntity()
 	m.mgr.Tag(e, "overworld")
 	enemies := game.NewTeam()
+	enemies.Control = game.ComputerControl
 	m.mgr.AddComponent(e, enemies)
 	m.mgr.AddComponent(e, &game.Sprite{
 		Texture: "figure.png",

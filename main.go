@@ -25,6 +25,7 @@ type system struct {
 	render       *game.Renderer
 	anim         *game.AnimationSystem
 	traversals   *overworld.TraversalSystem
+	collisions   *overworld.CollisionSystem
 	fonts        *game.FontSystem
 	hierarchy    *ecs.ParentSystem
 	leash        *game.LeashSystem
@@ -115,6 +116,7 @@ func setup(w, h int) (*system, error) {
 		render:     game.NewRenderer(),
 		anim:       &game.AnimationSystem{},
 		traversals: &overworld.TraversalSystem{},
+		collisions: overworld.NewCollisionSystem(mgr, bus),
 		combat:     combat.NewManager(mgr, camera, bus),
 		overworld:  overworld.NewManager(mgr, bus),
 
