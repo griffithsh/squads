@@ -6,7 +6,8 @@ import (
 )
 
 func TestAt(t *testing.T) {
-	b, _ := NewField(1, 1)
+	field := NewField()
+	field.Load(MByN(1, 1))
 
 	tests := []struct {
 		x, y    int
@@ -31,7 +32,7 @@ func TestAt(t *testing.T) {
 
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("At-%d-%d", tc.x, tc.y), func(t *testing.T) {
-			h := b.At(tc.x, tc.y)
+			h := field.At(tc.x, tc.y)
 
 			if tc.wantHex && h == nil {
 				t.Error("want hex, got nil\n")
@@ -45,7 +46,8 @@ func TestAt(t *testing.T) {
 }
 
 func TestAtMN(t *testing.T) {
-	b, _ := NewField(2, 6)
+	field := NewField()
+	field.Load(MByN(2, 6))
 
 	tests := []struct {
 		x, y  int
@@ -67,7 +69,7 @@ func TestAtMN(t *testing.T) {
 	}
 	for _, tc := range tests {
 		t.Run(fmt.Sprintf("AtMN-%d-%d)", tc.x, tc.y), func(t *testing.T) {
-			h := b.At(tc.x, tc.y)
+			h := field.At(tc.x, tc.y)
 			if h == nil {
 				t.Fatal("no hex\n")
 			}

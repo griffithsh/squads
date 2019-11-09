@@ -6,7 +6,8 @@ import (
 )
 
 func TestNavigate(t *testing.T) {
-	field, _ := NewField(20, 60)
+	field := NewField()
+	field.Load(MByN(20, 60))
 
 	start := Key{0, 0}
 	goal := Key{0, 58}

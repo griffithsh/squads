@@ -68,37 +68,37 @@ This diagram shows a three by eight Field of Hexes.
 
 // Field to play out encounters on. A collection of Hexes.
 type Field struct {
-	stride int // how many hexes are in a row
-	hexes  map[Key]*Hex
-	hex4s  map[Key]*Hex4
-	hex7s  map[Key]*Hex7
+	hexes map[Key]*Hex
+	hex4s map[Key]*Hex4
+	hex7s map[Key]*Hex7
 }
 
 // NewField creates a new game field.
-func NewField(w, h int) (*Field, error) {
-	hexes := make(map[Key]*Hex, w*h)
+func NewField() *Field {
+	return &Field{
+		hexes: map[Key]*Hex{},
+		hex4s: map[Key]*Hex4{},
+		hex7s: map[Key]*Hex7{},
+	}
+}
 
-	for i := 0; i < w*h; i++ {
-		h := Hex{
-			M: i % w,
-			N: i / w,
-		}
-		hexes[Key{i % w, i / w}] = &h
+// Load a slice of Keys into the Field, replacing whatever is currently in the field.
+func (f *Field) Load(keys []Key) {
+	hexes := map[Key]*Hex{}
+
+	for _, k := range keys {
+		hexes[k] = &Hex{M: k.M, N: k.N}
 	}
 
-	field := Field{
-		stride: w,
-		hexes:  hexes,
-		hex4s:  map[Key]*Hex4{},
-		hex7s:  map[Key]*Hex7{},
-	}
-	field.calcNeighbors()
-	field.calcHex4()
-	field.calcNeighbors4()
-	field.calcHex7()
-	field.calcNeighbors7()
+	f.hexes = hexes
+	f.hex4s = map[Key]*Hex4{}
+	f.hex7s = map[Key]*Hex7{}
 
-	return &field, nil
+	f.calcNeighbors()
+	f.calcHex4()
+	f.calcNeighbors4()
+	f.calcHex7()
+	f.calcNeighbors7()
 }
 
 func (f *Field) calcNeighbors() {
@@ -336,12 +336,16 @@ func (f *Field) Hexes() []*Hex {
 
 // Width of the Field in pixels.
 func (f *Field) Width() float64 {
-	return float64(f.stride * xStride)
+	maxM, maxN := f.Dimensions()
+
+	return 12 + float64(maxM*17*2) + float64(maxN%2)*12.0
 }
 
 // Height of the Field in pixels.
 func (f *Field) Height() float64 {
-	return float64(len(f.hexes) / f.stride * yStride)
+	_, maxN := f.Dimensions()
+
+	return 8 + float64(maxN%2*8) + float64(maxN/2)*16
 }
 
 // relative coordinates are global x,y coordinates translated to the roughMN
@@ -433,8 +437,18 @@ func (f *Field) At7(x, y int) *Hex7 {
 }
 
 // Dimensions returns the maximum extent of the field in M and N dimensions.
+// FIXME: This needs to be refactored to account for negative Hexes I think.
 func (f *Field) Dimensions() (M, N int) {
-	return f.stride, len(f.hexes) / f.stride
+	var maxM, maxN int
+	for k := range f.hexes {
+		if k.M > maxM {
+			maxM = k.M
+		}
+		if k.N > maxN {
+			maxN = k.N
+		}
+	}
+	return maxM + 1, maxN + 1
 }
 
 // isOddN determines whether the N coordinate will be odd or not.

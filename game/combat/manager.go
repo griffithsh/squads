@@ -67,13 +67,9 @@ type Manager struct {
 	dormant bool
 }
 
-// NewManager should accept two opposing squads of characters, a list of
-// M,N,Terrain, and a tileset, and a set of environmental effects.
-// Or it could accept a *ecs.World, which would by convention contain two squads
-// of characters, and some other object that contains terrain, environmental
-// effects etc.
+// NewManager creates a new combat Manager.
 func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
-	f, _ := geom.NewField(8, 24)
+	f := geom.NewField()
 
 	cm := Manager{
 		mgr:    mgr,
@@ -135,7 +131,11 @@ func (cm *Manager) setState(state State) {
 
 // Begin should be called at the start of an engagement to set up components
 // necessary for the combat.
+// TODO: Begin should be provided with information about the squads and the
+// terrain to fight on.
 func (cm *Manager) Begin() {
+	var keys []geom.Key = geom.MByN(8, 24)
+	cm.field.Load(keys)
 	cm.setState(FadingIn)
 	e := cm.mgr.NewEntity()
 	cm.mgr.Tag(e, "combat")

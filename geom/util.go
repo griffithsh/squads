@@ -73,3 +73,14 @@ func XY(m, n, hexW, hexH int) (float64, float64) {
 
 	return x, y
 }
+
+// MByN creates a slice of Keys that fill a rectangular field of m by n.
+func MByN(m, n int) []Key {
+	var result []Key
+	for ni := 0; ni < n; ni++ {
+		for mi := 0; mi < m; mi++ {
+			result = append(result, Key{M: mi, N: ni})
+		}
+	}
+	return result
+}
