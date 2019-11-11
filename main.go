@@ -133,7 +133,7 @@ func setup(w, h int) (*system, error) {
 		// TODO
 		// ccEvent := et.(*game.CombatConcluded)
 
-		s.combat.Disable()
+		s.combat.Pause()
 
 		// force cascade of deleted components
 		s.hierarchy.Update()
@@ -295,11 +295,11 @@ func setup(w, h int) (*system, error) {
 
 	// Start combat!
 	s.combat.Begin( /* a thing that has enough information to construct a Field and the enemies you'll face in the combat */ )
-	s.combat.Disable()
+	s.combat.Pause()
 
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	s.overworld.Begin(data(rng))
-	// s.overworld.Disable()
+	// s.overworld.Pause()
 
 	last = time.Now()
 
@@ -344,10 +344,10 @@ func (s *system) run(screen *ebiten.Image) error {
 	// Debug code to swap to overworld and back with Tab, Ctrl-Tab
 	if ebiten.IsKeyPressed(ebiten.KeyTab) {
 		if ebiten.IsKeyPressed(ebiten.KeyControl) {
-			s.combat.Disable()
+			s.combat.Pause()
 			s.overworld.Enable()
 		} else {
-			s.combat.Enable()
+			s.combat.Unpause()
 			s.overworld.Disable()
 		}
 	}

@@ -52,7 +52,11 @@ type Manager struct {
 
 	turnToken            ecs.Entity // Whose turn is it?
 	selectingInteractive ecs.Entity // catches clicks on the field.
-	state                State
+
+	// Manager has both a state and a paused flag, so that state transition
+	// logic can be isolated from pausing.
+	paused bool
+	state  State
 
 	incrementAccumulator float64
 
@@ -63,8 +67,6 @@ type Manager struct {
 
 	intents      *IntentSystem
 	performances *PerformanceSystem
-
-	dormant bool
 }
 
 // NewManager creates a new combat Manager.
@@ -84,7 +86,7 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 		intents:              NewIntentSystem(mgr, bus, f),
 		performances:         NewPerformanceSystem(mgr, bus),
 
-		dormant: false,
+		paused: false,
 	}
 
 	cm.bus.Subscribe(ActorMovementConcluded{}.Type(), cm.handleMovementConcluded)
@@ -320,30 +322,6 @@ func (cm *Manager) Begin() {
 	cm.bus.Publish(&game.CombatBegan{})
 }
 
-// Enable the combat Manager, responding to input and rendering the state of the
-// combat.
-func (cm *Manager) Enable() {
-	if cm.dormant {
-		for _, e := range cm.mgr.Tagged("combat") {
-			cm.mgr.RemoveComponent(e, &game.Hidden{})
-			cm.hud.Enable()
-		}
-		cm.dormant = false
-	}
-}
-
-// Disable the combat Manager, ignoring input and not rendering the state of the
-// combat.
-func (cm *Manager) Disable() {
-	if !cm.dormant {
-		for _, e := range cm.mgr.Tagged("combat") {
-			cm.mgr.AddComponent(e, &game.Hidden{})
-			cm.hud.Disable()
-		}
-		cm.dormant = true
-	}
-}
-
 // End should be called at the resolution of a combat encounter. It removes
 // combat-specific Components and Entities.
 func (cm *Manager) End() {
@@ -365,13 +343,36 @@ func (cm *Manager) End() {
 			cm.mgr.RemoveType(e, comp)
 		}
 	}
+}
 
-	// TODO: publish combat ended event.
+// Pause the combat Manager, ignoring input and not rendering the state of the
+// combat. Pause should be called when an in-combat modal menu is entered, and a
+// return to the current combat is imminent.
+func (cm *Manager) Pause() {
+	if !cm.paused {
+		for _, e := range cm.mgr.Tagged("combat") {
+			cm.mgr.AddComponent(e, &game.Hidden{})
+			cm.hud.Disable()
+		}
+		cm.paused = true
+	}
+}
+
+// Unpause the combat Manager, responding to input and rendering the state of the
+// combat.
+func (cm *Manager) Unpause() {
+	if cm.paused {
+		for _, e := range cm.mgr.Tagged("combat") {
+			cm.mgr.RemoveComponent(e, &game.Hidden{})
+			cm.hud.Enable()
+		}
+		cm.paused = false
+	}
 }
 
 // Run a frame of this Combat.
 func (cm *Manager) Run(elapsed time.Duration) {
-	if cm.dormant {
+	if cm.paused {
 		return
 	}
 
