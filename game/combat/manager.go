@@ -131,6 +131,85 @@ func (cm *Manager) setState(state State) {
 	cm.bus.Publish(&ev)
 }
 
+// semiSort provides the list of Hexes in the field roughly sorted by their
+// distance from m,n. It intends to provide randomish starting locations.
+func semiSort(m, n int, f *geom.Field) []*geom.Hex {
+	type s struct {
+		distance float64
+		h        *geom.Hex
+	}
+	start := geom.Hex{M: m, N: n}
+	distances := make([]s, len(f.Hexes()))
+
+	for i, h := range f.Hexes() {
+		distances[i] = s{math.Pow(math.Abs(h.X()-start.X()), 2) + math.Pow(math.Abs(h.Y()-start.Y()), 2), h}
+	}
+	sort.Slice(distances, func(i, j int) bool {
+		return distances[i].distance < distances[j].distance
+	})
+
+	// bucket the hexes into small groups, and shuffle the hexes within
+	// each group. This is going to keep the nearest together, but still
+	// not always pick the same places every time.
+	bucket := 25
+	gi := 0 // global index
+	for {
+		rand.Shuffle(bucket, func(i, j int) {
+			distances[i+gi], distances[j+gi] = distances[j+gi], distances[i+gi]
+		})
+		gi += bucket
+		if gi+bucket >= len(distances) {
+			break
+		}
+	}
+
+	result := make([]*geom.Hex, len(distances))
+	for i := range distances {
+		result[i] = distances[i].h
+	}
+	return result
+}
+
+// isBlocked determines if an Actor with an ActorSize of sz can be placed at m,n.
+func isBlocked(field *geom.Field, m, n int, sz game.CharacterSize, mgr *ecs.World) bool {
+	// blockages is a set of Keys that are taken by other things
+	blockages := map[geom.Key]struct{}{}
+	for _, e := range mgr.Get([]string{"Obstacle"}) {
+		o := mgr.Component(e, "Obstacle").(*game.Obstacle)
+
+		h := game.AdaptFieldObstacle(field, o.ObstacleType).Get(o.M, o.N)
+		if h == nil {
+			panic(fmt.Sprintf("there is no hex where Obstacle(%d,%s) is present (%d,%d)", e, o.ObstacleType, o.M, o.N))
+		}
+
+		// FIXME: We're making the assumption again here that all obstacles
+		// are total obstacles. Even conceptually things like shallow water
+		// or bushes that should only impede movement slightly.
+		for _, h := range h.Hexes() {
+			blockages[h.Key()] = struct{}{}
+		}
+	}
+
+	hex := game.AdaptField(field, sz).Get(m, n)
+	if hex == nil {
+		return true
+	}
+
+	// occupy is the list of Hexes an Actor with sz and m,n will occupy.
+	occupy := hex.Hexes()
+
+	for _, h := range occupy {
+		if h == nil {
+			return true
+		}
+		if _, blocked := blockages[geom.Key{M: h.M, N: h.N}]; blocked {
+			return true
+		}
+	}
+
+	return false
+}
+
 // Begin should be called at the start of an engagement to set up components
 // necessary for the combat.
 // TODO: Begin should be provided with information about the squads and the
@@ -165,45 +244,6 @@ func (cm *Manager) Begin() {
 	// It should also produce starting positions for teams...
 	// Some other entity should produce an opponent team for the player's squad to fight _on_ this level.
 
-	// semiSort provides the list of Hexes in the field roughly sorted by their
-	// distance from m,n. It intends to provide randomish starting locations.
-	semiSort := func(m, n int, f *geom.Field) []*geom.Hex {
-		type s struct {
-			distance float64
-			h        *geom.Hex
-		}
-		start := geom.Hex{M: m, N: n}
-		distances := make([]s, len(f.Hexes()))
-
-		for i, h := range f.Hexes() {
-			distances[i] = s{math.Pow(math.Abs(h.X()-start.X()), 2) + math.Pow(math.Abs(h.Y()-start.Y()), 2), h}
-		}
-		sort.Slice(distances, func(i, j int) bool {
-			return distances[i].distance < distances[j].distance
-		})
-
-		// bucket the hexes into small groups, and shuffle the hexes within
-		// each group. This is going to keep the nearest together, but still
-		// not always pick the same places every time.
-		bucket := 25
-		gi := 0 // global index
-		for {
-			rand.Shuffle(bucket, func(i, j int) {
-				distances[i+gi], distances[j+gi] = distances[j+gi], distances[i+gi]
-			})
-			gi += bucket
-			if gi+bucket >= len(distances) {
-				break
-			}
-		}
-
-		result := make([]*geom.Hex, len(distances))
-		for i := range distances {
-			result[i] = distances[i].h
-		}
-		return result
-	}
-
 	// List of start locations.
 	levelStarts := []geom.Key{
 		{M: 6, N: 18},
@@ -216,46 +256,6 @@ func (cm *Manager) Begin() {
 
 	// Then each team takes a turn placing an Actor from largest to smallest,
 	// working through the semi-shuffled list of results.
-
-	// isBlocked determines if an Actor with an ActorSize of sz can be placed at m,n.
-	isBlocked := func(m, n int, sz game.CharacterSize, mgr *ecs.World) bool {
-		// blockages is a set of Keys that are taken by other things
-		blockages := map[geom.Key]struct{}{}
-		for _, e := range mgr.Get([]string{"Obstacle"}) {
-			o := mgr.Component(e, "Obstacle").(*game.Obstacle)
-
-			h := game.AdaptFieldObstacle(cm.field, o.ObstacleType).Get(o.M, o.N)
-			if h == nil {
-				panic(fmt.Sprintf("there is no hex where Obstacle(%d,%s) is present (%d,%d)", e, o.ObstacleType, o.M, o.N))
-			}
-
-			// FIXME: We're making the assumption again here that all obstacles
-			// are total obstacles. Even conceptually things like shallow water
-			// or bushes that should only impede movement slightly.
-			for _, h := range h.Hexes() {
-				blockages[h.Key()] = struct{}{}
-			}
-		}
-
-		hex := game.AdaptField(cm.field, sz).Get(m, n)
-		if hex == nil {
-			return true
-		}
-
-		// occupy is the list of Hexes an Actor with sz and m,n will occupy.
-		occupy := hex.Hexes()
-
-		for _, h := range occupy {
-			if h == nil {
-				return true
-			}
-			if _, blocked := blockages[geom.Key{M: h.M, N: h.N}]; blocked {
-				return true
-			}
-		}
-
-		return false
-	}
 
 	// In game, something like this process should occur when additional Actors are summoned.
 	// Necromancers summon Skeletons (this could be ground targeted with a range)
@@ -283,7 +283,7 @@ func (cm *Manager) Begin() {
 
 		// Pick positions for the Actors.
 		for _, h := range nearbys {
-			if isBlocked(h.M, h.N, actor.Size, cm.mgr) {
+			if isBlocked(cm.field, h.M, h.N, actor.Size, cm.mgr) {
 				continue
 			}
 
