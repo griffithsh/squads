@@ -36,12 +36,12 @@ type ContextualObstacle struct {
 	Cost float64
 }
 
-// Update Actors with Intents.
+// Update Characters with Intents.
 func (s *IntentSystem) Update() {
-	entities := s.mgr.Get([]string{"Actor", "MoveIntent", "Position"})
+	entities := s.mgr.Get([]string{"Participant", "MoveIntent", "Position"})
 
 	for _, e := range entities {
-		a := s.mgr.Component(e, "Actor").(*Actor)
+		participant := s.mgr.Component(e, "Participant").(*Participant)
 		pos := s.mgr.Component(e, "Position").(*game.Position)
 		intent := s.mgr.Component(e, "MoveIntent").(*game.MoveIntent)
 
@@ -49,15 +49,15 @@ func (s *IntentSystem) Update() {
 
 		var start, goal geom.Key
 		var stepToWaypoint func(geom.NavigateStep) Waypoint
-		exists := ExistsFuncFactory(s.field, a.Size)
+		exists := ExistsFuncFactory(s.field, participant.Size)
 		costs := CostsFuncFactory(s.field, s.mgr, e)
 
-		f := game.AdaptField(s.field, a.Size)
+		f := game.AdaptField(s.field, participant.Size)
 		startHex := f.At(int(pos.Center.X), int(pos.Center.Y))
 		goalHex := f.At(int(intent.X), int(intent.Y))
 		if startHex == nil || goalHex == nil {
 			// Don't navigate.
-			s.Publish(&ActorMovementConcluded{Entity: e})
+			s.Publish(&ParticipantMovementConcluded{Entity: e})
 			continue
 		}
 		start = startHex.Key()
@@ -73,20 +73,20 @@ func (s *IntentSystem) Update() {
 		steps, err := geom.Navigate(start, goal, exists, costs)
 		if err != nil {
 			fmt.Printf("Navigate: %v\n", err)
-			s.Publish(&ActorMovementConcluded{Entity: e})
+			s.Publish(&ParticipantMovementConcluded{Entity: e})
 			continue
 		}
 
 		m := Mover{}
 		cost := 0
 		for _, step := range steps {
-			if int(step.Cost) > a.ActionPoints.Cur {
+			if int(step.Cost) > participant.ActionPoints.Cur {
 				break
 			}
 			cost = int(step.Cost)
 			m.Moves = append(m.Moves, stepToWaypoint(step))
 		}
-		a.ActionPoints.Cur -= cost
+		participant.ActionPoints.Cur -= cost
 		s.Publish(&StatModified{
 			Entity: e,
 			Stat:   game.ActionStat,
@@ -113,11 +113,11 @@ type CostsFunc func(geom.Key) float64
 
 // CostsFuncFactory constructs a CostsFunc that returns the costs of moving to
 // an M,N for an Entity from a context.
-func CostsFuncFactory(f *geom.Field, mgr *ecs.World, actor ecs.Entity) CostsFunc {
+func CostsFuncFactory(f *geom.Field, mgr *ecs.World, participantEntity ecs.Entity) CostsFunc {
 	var obstacles []ContextualObstacle
 	for _, e := range mgr.Get([]string{"Obstacle"}) {
-		// An Actor is not an obstacle to itself.
-		if e == actor {
+		// A Participant is not an obstacle to itself.
+		if e == participantEntity {
 			continue
 		}
 		obstacle := mgr.Component(e, "Obstacle").(*game.Obstacle)
@@ -136,10 +136,10 @@ func CostsFuncFactory(f *geom.Field, mgr *ecs.World, actor ecs.Entity) CostsFunc
 			})
 		}
 	}
-	a := mgr.Component(actor, "Actor").(*Actor)
+	participant := mgr.Component(participantEntity, "Participant").(*Participant)
 
 	return func(k geom.Key) float64 {
-		hex := game.AdaptField(f, a.Size).Get(k.M, k.N)
+		hex := game.AdaptField(f, participant.Size).Get(k.M, k.N)
 
 		if hex == nil {
 			return math.Inf(0)

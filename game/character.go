@@ -2,11 +2,11 @@ package game
 
 //go:generate stringer -output=./character_string.go -type=CharacterSize,CharacterProfession,CharacterSex,CharacterPerformance
 
-// CharacterSize enumerates Sizes for Actors.
+// CharacterSize enumerates Sizes for Character.
 type CharacterSize int
 
-// CharacterSize represents the sizes that an Actor can be. Small Actrors take only
-// one Hex, Medium, take 4, and Large take 7.
+// CharacterSize represents the sizes that an Character can be. Small Character
+// take only one Hex, Medium, take 4, and Large take 7.
 const (
 	SMALL CharacterSize = iota
 	MEDIUM
@@ -46,9 +46,9 @@ const (
 // is over.
 type Character struct {
 	// Things that don't affect gameplay.
-	Name string
-	// SmallIcon Sprite // (26x26)
-	// BigIcon   Sprite // (52x52)
+	Name      string
+	SmallIcon Sprite // (26x26)
+	BigIcon   Sprite // (52x52)
 
 	// Intrinsic to the Character
 	Size       CharacterSize
@@ -57,6 +57,8 @@ type Character struct {
 
 	PreparationThreshold int // Preparation required to take a turn
 	ActionPoints         int
+	CurrentHealth        int
+	MaxHealth            int
 
 	Level                uint
 	StrengthPerLevel     float64

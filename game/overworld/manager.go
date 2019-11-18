@@ -42,7 +42,21 @@ func NewManager(mgr *ecs.World, bus *event.Bus) *Manager {
 
 func (m *Manager) handleTokensCollided(t event.Typer) {
 	ev := t.(*TokensCollided)
+	// TODO: camera focus event for ev.At
 	fmt.Println("Tokens Collided", ev)
+
+	m.setState(FadingOut)
+	m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
+		W: 1024, H: 768, // FIXME: need access to screen dimensions
+		Obscuring: true,
+		OnComplete: func() {
+			m.bus.Publish(&CombatInitiated{
+				// TODO!
+				// info about baddy squad
+				// info about terrain
+			})
+		},
+	})
 }
 
 // randInHex generates a random point in an overworld hex.
@@ -180,6 +194,7 @@ func (m *Manager) Begin(d Data) {
 	position := m.mgr.Component(start.e, "Position").(*game.Position)
 	e := m.mgr.NewEntity()
 	m.mgr.Tag(e, "overworld")
+	m.mgr.Tag(e, "player")
 	m.mgr.AddComponent(e, game.NewTeam())
 	m.mgr.AddComponent(e, &game.Sprite{
 		Texture: "figure.png",
@@ -208,6 +223,7 @@ func (m *Manager) Begin(d Data) {
 	position = m.mgr.Component(start.e, "Position").(*game.Position)
 	e = m.mgr.NewEntity()
 	m.mgr.Tag(e, "overworld")
+	m.mgr.Tag(e, "baddy")
 	enemies := game.NewTeam()
 	enemies.Control = game.ComputerControl
 	m.mgr.AddComponent(e, enemies)

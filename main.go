@@ -55,7 +55,13 @@ func main() {
 	rand.Seed(time.Now().Unix())
 	w, h := 1024, 768
 	s, _ := setup(w, h)
-	ebiten.Run(s.run, w, h, 1, "Squads")
+	if err := ebiten.Run(s.run, w, h, 1, "Squads"); err == errExitGame {
+		fmt.Println("See you next time.")
+	} else if err != nil {
+		fmt.Printf("%v\n", err)
+		os.Exit(1)
+	}
+
 }
 
 // Controls represent debug controls
@@ -130,32 +136,55 @@ func setup(w, h int) (*system, error) {
 		interactives: ui.NewInteractiveSystem(mgr, bus),
 	}
 	bus.Subscribe(game.CombatConcluded{}.Type(), func(et event.Typer) {
-		// TODO
-		// ccEvent := et.(*game.CombatConcluded)
+		s.combat.End()
 
-		s.combat.Pause()
+		// Handle results of combat.
+		ev := et.(*game.CombatConcluded)
+		for e, result := range ev.Results {
+			if mgr.HasTag(e, "player") {
+				switch result {
+				case game.Escaped:
+					// others are removed
+				case game.Defeated:
+					// game is over
+				}
+			} else if result == game.Defeated {
+				// baddy squad goes away.
+				mgr.DestroyEntity(e)
+			}
+		}
 
 		// force cascade of deleted components
 		s.hierarchy.Update()
 
 		s.overworld.Enable()
 	})
+	bus.Subscribe(overworld.CombatInitiated{}.Type(), func(t event.Typer) {
+		s.overworld.Disable()
+		teams := []ecs.Entity{}
+		for _, e := range s.mgr.Get([]string{"Squad"}) {
+			teams = append(teams, e)
+		}
+		s.combat.Begin(teams)
+	})
 
-	t := game.NewTeam()
-
-	// Create some Actors that are controlled by mouse clicks
+	// Create a Squad Entity.
 	e := mgr.NewEntity()
-	mgr.AddComponent(e, &combat.Actor{
-		Name:       "Samithee",
-		Size:       game.SMALL,
-		Sex:        game.Male,
-		Profession: game.Villager,
-		PreparationThreshold: combat.CurMax{
-			Max: 701,
-		},
-		ActionPoints: combat.CurMax{
-			Max: 100,
-		},
+	mgr.Tag(e, "player")
+	mgr.AddComponent(e, &game.Squad{})
+	players := game.NewTeam()
+	mgr.AddComponent(e, players)
+
+	// Create Characters to Populate the player's Squad.
+	e = mgr.NewEntity()
+	mgr.AddComponent(e, players)
+	mgr.AddComponent(e, &game.Character{
+		Name:                 "Samithee",
+		Size:                 game.SMALL,
+		Sex:                  game.Male,
+		Profession:           game.Villager,
+		PreparationThreshold: 701,
+		ActionPoints:         100,
 		SmallIcon: game.Sprite{
 			Texture: "hud.png",
 			X:       0,
@@ -171,20 +200,15 @@ func setup(w, h int) (*system, error) {
 			H:       52,
 		},
 	})
-	mgr.AddComponent(e, t)
 
 	e = mgr.NewEntity()
-	mgr.AddComponent(e, &combat.Actor{
-		Name:       "Timjamen",
-		Size:       game.SMALL,
-		Sex:        game.Male,
-		Profession: game.Villager,
-		PreparationThreshold: combat.CurMax{
-			Max: 699,
-		},
-		ActionPoints: combat.CurMax{
-			Max: 100,
-		},
+	mgr.AddComponent(e, &game.Character{
+		Name:                 "Timjamen",
+		Size:                 game.SMALL,
+		Sex:                  game.Male,
+		Profession:           game.Villager,
+		PreparationThreshold: 699,
+		ActionPoints:         100,
 
 		SmallIcon: game.Sprite{
 			Texture: "portraits.png",
@@ -201,23 +225,23 @@ func setup(w, h int) (*system, error) {
 			H:       52,
 		},
 	})
-	mgr.AddComponent(e, t)
+	mgr.AddComponent(e, players)
 
 	// FIXME: remove these "baddies" from this func, should be provided by a factory-like thing.
 	e = mgr.NewEntity()
-	t = game.NewTeam()
+	mgr.Tag(e, "baddies")
+	baddies := game.NewTeam()
+	mgr.AddComponent(e, baddies)
+	mgr.AddComponent(e, &game.Squad{})
 
-	mgr.AddComponent(e, &combat.Actor{
-		Name:       "Wolf",
-		Size:       game.MEDIUM,
-		Sex:        game.Male,
-		Profession: game.Wolf,
-		PreparationThreshold: combat.CurMax{
-			Max: 1103,
-		},
-		ActionPoints: combat.CurMax{
-			Max: 80,
-		},
+	e = mgr.NewEntity()
+	mgr.AddComponent(e, &game.Character{
+		Name:                 "Wolf",
+		Size:                 game.MEDIUM,
+		Sex:                  game.Male,
+		Profession:           game.Wolf,
+		PreparationThreshold: 1103,
+		ActionPoints:         80,
 		SmallIcon: game.Sprite{
 			Texture: "hud.png",
 			X:       52,
@@ -233,20 +257,16 @@ func setup(w, h int) (*system, error) {
 			H:       52,
 		},
 	})
-	mgr.AddComponent(e, t)
+	mgr.AddComponent(e, baddies)
 
 	e = mgr.NewEntity()
-	mgr.AddComponent(e, &combat.Actor{
-		Name:       "Giant",
-		Size:       game.LARGE,
-		Sex:        game.Male,
-		Profession: game.Giant,
-		PreparationThreshold: combat.CurMax{
-			Max: 1301,
-		},
-		ActionPoints: combat.CurMax{
-			Max: 120,
-		},
+	mgr.AddComponent(e, &game.Character{
+		Name:                 "Giant",
+		Size:                 game.LARGE,
+		Sex:                  game.Male,
+		Profession:           game.Giant,
+		PreparationThreshold: 1301,
+		ActionPoints:         120,
 		SmallIcon: game.Sprite{
 			Texture: "hud.png",
 			X:       104,
@@ -262,40 +282,39 @@ func setup(w, h int) (*system, error) {
 			H:       52,
 		},
 	})
-	mgr.AddComponent(e, t)
+	mgr.AddComponent(e, baddies)
 
 	e = mgr.NewEntity()
-	mgr.AddComponent(e, &combat.Actor{
-		Name:       "Dumble",
-		Size:       game.SMALL,
-		Sex:        game.Male,
-		Profession: game.Skeleton,
-		PreparationThreshold: combat.CurMax{
-			Max: 1650,
-		},
-		ActionPoints: combat.CurMax{
-			Max: 60,
-		},
+	mgr.AddComponent(e, &game.Character{
+		Name:                 "Dumble",
+		Size:                 game.SMALL,
+		Sex:                  game.Male,
+		Profession:           game.Skeleton,
+		PreparationThreshold: 1650,
+		ActionPoints:         60,
 		SmallIcon: game.Sprite{
 			Texture: "hud.png",
-			X:       104,
-			Y:       76,
-			W:       0,
-			H:       0,
+			X:       0,
+			Y:       154,
+			W:       26,
+			H:       26,
 		},
 		BigIcon: game.Sprite{
 			Texture: "hud.png",
-			X:       104,
-			Y:       24,
-			W:       0,
-			H:       0,
+			X:       0,
+			Y:       102,
+			W:       52,
+			H:       52,
 		},
 	})
-	mgr.AddComponent(e, t)
+	mgr.AddComponent(e, baddies)
 
 	// Start combat!
-	s.combat.Begin( /* a thing that has enough information to construct a Field and the enemies you'll face in the combat */ )
-	s.combat.Pause()
+	// TODO: pass a thing that has enough information to construct a Field and
+	// the enemies you'll face in the combat
+	teams := []ecs.Entity{}
+	s.combat.Begin(teams)
+	s.combat.End()
 
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	s.overworld.Begin(data(rng))
@@ -342,15 +361,15 @@ func (s *system) run(screen *ebiten.Image) error {
 	}
 
 	// Debug code to swap to overworld and back with Tab, Ctrl-Tab
-	if ebiten.IsKeyPressed(ebiten.KeyTab) {
-		if ebiten.IsKeyPressed(ebiten.KeyControl) {
-			s.combat.Pause()
-			s.overworld.Enable()
-		} else {
-			s.combat.Unpause()
-			s.overworld.Disable()
-		}
-	}
+	// if ebiten.IsKeyPressed(ebiten.KeyTab) {
+	// 	if ebiten.IsKeyPressed(ebiten.KeyControl) {
+	// 		s.combat.End()
+	// 		s.overworld.Enable()
+	// 	} else {
+	// 		s.combat.()
+	// 		s.overworld.Disable()
+	// 	}
+	// }
 
 	x, y := ebiten.CursorPosition()
 
@@ -394,7 +413,7 @@ func (s *system) run(screen *ebiten.Image) error {
 
 	// Render all entities in the World.
 	if err := s.render.Render(screen, s.mgr, s.camera.GetX(), s.camera.GetY(), s.camera.GetZoom(), w, h); err != nil {
-		panic(err)
+		return fmt.Errorf("Render: %v", err)
 	}
 
 	select {

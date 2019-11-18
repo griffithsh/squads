@@ -12,8 +12,8 @@ import (
 )
 
 /*
-Actors Perform Movement, Striking with a weapon, Spellcasting, Hurt, Victory,
-and Dying, otherwise they are Idle.
+Participants Perform Movement, Striking with a weapon, Spellcasting, Hurt,
+Victory, and Dying, otherwise they are Idle.
 
 Striking with a weapon and spellcasting are probably the same thing - "using
 a skill" but different professions could have different numbers of skill
@@ -29,7 +29,7 @@ would mean that the "UsedSkill" event would include a reference to the
 animation "class" that best represents this skill.
 */
 
-// PerformanceSystem sets appropriate Animations for Actors in a Combat based on
+// PerformanceSystem sets appropriate Animations for Participants in a Combat based on
 // what's happening.
 type PerformanceSystem struct {
 	mgr *ecs.World
@@ -41,23 +41,24 @@ func NewPerformanceSystem(mgr *ecs.World, bus *event.Bus) *PerformanceSystem {
 		mgr: mgr,
 	}
 
-	bus.Subscribe(ActorMoving{}.Type(), ps.handleActorMoving)
+	bus.Subscribe(ParticipantMoving{}.Type(), ps.handleParticipantMoving)
+	bus.Subscribe(CharacterCelebrating{}.Type(), ps.handleCharacterCelebrating)
 
 	return &ps
 }
 
 // Update the System.
 func (ps *PerformanceSystem) Update(elapse time.Duration) {
-	// For any actors without a sprite, apply their idling animation
-	for _, e := range ps.mgr.Get([]string{"Actor", "Position"}) {
+	// For any Participants without a sprite, apply their idling animation
+	for _, e := range ps.mgr.Get([]string{"Participant", "Position"}) {
 		if _, ok := ps.mgr.Component(e, "Sprite").(*game.Sprite); ok {
 			continue
 		}
 
-		actor := ps.mgr.Component(e, "Actor").(*Actor)
+		participant := ps.mgr.Component(e, "Participant").(*Participant)
 		facer := ps.mgr.Component(e, "Facer").(*game.Facer)
 
-		fa := get(animationId{actor.Profession, actor.Sex, game.PerformIdle, facer.Face})
+		fa := get(animationId{participant.Profession, participant.Sex, game.PerformIdle, facer.Face})
 
 		// Start at a random point of the Idle animation.
 		ps.mgr.AddComponent(e, fa.Randomise())
@@ -91,15 +92,15 @@ func notFound() game.FrameAnimation {
 	}
 }
 
-func (ps *PerformanceSystem) handleActorMoving(t event.Typer) {
-	ev := t.(*ActorMoving)
+func (ps *PerformanceSystem) handleParticipantMoving(t event.Typer) {
+	ev := t.(*ParticipantMoving)
 	e := ev.Entity
-	actor := ps.mgr.Component(e, "Actor").(*Actor)
+	participant := ps.mgr.Component(e, "Participant").(*Participant)
 	facer := ps.mgr.Component(e, "Facer").(*game.Facer)
 
 	// If the facing has changed, then we need to edit the FrameAnimation.
 	if ev.OldFacing != ev.NewFacing {
-		fa := get(animationId{actor.Profession, actor.Sex, game.PerformMove, facer.Face})
+		fa := get(animationId{participant.Profession, participant.Sex, game.PerformMove, facer.Face})
 		ps.mgr.AddComponent(e, &fa)
 	}
 
@@ -114,10 +115,18 @@ func (ps *PerformanceSystem) handleActorMoving(t event.Typer) {
 			Speed: ev.NewSpeed,
 		})
 		if ev.OldSpeed == 0 {
-			fa := get(animationId{actor.Profession, actor.Sex, game.PerformMove, facer.Face})
+			fa := get(animationId{participant.Profession, participant.Sex, game.PerformMove, facer.Face})
 			ps.mgr.AddComponent(e, &fa)
 		}
 	}
+}
+
+func (ps *PerformanceSystem) handleCharacterCelebrating(t event.Typer) {
+	ev := t.(*CharacterCelebrating)
+	e := ev.Entity
+	participant := ps.mgr.Component(e, "Participant").(*Participant)
+	fa := get(animationId{participant.Profession, participant.Sex, game.PerformVictory, geom.S})
+	ps.mgr.AddComponent(e, &fa)
 }
 
 type animationId struct {

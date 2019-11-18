@@ -37,26 +37,27 @@ type entity struct {
 func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 	raw := mgr.Get([]string{"Sprite", "Position"})
 
-	// Filter out any Hidden Entities.
-	visible := make([]ecs.Entity, 0, len(raw))
+	entities := make([]entity, 0, len(raw))
 	for _, e := range raw {
+		// Filter out any Hidden Entities.
 		if mgr.Component(e, "Hidden") != nil {
 			continue
 		}
-		visible = append(visible, e)
-	}
-
-	entities := make([]entity, len(visible))
-	for i, e := range visible {
-		entities[i] = entity{
-			s: mgr.Component(e, "Sprite").(*Sprite),
-			p: mgr.Component(e, "Position").(*Position),
+		// Don't attempt to render sprites without a Texture.
+		sprite := mgr.Component(e, "Sprite").(*Sprite)
+		if sprite.Texture == "" {
+			continue
 		}
+
+		entities = append(entities, entity{
+			s: sprite,
+			p: mgr.Component(e, "Position").(*Position),
+		})
 		if offset, ok := mgr.Component(e, "RenderOffset").(*RenderOffset); ok {
-			entities[i].offset = offset
+			entities[len(entities)-1].offset = offset
 		}
 		if scale, ok := mgr.Component(e, "Scale").(*Scale); ok {
-			entities[i].scale = scale
+			entities[len(entities)-1].scale = scale
 		}
 	}
 

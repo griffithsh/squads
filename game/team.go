@@ -17,8 +17,8 @@ const (
 	// NetworkControl ?
 )
 
-// Team is a Component that represents a grouping of Actors that work together,
-// and share a source of control.
+// Team is a Component that represents a grouping of Characters that work
+// together, and share a source of control.
 type Team struct {
 	ID      int64
 	Control TeamControl

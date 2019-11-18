@@ -11,16 +11,16 @@ import (
 )
 
 var (
-	cursorsTag        = "CURSORS_TAG"
-	liveActorsTag     = cursorsTag + ".LIVE_ACTORS"
-	pathNavigationTag = cursorsTag + ".PATH_NAVIGATION"
+	cursorsTag          = "CURSORS_TAG"
+	liveParticipantsTag = cursorsTag + ".LIVE_PARTICIPANTS"
+	pathNavigationTag   = cursorsTag + ".PATH_NAVIGATION"
 
 	invalidatedCursorsTag = cursorsTag + ".INVALIDATED"
 )
 
 // CursorManager controls the visibility of cursors in a game combat. Cursors
 // are visual highlights applied to Hexes. Examples might be permanent boundary
-// markers of every Actor, or temporary red/green blockouts when selecting a
+// markers of every Character, or temporary red/green blockouts when selecting a
 // place to target a skill. All Cursor Entities are tagged with "combat".
 type CursorManager struct {
 	mgr         *ecs.World
@@ -44,14 +44,14 @@ func NewCursorManager(mgr *ecs.World, bus *event.Bus, f *geom.Field) *CursorMana
 	bus.Subscribe(game.CombatBegan{}.Type(), cm.handleCombatBegan)
 	bus.Subscribe(DifferentHexSelected{}.Type(), cm.handleDifferentHexSelected)
 	bus.Subscribe(StateTransition{}.Type(), cm.handleCombatStateTransition)
-	t := ActorTurnChanged{}.Type()
-	bus.Subscribe(t, cm.handleActorTurnChanged)
+	t := ParticipantTurnChanged{}.Type()
+	bus.Subscribe(t, cm.handleParticipantTurnChanged)
 
 	return &cm
 }
 
 func (cm *CursorManager) handleCombatBegan(ev event.Typer) {
-	cm.showLiveActors()
+	cm.showLiveParticipants()
 }
 
 func (cm *CursorManager) handleDifferentHexSelected(ev event.Typer) {
@@ -66,8 +66,8 @@ func (cm *CursorManager) handleCombatStateTransition(ev event.Typer) {
 	cm.hidePathNavigationCursor()
 }
 
-func (cm *CursorManager) handleActorTurnChanged(ev event.Typer) {
-	atc := ev.(*ActorTurnChanged)
+func (cm *CursorManager) handleParticipantTurnChanged(ev event.Typer) {
+	atc := ev.(*ParticipantTurnChanged)
 	cm.turnToken = atc.Entity
 }
 
@@ -75,9 +75,9 @@ func (cm *CursorManager) handleActorTurnChanged(ev event.Typer) {
 func (cm *CursorManager) Update(elapsed time.Duration) {
 	var e ecs.Entity
 
-	e = cm.mgr.AnyTagged(liveActorsTag)
+	e = cm.mgr.AnyTagged(liveParticipantsTag)
 	if e != 0 && cm.mgr.HasTag(e, invalidatedCursorsTag) {
-		cm.repaintLiveActors()
+		cm.repaintLiveParticipants()
 	}
 	e = cm.mgr.AnyTagged(pathNavigationTag)
 	if e != 0 && cm.mgr.HasTag(e, invalidatedCursorsTag) {
@@ -85,37 +85,37 @@ func (cm *CursorManager) Update(elapsed time.Duration) {
 	}
 }
 
-const maxLiveActors int = 25
+const maxLiveParticipants int = 25
 
-func (cm *CursorManager) showLiveActors() {
-	for _, e := range cm.mgr.Tagged(liveActorsTag) {
+func (cm *CursorManager) showLiveParticipants() {
+	for _, e := range cm.mgr.Tagged(liveParticipantsTag) {
 		cm.mgr.DestroyEntity(e)
 	}
 
-	for i := 0; i < maxLiveActors; i++ {
+	for i := 0; i < maxLiveParticipants; i++ {
 		e := cm.mgr.NewEntity()
 		cm.mgr.Tag(e, "combat")
 
-		cm.mgr.Tag(e, liveActorsTag)
+		cm.mgr.Tag(e, liveParticipantsTag)
 		cm.mgr.Tag(e, invalidatedCursorsTag)
 	}
 }
 
-func (cm *CursorManager) hideLiveActors() {
-	for _, e := range cm.mgr.Tagged(liveActorsTag) {
+func (cm *CursorManager) hideLiveParticipants() {
+	for _, e := range cm.mgr.Tagged(liveParticipantsTag) {
 		cm.mgr.DestroyEntity(e)
 	}
 }
 
-func (cm *CursorManager) repaintLiveActors() {
-	entities := cm.mgr.Get([]string{"Actor"})
-	for i, slot := range cm.mgr.Tagged(liveActorsTag) {
+func (cm *CursorManager) repaintLiveParticipants() {
+	entities := cm.mgr.Get([]string{"Participant"})
+	for i, slot := range cm.mgr.Tagged(liveParticipantsTag) {
 		if i < len(entities) {
 			spr := game.Sprite{
 				Texture: "cursors.png",
 			}
-			actor := cm.mgr.Component(entities[i], "Actor").(*Actor)
-			switch actor.Size {
+			participant := cm.mgr.Component(entities[i], "Participant").(*Participant)
+			switch participant.Size {
 			case game.SMALL:
 				spr.X = 0
 				spr.Y = 0
@@ -170,17 +170,17 @@ func (cm *CursorManager) hidePathNavigationCursor() {
 }
 
 func (cm *CursorManager) repaintPathNavigationCursor() {
-	actor := cm.mgr.Component(cm.turnToken, "Actor").(*Actor)
+	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
 	pos := cm.mgr.Component(cm.turnToken, "Position").(*game.Position)
 
-	f := game.AdaptField(cm.field, actor.Size)
+	f := game.AdaptField(cm.field, participant.Size)
 
 	var start, goal geom.Key
 
 	sh := f.At(int(pos.Center.X), int(pos.Center.Y))
 	start = sh.Key()
 
-	exists := ExistsFuncFactory(cm.field, actor.Size)
+	exists := ExistsFuncFactory(cm.field, participant.Size)
 	costs := CostsFuncFactory(cm.field, cm.mgr, cm.turnToken)
 
 	type comps struct {
@@ -244,7 +244,7 @@ func (cm *CursorManager) repaintPathNavigationCursor() {
 					Layer: 10,
 				},
 			})
-			if int(step.Cost) > actor.ActionPoints.Cur {
+			if int(step.Cost) > participant.ActionPoints.Cur {
 				c[len(c)-1].s.X = 48
 			}
 		}

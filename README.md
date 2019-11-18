@@ -16,4 +16,4 @@ $GOPATH/bin/squads
 
 Pan the camera with the arrow keys. Zoom the camera with Z and X.
 
-Click on grassy areas to make the figure move. Click the finish turn button to control the next Actor.
+Click on grassy areas to make the figure move. Click the finish turn button to control the next Character.

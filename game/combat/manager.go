@@ -20,8 +20,10 @@ import (
 type State int
 
 const (
+	// Uninitialised is that default state of the combat.Manager.
+	Uninitialised State = iota
 	// AwaitingInputState is when the combat is waiting for the local, human player to make a move.
-	AwaitingInputState State = iota
+	AwaitingInputState
 	// SelectingTargetState is when the local player is picking a hex to use a skill on.
 	SelectingTargetState
 	// ExecutingState is when a move or action is being played out by a character.
@@ -30,6 +32,9 @@ const (
 	ThinkingState
 	// PreparingState is when no characters is prepared enough to make a move.
 	PreparingState
+	// Celebration occurs when there is only one team left, and they are
+	// celebrating their victory.
+	Celebration
 	// FadingIn is when the combat is first starting, or returning from a menu,
 	// and the curtain that obscures the scene change is disappearing.
 	FadingIn
@@ -50,7 +55,7 @@ type Manager struct {
 	hud     *HUD
 	cursors *CursorManager
 
-	turnToken            ecs.Entity // Whose turn is it?
+	turnToken            ecs.Entity // Whose turn is it? References an existing Entity.
 	selectingInteractive ecs.Entity // catches clicks on the field.
 
 	// Manager has both a state and a paused flag, so that state transition
@@ -67,6 +72,8 @@ type Manager struct {
 
 	intents      *IntentSystem
 	performances *PerformanceSystem
+
+	celebrations time.Duration
 }
 
 // NewManager creates a new combat Manager.
@@ -74,12 +81,12 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 	f := geom.NewField()
 
 	cm := Manager{
-		mgr:    mgr,
-		bus:    bus,
-		field:  f,
-		nav:    NewNavigator(bus),
-		camera: camera,
-		// state:   TODO: some-uninitialised-state
+		mgr:                  mgr,
+		bus:                  bus,
+		field:                f,
+		nav:                  NewNavigator(bus),
+		camera:               camera,
+		state:                Uninitialised,
 		hud:                  NewHUD(mgr, bus, camera.GetW(), camera.GetH()),
 		cursors:              NewCursorManager(mgr, bus, f),
 		selectingInteractive: mgr.NewEntity(),
@@ -89,10 +96,11 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 		paused: false,
 	}
 
-	cm.bus.Subscribe(ActorMovementConcluded{}.Type(), cm.handleMovementConcluded)
+	cm.bus.Subscribe(ParticipantMovementConcluded{}.Type(), cm.handleMovementConcluded)
 	cm.bus.Subscribe(EndTurnRequested{}.Type(), cm.handleEndTurnRequested)
 	cm.bus.Subscribe(MoveModeRequested{}.Type(), cm.handleMoveModeRequested)
 	cm.bus.Subscribe(CancelSkillRequested{}.Type(), cm.handleCancelSkillRequested)
+	cm.bus.Subscribe(AttemptingEscape{}.Type(), cm.handleAttemptingEscape)
 
 	return &cm
 }
@@ -170,7 +178,7 @@ func semiSort(m, n int, f *geom.Field) []*geom.Hex {
 	return result
 }
 
-// isBlocked determines if an Actor with an ActorSize of sz can be placed at m,n.
+// isBlocked determines if a Character with a CharacterSize of sz can be placed at m,n.
 func isBlocked(field *geom.Field, m, n int, sz game.CharacterSize, mgr *ecs.World) bool {
 	// blockages is a set of Keys that are taken by other things
 	blockages := map[geom.Key]struct{}{}
@@ -195,7 +203,7 @@ func isBlocked(field *geom.Field, m, n int, sz game.CharacterSize, mgr *ecs.Worl
 		return true
 	}
 
-	// occupy is the list of Hexes an Actor with sz and m,n will occupy.
+	// occupy is the list of Hexes a Character with sz and m,n will occupy.
 	occupy := hex.Hexes()
 
 	for _, h := range occupy {
@@ -210,112 +218,175 @@ func isBlocked(field *geom.Field, m, n int, sz game.CharacterSize, mgr *ecs.Worl
 	return false
 }
 
+// startProvider provides randomised starting hexes for combat Participants.
+// In game, something like this process should occur when additional
+// Participants are summoned. Necromancers summon Skeletons (this could be
+// ground targeted with a range) Gemini auto-summon their twin at the start of
+// combat (this sounds more like what's happening here) Druids summon beasts
+// (ground targeted again)
+type startProvider struct {
+	starts []geom.Key
+	used   map[int64][]*geom.Hex
+}
+
+func newStartProvider(starts []geom.Key) *startProvider {
+	rand.Shuffle(len(starts), func(i, j int) {
+		starts[i], starts[j] = starts[j], starts[i]
+	})
+	return &startProvider{
+		starts: starts,
+		used:   map[int64][]*geom.Hex{},
+	}
+}
+
+func (sp *startProvider) getNearby(team *game.Team, f *geom.Field) []*geom.Hex {
+	if _, ok := sp.used[team.ID]; !ok {
+		s := sp.starts[len(sp.used)]
+		sp.used[team.ID] = semiSort(s.M, s.N, f)
+	}
+	return sp.used[team.ID]
+}
+
+func (cm *Manager) getStart(sz game.CharacterSize, nearbys []*geom.Hex) *geom.Hex {
+	for _, h := range nearbys {
+		if isBlocked(cm.field, h.M, h.N, sz, cm.mgr) {
+			continue
+		}
+
+		return h
+	}
+	return nil
+}
+
+// CToP converts a Character to a Participant.
+func CToP(char *game.Character) *Participant {
+	return &Participant{
+		Name:       char.Name,
+		Level:      char.Level,
+		SmallIcon:  char.SmallIcon,
+		BigIcon:    char.BigIcon,
+		Size:       char.Size,
+		Profession: char.Profession,
+		Sex:        char.Sex,
+		PreparationThreshold: CurMax{
+			Max: char.PreparationThreshold,
+		},
+		ActionPoints: CurMax{
+			Max: char.ActionPoints,
+		},
+		// Health: CurMax{
+		// 	Cur: char.CurrentHealth,
+		// 	Max: char.MaxHealth,
+		// },
+		// Strength:     int(char.StrengthPerLevel * float64(char.Level)),
+		// Dexterity:    0,
+		// Intelligence: 0,
+		// Vitality:     0,
+	}
+}
+
+// createParticipation adds a new Entity to participate in combat based on a Character.
+func (cm *Manager) createParticipation(char *game.Character, team *game.Team, h *geom.Hex) {
+	e := cm.mgr.NewEntity()
+	cm.mgr.Tag(e, "combat")
+
+	// Add Participant Component.
+	participant := CToP(char)
+	participant.Character = 0 // FIXME: need Entity of Character that "owns" this Participant.
+	participant.ActionPoints.Cur = participant.ActionPoints.Max
+	participant.Status = Alive
+	cm.mgr.AddComponent(e, participant)
+
+	// Add Team.
+	cm.mgr.AddComponent(e, team)
+
+	// Add Position.
+	f := game.AdaptField(cm.field, char.Size)
+	start := f.Get(h.M, h.N)
+	cm.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: start.X(),
+			Y: start.Y(),
+		},
+		Layer: 10,
+	})
+
+	// Add Obstacle.
+	o := game.Obstacle{
+		M:            h.M,
+		N:            h.N,
+		ObstacleType: game.SmallCharacter,
+	}
+	switch char.Size {
+	case game.MEDIUM:
+		o.ObstacleType = game.MediumCharacter
+	case game.LARGE:
+		o.ObstacleType = game.LargeCharacter
+	}
+	cm.mgr.AddComponent(e, &o)
+
+	// Add Facer Component.
+	cm.mgr.AddComponent(e, &game.Facer{Face: geom.S})
+}
+
 // Begin should be called at the start of an engagement to set up components
 // necessary for the combat.
 // TODO: Begin should be provided with information about the squads and the
 // terrain to fight on.
-func (cm *Manager) Begin() {
-	var keys []geom.Key = geom.MByN(8, 24)
+func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
+	var keys []geom.Key = geom.MByN(rand.Intn(3)+6, rand.Intn(7)+20)
 	cm.field.Load(keys)
 	cm.setState(FadingIn)
 	e := cm.mgr.NewEntity()
 	cm.mgr.Tag(e, "combat")
 	cm.mgr.AddComponent(e, &game.DiagonalMatrixWipe{
+		W: 1024, H: 768, // FIXME: need access to screen size
 		Obscuring: false, // ergo revealing
-		W:         1024,
-		H:         768,
 		OnComplete: func() {
 			cm.setState(PreparingState)
 		},
 	})
-	/*
-		At the start of Combat, we need to add a sprite and position component to
-		every actor, because a Combat should be the thing responsible for deciding
-		how to render an actor on the field.
-	*/
 	cm.camera.Center(cm.field.Width()/2, cm.field.Height()/2)
 
+	// Debug hacky code to add some terrain.
 	cm.addGrass()
 	cm.addTrees()
 
 	// TODO:
-	// There is some entity which stores info about a "level", and produces artifacts that can be used by the combat Manager.
-	// It should produce the shape of the level, and the terrain of each hex (grass, water, blocked by tree etc).
-	// It should also produce starting positions for teams...
-	// Some other entity should produce an opponent team for the player's squad to fight _on_ this level.
+	// There is some entity which stores info about a "level", and produces
+	// artifacts that can be used by the combat Manager. It should produce the
+	// shape of the level, and the terrain of each hex (grass, water, blocked by
+	// tree etc). It should also produce starting positions for teams... Some
+	// other entity should produce an opponent team for the player's squad to
+	// fight _on_ this level.
 
-	// List of start locations.
-	levelStarts := []geom.Key{
+	// FIXME: Hard-coded list of start locations.
+	sp := newStartProvider([]geom.Key{
 		{M: 6, N: 18},
 		{M: 2, N: 8},
-	}
-	rand.Shuffle(len(levelStarts), func(i, j int) {
-		levelStarts[i], levelStarts[j] = levelStarts[j], levelStarts[i]
 	})
-	usedStarts := map[int64][]*geom.Hex{}
 
-	// Then each team takes a turn placing an Actor from largest to smallest,
-	// working through the semi-shuffled list of results.
-
-	// In game, something like this process should occur when additional Actors are summoned.
-	// Necromancers summon Skeletons (this could be ground targeted with a range)
-	// Gemini auto-summon their twin at the start of combat (this sounds more like what's happening here)
-	// Druids summon beasts (ground targeted again)
-
-	// Upgrade all Actors with components for combat.
-	entities := cm.mgr.Get([]string{"Actor"})
-	for _, e := range entities {
-		// This shows something that is perhaps an architectural flaw - who
-		// does the Actor really belong to here? Having a list of Actors is
-		// relevant when we want to show a combat board and when we want to
-		// serialise a savegame. Is it appropriate that the combat really
-		// "owns" the Actors?
-		cm.mgr.Tag(e, "combat")
-
-		actor := cm.mgr.Component(e, "Actor").(*Actor)
+	participatingTeams := map[int64]struct{}{}
+	for _, e := range participatingSquads {
 		team := cm.mgr.Component(e, "Team").(*game.Team)
+		participatingTeams[team.ID] = struct{}{}
+	}
 
-		if _, ok := usedStarts[team.ID]; !ok {
-			s := levelStarts[len(usedStarts)]
-			usedStarts[team.ID] = semiSort(s.M, s.N, cm.field)
-		}
-		nearbys := usedStarts[team.ID]
-
-		// Pick positions for the Actors.
-		for _, h := range nearbys {
-			if isBlocked(cm.field, h.M, h.N, actor.Size, cm.mgr) {
-				continue
-			}
-
-			f := game.AdaptField(cm.field, actor.Size)
-			start := f.Get(h.M, h.N)
-			cm.mgr.AddComponent(e, &game.Position{
-				Center: game.Center{
-					X: start.X(),
-					Y: start.Y(),
-				},
-				Layer: 10,
-			})
-
-			o := game.Obstacle{
-				M:            h.M,
-				N:            h.N,
-				ObstacleType: game.SmallActor,
-			}
-			switch actor.Size {
-			case game.MEDIUM:
-				o.ObstacleType = game.MediumActor
-			case game.LARGE:
-				o.ObstacleType = game.LargeActor
-			}
-			cm.mgr.AddComponent(e, &o)
-
-			break
+	// Create a Participating Entity for every Character we get.
+	// For every Character ...
+	entities := cm.mgr.Get([]string{"Character", "Team"})
+	for _, e := range entities {
+		// ... that's in a participating team ...
+		team := cm.mgr.Component(e, "Team").(*game.Team)
+		if _, ok := participatingTeams[team.ID]; !ok {
+			continue
 		}
 
-		actor.PreparationThreshold.Cur = 0
-		actor.ActionPoints.Cur = actor.ActionPoints.Max
-		cm.mgr.AddComponent(e, &game.Facer{Face: geom.S})
+		char := cm.mgr.Component(e, "Character").(*game.Character)
+		near := sp.getNearby(team, cm.field)
+		h := cm.getStart(char.Size, near)
+
+		cm.createParticipation(char, team, h)
 	}
 
 	// Announce that the Combat has begun.
@@ -325,20 +396,21 @@ func (cm *Manager) Begin() {
 // End should be called at the resolution of a combat encounter. It removes
 // combat-specific Components and Entities.
 func (cm *Manager) End() {
-	// TODO: When there are summoned units, then in Manager.End(), we will need
-	// to remove them. Potentialy a new Component called "Impermanent", or
-	// "Summoned" could be added to these, and we would need to Destroy these
-	// Entities before removing combat-only Components from the other Actors.
+	// It is no-one's turn.
+	cm.turnToken = 0
+	cm.setState(Uninitialised)
 
+	// Destroy Entities that were added for combat.
+	for _, e := range cm.mgr.Tagged("combat") {
+		cm.mgr.DestroyEntity(e)
+	}
+
+	// Remove Components that are only relevant to combat.
 	removals := []string{
-		"Sprite",
-		"RenderOffset",
-		"Scale",
-		"Position",
 		"Obstacle",
 		"Facer",
 	}
-	for _, e := range cm.mgr.Get([]string{"Actor"}) {
+	for _, e := range cm.mgr.Get([]string{"Participant"}) {
 		for _, comp := range removals {
 			cm.mgr.RemoveType(e, comp)
 		}
@@ -376,6 +448,32 @@ func (cm *Manager) Run(elapsed time.Duration) {
 		return
 	}
 
+	// Do a check for a victory condition.
+	if cm.state == PreparingState || cm.state == AwaitingInputState {
+		remainingTeams := map[int64]struct{}{}
+		victoriousEntities := []ecs.Entity{}
+		for _, e := range cm.mgr.Get([]string{"Participant", "Team"}) {
+			participant := cm.mgr.Component(e, "Participant").(*Participant)
+			if participant.Status != Alive {
+				continue
+			}
+			team := cm.mgr.Component(e, "Team").(*game.Team)
+			remainingTeams[team.ID] = struct{}{}
+			victoriousEntities = append(victoriousEntities, e)
+		}
+		if len(remainingTeams) < 2 {
+			// TODO: set Victory, Escape, Defeat banner
+			// ...
+
+			for _, e := range victoriousEntities {
+				cm.bus.Publish(&CharacterCelebrating{Entity: e})
+			}
+
+			cm.setState(Celebration)
+			return
+		}
+	}
+
 	switch cm.state {
 	case PreparingState:
 		// Use the elapsed time as a base for the preparation increment.
@@ -384,58 +482,81 @@ func (cm *Manager) Run(elapsed time.Duration) {
 		increment := int(cm.incrementAccumulator)
 		cm.incrementAccumulator -= float64(increment)
 
-		// But if any Actor requires less than that, then only use that amount
-		// instead, so that no actor overshoots its PreparationThreshold.
-		for _, e := range cm.mgr.Get([]string{"Actor"}) {
-			actor := cm.mgr.Component(e, "Actor").(*Actor)
+		// But if any Character requires less than that, then only use that amount
+		// instead, so that no Character overshoots its PreparationThreshold.
+		for _, e := range cm.mgr.Get([]string{"Participant"}) {
+			participant := cm.mgr.Component(e, "Participant").(*Participant)
 
-			if actor.PreparationThreshold.Max-actor.PreparationThreshold.Cur < increment {
-				increment = actor.PreparationThreshold.Max - actor.PreparationThreshold.Cur
+			if participant.Status != Alive {
+				continue
+			}
+
+			if participant.PreparationThreshold.Max-participant.PreparationThreshold.Cur < increment {
+				increment = participant.PreparationThreshold.Max - participant.PreparationThreshold.Cur
 			}
 		}
 
-		// prepared captures all Actors who are fully prepared to take their
+		// prepared captures all Participants who are fully prepared to take their
 		// turn now.
 		prepared := []ecs.Entity{}
 
 		// Now that we know the increment, we can apply it with confidence that
 		// we will not over-prepare.
-		for _, e := range cm.mgr.Get([]string{"Actor"}) {
-			actor := cm.mgr.Component(e, "Actor").(*Actor)
+		for _, e := range cm.mgr.Get([]string{"Participant"}) {
+			participant := cm.mgr.Component(e, "Participant").(*Participant)
+			if participant.Status != Alive {
+				continue
+			}
 
-			actor.PreparationThreshold.Cur += increment
+			participant.PreparationThreshold.Cur += increment
 			cm.bus.Publish(&StatModified{
 				Entity: e,
 				Stat:   game.PrepStat,
 				Amount: increment,
 			})
 
-			if actor.PreparationThreshold.Cur >= actor.PreparationThreshold.Max {
+			if participant.PreparationThreshold.Cur >= participant.PreparationThreshold.Max {
 				prepared = append(prepared, e)
 			}
 		}
 
-		// N.B. It's non-deterministic whose turn it is when multiple Actors
-		// finish preparing at the same time.
+		// N.B. It's non-deterministic whose turn it is when multiple
+		// Participants finish preparing at the same time.
 		if len(prepared) > 0 {
 			e := prepared[0]
-			actor := cm.mgr.Component(e, "Actor").(*Actor)
+			participant := cm.mgr.Component(e, "Participant").(*Participant)
 
 			ev := &StatModified{
 				Entity: e,
 				Stat:   game.PrepStat,
-				Amount: -actor.PreparationThreshold.Cur,
+				Amount: -participant.PreparationThreshold.Cur,
 			}
-			actor.PreparationThreshold.Cur = 0
+			participant.PreparationThreshold.Cur = 0
 			cm.bus.Publish(ev)
 
 			cm.turnToken = e
-			cm.bus.Publish(&ActorTurnChanged{Entity: cm.turnToken})
+			cm.bus.Publish(&ParticipantTurnChanged{Entity: cm.turnToken})
 			cm.setState(AwaitingInputState)
 		}
 
 	case ExecutingState:
 		cm.nav.Update(cm.mgr, elapsed)
+	case Celebration:
+		// Celebrate for a time ...
+		cm.celebrations += elapsed
+		if cm.celebrations > time.Second*2 {
+			cm.celebrations = 0
+			cm.mgr.AddComponent(cm.mgr.NewEntity(), &game.DiagonalMatrixWipe{
+				W: 1024, H: 768, // FIXME: need access to screen dimensions!
+				Obscuring: true,
+				OnComplete: func() {
+					// TODO: where do we get the "Entities" that represent the opposing Squads?
+					cm.bus.Publish(&game.CombatConcluded{
+						// Results: ...
+					})
+				},
+			})
+		}
 	}
 
 	cm.intents.Update()
@@ -459,10 +580,10 @@ func (cm *Manager) MousePosition(x, y int) {
 		// the hex that the mouse is hovering over has changed. It might be a
 		// path of hexes because we're selecting a place to move to, or it might
 		// be a glob of hexes because we're targeting an AoE fireball spell etc.
-		actor := cm.mgr.Component(cm.turnToken, "Actor").(*Actor)
+		participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
 		var newSelected *geom.Key
 
-		f := game.AdaptField(cm.field, actor.Size)
+		f := game.AdaptField(cm.field, participant.Size)
 		h := f.At(int(wx), int(wy))
 		if h != nil {
 			k := h.Key()
@@ -497,14 +618,15 @@ func (cm *Manager) MousePosition(x, y int) {
 	cm.wy = wy
 }
 
-// syncActorObstacle updates the an Actor's Obstacle to be synchronised with its
-// position. It should be called when an Actor has completed a move.
-func (cm *Manager) syncActorObstacle(evt *ActorMovementConcluded) {
-	actor := cm.mgr.Component(evt.Entity, "Actor").(*Actor)
+// syncParticipantObstacle updates the Participant's Obstacle to be synchronised
+// with its position. It should be called when a Participant has completed a
+// move.
+func (cm *Manager) syncParticipantObstacle(evt *ParticipantMovementConcluded) {
+	participant := cm.mgr.Component(evt.Entity, "Participant").(*Participant)
 	obstacle := cm.mgr.Component(evt.Entity, "Obstacle").(*game.Obstacle)
 	position := cm.mgr.Component(evt.Entity, "Position").(*game.Position)
 
-	h := game.AdaptField(cm.field, actor.Size).At(int(position.Center.X), int(position.Center.Y))
+	h := game.AdaptField(cm.field, participant.Size).At(int(position.Center.X), int(position.Center.Y))
 	k := h.Key()
 	obstacle.M = k.M
 	obstacle.N = k.N
@@ -512,7 +634,7 @@ func (cm *Manager) syncActorObstacle(evt *ActorMovementConcluded) {
 
 func (cm *Manager) handleMovementConcluded(t event.Typer) {
 	// FIXME: Should Obstacle movement be handled by an "obstacle" system instead?
-	cm.syncActorObstacle(t.(*ActorMovementConcluded))
+	cm.syncParticipantObstacle(t.(*ParticipantMovementConcluded))
 
 	cm.setState(AwaitingInputState)
 	cm.MousePosition(cm.x, cm.y)
@@ -520,12 +642,12 @@ func (cm *Manager) handleMovementConcluded(t event.Typer) {
 
 func (cm *Manager) handleEndTurnRequested(event.Typer) {
 	// Reset to maximum AP.
-	actor := cm.mgr.Component(cm.turnToken, "Actor").(*Actor)
-	actor.ActionPoints.Cur = actor.ActionPoints.Max
+	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
+	participant.ActionPoints.Cur = participant.ActionPoints.Max
 
 	// Remove turnToken
 	cm.turnToken = 0
-	cm.bus.Publish(&ActorTurnChanged{Entity: cm.turnToken})
+	cm.bus.Publish(&ParticipantTurnChanged{Entity: cm.turnToken})
 
 	cm.setState(PreparingState)
 }
@@ -536,6 +658,22 @@ func (cm *Manager) handleMoveModeRequested(event.Typer) {
 
 func (cm *Manager) handleCancelSkillRequested(event.Typer) {
 	cm.setState(AwaitingInputState)
+}
+
+func (cm *Manager) handleAttemptingEscape(t event.Typer) {
+	ev := t.(*AttemptingEscape)
+	participant := cm.mgr.Component(ev.Entity, "Participant").(*Participant)
+	participant.Status = Escaped
+
+	cm.mgr.RemoveComponent(ev.Entity, &game.Sprite{})
+	cm.mgr.RemoveComponent(ev.Entity, &game.Obstacle{})
+	cm.mgr.RemoveComponent(ev.Entity, &game.Position{})
+	cm.mgr.RemoveComponent(ev.Entity, &game.Facer{})
+
+	cm.turnToken = 0
+	cm.bus.Publish(&ParticipantTurnChanged{Entity: cm.turnToken})
+
+	cm.setState(PreparingState)
 }
 
 func (cm *Manager) addGrass() {

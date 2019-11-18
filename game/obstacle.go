@@ -6,12 +6,12 @@ type ObstacleType int
 //go:generate stringer -type=ObstacleType
 
 // ObstacleTypes represent the thing that is the obstacle. These might be static
-// obstacle types, like a Tree or Rock, or another Actor could be an Obstacle
+// obstacle types, like a Tree or Rock, or another Character could be an Obstacle
 // too.
 const (
-	SmallActor ObstacleType = iota
-	MediumActor
-	LargeActor
+	SmallCharacter ObstacleType = iota
+	MediumCharacter
+	LargeCharacter
 	Crevasse
 	Tree
 )

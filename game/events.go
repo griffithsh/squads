@@ -1,6 +1,7 @@
 package game
 
 import (
+	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 )
 
@@ -14,6 +15,15 @@ const (
 	PrepStat
 )
 
+type CombatResult int
+
+//go:generate stringer -type=CombatResult
+const (
+	Victorious CombatResult = iota
+	Defeated
+	Escaped
+)
+
 // CombatBegan occurs when a Combat has been initialised.
 type CombatBegan struct{}
 
@@ -23,7 +33,9 @@ func (CombatBegan) Type() event.Type {
 }
 
 // CombatConcluded occurs when a Combat is over.
-type CombatConcluded struct{}
+type CombatConcluded struct {
+	Results map[ecs.Entity]CombatResult
+}
 
 // Type of the Event.
 func (CombatConcluded) Type() event.Type {

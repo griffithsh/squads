@@ -29,18 +29,18 @@ var professionSpeeds = map[game.CharacterProfession]time.Duration{
 
 // Update Movers.
 func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
-	entities := mgr.Get([]string{"Mover", "Actor", "Position"})
+	entities := mgr.Get([]string{"Mover", "Participant", "Position"})
 
 	for _, e := range entities {
 		mover := mgr.Component(e, "Mover").(*Mover)
 		pos := mgr.Component(e, "Position").(*game.Position)
 		facer := mgr.Component(e, "Facer").(*game.Facer)
-		actor := mgr.Component(e, "Actor").(*Actor)
+		participant := mgr.Component(e, "Participant").(*Participant)
 
 		oldFace := facer.Face
 
 		speed := float64(250 * time.Millisecond)
-		if t, ok := professionSpeeds[actor.Profession]; ok {
+		if t, ok := professionSpeeds[participant.Profession]; ok {
 			speed = float64(t)
 		}
 
@@ -62,7 +62,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 				facer.Face = dir
 			}
 			if oldFace != facer.Face || 0 != mover.Speed {
-				nav.Publish(&ActorMoving{
+				nav.Publish(&ParticipantMoving{
 					Entity:    e,
 					NewSpeed:  mover.Speed,
 					OldSpeed:  0,
@@ -82,7 +82,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 
 			// Are we done?
 			if len(mover.Moves) == 0 {
-				nav.Publish(&ActorMoving{
+				nav.Publish(&ParticipantMoving{
 					Entity:    e,
 					NewSpeed:  0,
 					OldSpeed:  mover.Speed,
@@ -90,7 +90,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 					OldFacing: oldFace,
 				})
 				mgr.RemoveComponent(e, mover)
-				nav.Publish(&ActorMovementConcluded{Entity: e})
+				nav.Publish(&ParticipantMovementConcluded{Entity: e})
 				continue
 			}
 
@@ -117,7 +117,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 				facer.Face = dir
 			}
 			if oldFace != facer.Face || oldSpeed != mover.Speed {
-				nav.Publish(&ActorMoving{
+				nav.Publish(&ParticipantMoving{
 					Entity:    e,
 					NewSpeed:  mover.Speed,
 					OldSpeed:  oldSpeed,
