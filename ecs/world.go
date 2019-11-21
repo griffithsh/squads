@@ -110,6 +110,17 @@ func (mgr *World) AddComponent(e Entity, c Component) {
 	mgr.components[c.Type()][e] = c
 }
 
+// ListComponents returns the Component types that are present on the Entity.
+func (mgr *World) ListComponents(e Entity) []string {
+	result := []string{}
+	for ty, v := range mgr.components {
+		if _, ok := v[e]; ok {
+			result = append(result, ty)
+		}
+	}
+	return result
+}
+
 // RemoveType removes the Component of Type t from Entity e.
 func (mgr *World) RemoveType(e Entity, t string) {
 	delete(mgr.components[t], e)

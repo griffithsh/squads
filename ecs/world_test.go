@@ -1,6 +1,9 @@
 package ecs
 
-import "testing"
+import (
+	"reflect"
+	"testing"
+)
 
 func TestHasTag(t *testing.T) {
 	t.Run("nonexistant-entity", func(t *testing.T) {
@@ -49,5 +52,19 @@ func TestRemoveTag(t *testing.T) {
 
 	if len(mgr.Tagged("B")) != 2 {
 		t.Errorf("want one Entity tagged with B, got %d", len(mgr.Tagged("B")))
+	}
+}
+
+func TestListComponents(t *testing.T) {
+	mgr := NewWorld()
+	e := mgr.NewEntity()
+	mgr.AddComponent(e, &Parent{})
+	mgr.Tag(e, "Anything")
+
+	got := mgr.ListComponents(e)
+
+	want := []string{"Parent", "Tags"}
+	if !reflect.DeepEqual(got, want) {
+		t.Fatalf("want %v, got %v", want, got)
 	}
 }
