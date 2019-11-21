@@ -1,7 +1,6 @@
 package overworld
 
 import (
-	"fmt"
 	"math"
 	"math/rand"
 	"time"
@@ -43,16 +42,19 @@ func NewManager(mgr *ecs.World, bus *event.Bus) *Manager {
 func (m *Manager) handleTokensCollided(t event.Typer) {
 	ev := t.(*TokensCollided)
 	// TODO: camera focus event for ev.At
-	fmt.Println("Tokens Collided", ev)
 
 	m.setState(FadingOut)
 	m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
 		W: 1024, H: 768, // FIXME: need access to screen dimensions
 		Obscuring: true,
 		OnComplete: func() {
+			squads := []ecs.Entity{}
+			for _, e := range []ecs.Entity{ev.E1, ev.E2} {
+				token := m.mgr.Component(e, "Token").(*Token)
+				squads = append(squads, token.Squad)
+			}
 			m.bus.Publish(&CombatInitiated{
-				// TODO!
-				// info about baddy squad
+				Squads: squads,
 				// info about terrain
 			})
 		},
@@ -124,6 +126,28 @@ func (m *Manager) setState(new State) {
 	m.state = new
 }
 
+func (m *Manager) playerSquad() ecs.Entity {
+
+	for _, e := range m.mgr.Tagged("player") {
+		if m.mgr.Component(e, "Squad") != nil {
+			return e
+		}
+	}
+	return 0
+}
+
+func (m *Manager) playerTeam() *game.Team {
+	for _, e := range m.mgr.Get([]string{"Squad"}) {
+		if !m.mgr.HasTag(e, "player") {
+			continue
+		}
+		// Found the player's squad.
+		team := m.mgr.Component(e, "Team").(*game.Team)
+		return team
+	}
+	return nil
+}
+
 // Begin a Manager session.
 func (m *Manager) Begin(d Data) {
 	m.setState(AwaitingInputState)
@@ -179,70 +203,105 @@ func (m *Manager) Begin(d Data) {
 		})
 	}
 
-	var start *Node
-
-	// We're using go's random map iteration to pick *a* starting node.
-	for _, n := range d.Nodes {
-		start = n
-		break
+	keys := make([]geom.Key, 0, len(d.Nodes))
+	for k := range d.Nodes {
+		keys = append(keys, k)
 	}
-
-	// Publish a focus event for the camera.
-	// TODO: ...
-
-	// Add a Token to mark where the player's squad is.
-	position := m.mgr.Component(start.e, "Position").(*game.Position)
-	e := m.mgr.NewEntity()
-	m.mgr.Tag(e, "overworld")
-	m.mgr.Tag(e, "player")
-	m.mgr.AddComponent(e, game.NewTeam())
-	m.mgr.AddComponent(e, &game.Sprite{
-		Texture: "figure.png",
-
-		X: 0, Y: 0,
-		W: 24, H: 48,
-		OffsetY: -16,
-	})
-	m.mgr.AddComponent(e, &game.Position{
-		Center: game.Center{
-			X: position.Center.X, Y: position.Center.Y,
-		},
-		Layer: position.Layer + 1,
-	})
-	m.mgr.AddComponent(e, &Token{
-		Key: start.ID,
-	})
-
-	// We're using go's random map iteration to pick *a* starting node.
-	for _, n := range d.Nodes {
-		start = n
-		break
-	}
-
-	// Add a Token to mark where the baddies squad is.
-	position = m.mgr.Component(start.e, "Position").(*game.Position)
-	e = m.mgr.NewEntity()
-	m.mgr.Tag(e, "overworld")
-	m.mgr.Tag(e, "baddy")
+	rand.Shuffle(len(keys), func(i, j int) { keys[i], keys[j] = keys[j], keys[i] })
 	enemies := game.NewTeam()
-	enemies.Control = game.ComputerControl
-	m.mgr.AddComponent(e, enemies)
-	m.mgr.AddComponent(e, &game.Sprite{
-		Texture: "figure.png",
+	for i, k := range keys {
+		start := d.Nodes[k]
+		position := m.mgr.Component(start.e, "Position").(*game.Position)
+		if i == 0 {
+			// Add a Token to mark where the player's squad is.
+			e := m.mgr.NewEntity()
+			m.mgr.Tag(e, "overworld")
+			m.mgr.Tag(e, "player")
+			m.mgr.AddComponent(e, m.playerTeam())
+			m.mgr.AddComponent(e, &game.Sprite{
+				Texture: "figure.png",
 
-		X: 0, Y: 0,
-		W: 24, H: 48,
-		OffsetY: -16,
-	})
-	m.mgr.AddComponent(e, &game.Position{
-		Center: game.Center{
-			X: position.Center.X, Y: position.Center.Y,
-		},
-		Layer: position.Layer + 1,
-	})
-	m.mgr.AddComponent(e, &Token{
-		Key: start.ID,
-	})
+				X: 0, Y: 0,
+				W: 24, H: 48,
+				OffsetY: -16,
+			})
+			m.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: position.Center.X, Y: position.Center.Y,
+				},
+				Layer: position.Layer + 1,
+			})
+			m.mgr.AddComponent(e, &Token{
+				Key:   start.ID,
+				Squad: m.playerSquad(),
+			})
+
+			// Publish a focus event for the camera.
+			// TODO: ...
+
+			continue
+		}
+
+		roll := rand.Intn(6)
+		if roll == 0 {
+			// Luckily, no baddies on this node.
+			continue
+		}
+
+		// Add a Squad, and visible Token to the overworld map.
+		e := m.mgr.NewEntity()
+		m.mgr.Tag(e, "overworld")
+		enemies.Control = game.ComputerControl
+		m.mgr.AddComponent(e, enemies)
+		m.mgr.AddComponent(e, &game.Squad{})
+		squad := m.mgr.Component(e, "Squad").(*game.Squad)
+		m.mgr.AddComponent(e, &game.Sprite{
+			Texture: "wolf.png",
+
+			X: 0, Y: 0,
+			W: 64, H: 64,
+		})
+		m.mgr.AddComponent(e, enemies)
+		m.mgr.AddComponent(e, &game.Position{
+			Center: game.Center{
+				X: position.Center.X, Y: position.Center.Y,
+			},
+			Layer: position.Layer + 1,
+		})
+		m.mgr.AddComponent(e, &Token{
+			Key:   start.ID,
+			Squad: e,
+		})
+
+		// Add a baddy to this Squad.
+		e = m.mgr.NewEntity()
+		m.mgr.Tag(e, "overworld")
+		m.mgr.Tag(e, "baddy")
+		m.mgr.AddComponent(e, enemies)
+		m.mgr.AddComponent(e, &game.Character{
+			Name:                 "Dumble",
+			Size:                 game.SMALL,
+			Sex:                  game.Male,
+			Profession:           game.Skeleton,
+			PreparationThreshold: 1650,
+			ActionPoints:         60,
+			SmallIcon: game.Sprite{
+				Texture: "hud.png",
+				X:       0,
+				Y:       154,
+				W:       26,
+				H:       26,
+			},
+			BigIcon: game.Sprite{
+				Texture: "hud.png",
+				X:       0,
+				Y:       102,
+				W:       52,
+				H:       52,
+			},
+		})
+		squad.Members = append(squad.Members, e)
+	}
 
 	// Now show connections between the nodes.
 	type connectKey struct {

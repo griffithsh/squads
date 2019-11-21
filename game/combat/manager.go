@@ -74,6 +74,8 @@ type Manager struct {
 	performances *PerformanceSystem
 
 	celebrations time.Duration
+
+	squads []ecs.Entity
 }
 
 // NewManager creates a new combat Manager.
@@ -286,13 +288,13 @@ func CToP(char *game.Character) *Participant {
 }
 
 // createParticipation adds a new Entity to participate in combat based on a Character.
-func (cm *Manager) createParticipation(char *game.Character, team *game.Team, h *geom.Hex) {
+func (cm *Manager) createParticipation(charEntity ecs.Entity, char *game.Character, team *game.Team, h *geom.Hex) {
 	e := cm.mgr.NewEntity()
 	cm.mgr.Tag(e, "combat")
 
 	// Add Participant Component.
 	participant := CToP(char)
-	participant.Character = 0 // FIXME: need Entity of Character that "owns" this Participant.
+	participant.Character = charEntity
 	participant.ActionPoints.Cur = participant.ActionPoints.Max
 	participant.Status = Alive
 	cm.mgr.AddComponent(e, participant)
@@ -366,27 +368,21 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 		{M: 2, N: 8},
 	})
 
-	participatingTeams := map[int64]struct{}{}
+	entities := []ecs.Entity{}
 	for _, e := range participatingSquads {
-		team := cm.mgr.Component(e, "Team").(*game.Team)
-		participatingTeams[team.ID] = struct{}{}
+		cm.squads = append(cm.squads, e)
+		squad := cm.mgr.Component(e, "Squad").(*game.Squad)
+		entities = append(entities, squad.Members...)
 	}
 
-	// Create a Participating Entity for every Character we get.
-	// For every Character ...
-	entities := cm.mgr.Get([]string{"Character", "Team"})
+	// Create a Participating Entity for every Character we have.
 	for _, e := range entities {
-		// ... that's in a participating team ...
 		team := cm.mgr.Component(e, "Team").(*game.Team)
-		if _, ok := participatingTeams[team.ID]; !ok {
-			continue
-		}
-
 		char := cm.mgr.Component(e, "Character").(*game.Character)
 		near := sp.getNearby(team, cm.field)
 		h := cm.getStart(char.Size, near)
 
-		cm.createParticipation(char, team, h)
+		cm.createParticipation(e, char, team, h)
 	}
 
 	// Announce that the Combat has begun.
@@ -399,6 +395,7 @@ func (cm *Manager) End() {
 	// It is no-one's turn.
 	cm.turnToken = 0
 	cm.setState(Uninitialised)
+	cm.squads = cm.squads[:0]
 
 	// Destroy Entities that were added for combat.
 	for _, e := range cm.mgr.Tagged("combat") {
@@ -409,6 +406,7 @@ func (cm *Manager) End() {
 	removals := []string{
 		"Obstacle",
 		"Facer",
+		"Participant",
 	}
 	for _, e := range cm.mgr.Get([]string{"Participant"}) {
 		for _, comp := range removals {
@@ -550,10 +548,31 @@ func (cm *Manager) Run(elapsed time.Duration) {
 				W: 1024, H: 768, // FIXME: need access to screen dimensions!
 				Obscuring: true,
 				OnComplete: func() {
-					// TODO: where do we get the "Entities" that represent the opposing Squads?
-					cm.bus.Publish(&game.CombatConcluded{
-						// Results: ...
-					})
+					cc := game.CombatConcluded{
+						Results: map[ecs.Entity]game.CombatResult{},
+					}
+					for _, squadEntity := range cm.squads {
+						squad := cm.mgr.Component(squadEntity, "Squad").(*game.Squad)
+						cc.Results[squadEntity] = game.Defeated
+						for _, e1 := range cm.mgr.Get([]string{"Participant"}) {
+							participant := cm.mgr.Component(e1, "Participant").(*Participant)
+
+							for _, e2 := range squad.Members {
+								if participant.Character == e2 {
+									participant := cm.mgr.Component(e1, "Participant").(*Participant)
+									if participant.Status == Alive {
+										cc.Results[squadEntity] = game.Victorious
+										goto nextSquad
+									} else if participant.Status == Escaped {
+										cc.Results[squadEntity] = game.Escaped
+									}
+
+								}
+							}
+						}
+					nextSquad:
+					}
+					cm.bus.Publish(&cc)
 				},
 			})
 		}

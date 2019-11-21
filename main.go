@@ -144,11 +144,19 @@ func setup(w, h int) (*system, error) {
 			if mgr.HasTag(e, "player") {
 				switch result {
 				case game.Escaped:
-					// others are removed
+					// player escaped, others are removed
+					for otherEntity := range ev.Results {
+						if e == otherEntity {
+							continue
+						}
+						mgr.DestroyEntity(otherEntity)
+
+					}
 				case game.Defeated:
 					// game is over
+					mgr.DestroyEntity(e)
 				}
-			} else if result == game.Defeated {
+			} else if result != game.Victorious {
 				// baddy squad goes away.
 				mgr.DestroyEntity(e)
 			}
@@ -161,23 +169,22 @@ func setup(w, h int) (*system, error) {
 	})
 	bus.Subscribe(overworld.CombatInitiated{}.Type(), func(t event.Typer) {
 		s.overworld.Disable()
-		teams := []ecs.Entity{}
-		for _, e := range s.mgr.Get([]string{"Squad"}) {
-			teams = append(teams, e)
-		}
-		s.combat.Begin(teams)
+		ev := t.(*overworld.CombatInitiated)
+		s.combat.Begin(ev.Squads)
 	})
 
 	// Create a Squad Entity.
 	e := mgr.NewEntity()
 	mgr.Tag(e, "player")
 	mgr.AddComponent(e, &game.Squad{})
+	squad := mgr.Component(e, "Squad").(*game.Squad)
 	players := game.NewTeam()
 	mgr.AddComponent(e, players)
 
 	// Create Characters to Populate the player's Squad.
 	e = mgr.NewEntity()
 	mgr.AddComponent(e, players)
+	squad.Members = append(squad.Members, e)
 	mgr.AddComponent(e, &game.Character{
 		Name:                 "Samithee",
 		Size:                 game.SMALL,
@@ -202,6 +209,8 @@ func setup(w, h int) (*system, error) {
 	})
 
 	e = mgr.NewEntity()
+	mgr.AddComponent(e, players)
+	squad.Members = append(squad.Members, e)
 	mgr.AddComponent(e, &game.Character{
 		Name:                 "Timjamen",
 		Size:                 game.SMALL,
@@ -225,89 +234,6 @@ func setup(w, h int) (*system, error) {
 			H:       52,
 		},
 	})
-	mgr.AddComponent(e, players)
-
-	// FIXME: remove these "baddies" from this func, should be provided by a factory-like thing.
-	e = mgr.NewEntity()
-	mgr.Tag(e, "baddies")
-	baddies := game.NewTeam()
-	mgr.AddComponent(e, baddies)
-	mgr.AddComponent(e, &game.Squad{})
-
-	e = mgr.NewEntity()
-	mgr.AddComponent(e, &game.Character{
-		Name:                 "Wolf",
-		Size:                 game.MEDIUM,
-		Sex:                  game.Male,
-		Profession:           game.Wolf,
-		PreparationThreshold: 1103,
-		ActionPoints:         80,
-		SmallIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       52,
-			Y:       76,
-			W:       26,
-			H:       26,
-		},
-		BigIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       52,
-			Y:       24,
-			W:       52,
-			H:       52,
-		},
-	})
-	mgr.AddComponent(e, baddies)
-
-	e = mgr.NewEntity()
-	mgr.AddComponent(e, &game.Character{
-		Name:                 "Giant",
-		Size:                 game.LARGE,
-		Sex:                  game.Male,
-		Profession:           game.Giant,
-		PreparationThreshold: 1301,
-		ActionPoints:         120,
-		SmallIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       104,
-			Y:       76,
-			W:       26,
-			H:       26,
-		},
-		BigIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       104,
-			Y:       24,
-			W:       52,
-			H:       52,
-		},
-	})
-	mgr.AddComponent(e, baddies)
-
-	e = mgr.NewEntity()
-	mgr.AddComponent(e, &game.Character{
-		Name:                 "Dumble",
-		Size:                 game.SMALL,
-		Sex:                  game.Male,
-		Profession:           game.Skeleton,
-		PreparationThreshold: 1650,
-		ActionPoints:         60,
-		SmallIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       0,
-			Y:       154,
-			W:       26,
-			H:       26,
-		},
-		BigIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       0,
-			Y:       102,
-			W:       52,
-			H:       52,
-		},
-	})
-	mgr.AddComponent(e, baddies)
 
 	// Start combat!
 	// TODO: pass a thing that has enough information to construct a Field and

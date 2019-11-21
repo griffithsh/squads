@@ -32,7 +32,7 @@ type Complete event.Type
 
 // CombatInitiated occurs when the player has met another squad for combat.
 type CombatInitiated struct {
-	// info about the baddies?
+	Squads []ecs.Entity
 	// info about the terrain?
 }
 
