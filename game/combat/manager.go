@@ -573,6 +573,17 @@ func (cm *Manager) Run(elapsed time.Duration) {
 					nextSquad:
 					}
 					cm.bus.Publish(&cc)
+					for _, e := range cm.mgr.Get([]string{"Token", "Position"}) {
+						if !cm.mgr.HasTag(e, "player") {
+							continue
+						}
+						p := cm.mgr.Component(e, "Position").(*game.Position)
+						cm.bus.Publish(&game.SomethingInteresting{
+							X: p.Center.X,
+							Y: p.Center.Y,
+						})
+						break
+					}
 				},
 			})
 		}

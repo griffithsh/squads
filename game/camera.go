@@ -21,6 +21,7 @@ func NewCamera(width, height int, bus *event.Bus) *Camera {
 		screenH: height,
 	}
 	bus.Subscribe(WindowSizeChanged{}.Type(), c.handleWindowSizeChanged)
+	bus.Subscribe(SomethingInteresting{}.Type(), c.handleSomethingInteresting)
 	return &c
 }
 
@@ -63,6 +64,11 @@ func (c *Camera) GetH() int {
 func (c *Camera) handleWindowSizeChanged(e event.Typer) {
 	wsc := e.(*WindowSizeChanged)
 	c.screenW, c.screenH = wsc.NewW, wsc.NewH
+}
+
+func (c *Camera) handleSomethingInteresting(t event.Typer) {
+	ev := t.(*SomethingInteresting)
+	c.Center(ev.X, ev.Y)
 }
 
 // GetZoom of the camera.

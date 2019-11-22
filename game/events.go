@@ -53,3 +53,14 @@ type WindowSizeChanged struct {
 func (WindowSizeChanged) Type() event.Type {
 	return "game.WindowSizeChanged"
 }
+
+// SomethingInteresting occurs when something interesting has occurred. The
+// camera may want to focus on X,Y.
+type SomethingInteresting struct {
+	X, Y float64
+}
+
+// Type of the Event.
+func (SomethingInteresting) Type() event.Type {
+	return "game.SomethingInteresting"
+}

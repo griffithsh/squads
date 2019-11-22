@@ -41,7 +41,12 @@ func NewManager(mgr *ecs.World, bus *event.Bus) *Manager {
 
 func (m *Manager) handleTokensCollided(t event.Typer) {
 	ev := t.(*TokensCollided)
-	// TODO: camera focus event for ev.At
+
+	p := m.mgr.Component(ev.E1, "Position").(*game.Position)
+	m.bus.Publish(&game.SomethingInteresting{
+		X: p.Center.X,
+		Y: p.Center.Y,
+	})
 
 	m.setState(FadingOut)
 	m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
@@ -237,7 +242,10 @@ func (m *Manager) Begin(d Data) {
 			})
 
 			// Publish a focus event for the camera.
-			// TODO: ...
+			m.bus.Publish(&game.SomethingInteresting{
+				X: position.Center.X,
+				Y: position.Center.Y,
+			})
 
 			continue
 		}
