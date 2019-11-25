@@ -15,9 +15,10 @@ type row struct {
 // DiagonalMatrixWipe obscures the scene by animating in squares of curtain
 // in a diagonal pattern.
 type DiagonalMatrixWipe struct {
-	W, H       int
-	Obscuring  bool
-	OnComplete func()
+	W, H          int
+	Obscuring     bool
+	OnComplete    func()
+	OnInitialised func() // Useful for a !Obscuring to load stuff while the screen is hidden.
 
 	age time.Duration
 }
@@ -114,6 +115,10 @@ func (cs *SceneWipeSystem) Update(mgr *ecs.World, elapsed time.Duration) {
 				children = append(children, block, anim1, anim2)
 			}
 			mgr.AddComponent(e, &ecs.Children{Value: children})
+
+			if dmw.OnInitialised != nil {
+				dmw.OnInitialised()
+			}
 		}
 
 		percentage := float64(dmw.age) / float64(complete)

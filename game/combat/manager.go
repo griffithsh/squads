@@ -347,46 +347,47 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 		OnComplete: func() {
 			cm.setState(PreparingState)
 		},
+		OnInitialised: func() {
+			// Debug hacky code to add some terrain.
+			cm.addGrass()
+			cm.addTrees()
+
+			// TODO:
+			// There is some entity which stores info about a "level", and produces
+			// artifacts that can be used by the combat Manager. It should produce the
+			// shape of the level, and the terrain of each hex (grass, water, blocked by
+			// tree etc). It should also produce starting positions for teams... Some
+			// other entity should produce an opponent team for the player's squad to
+			// fight _on_ this level.
+
+			// FIXME: Hard-coded list of start locations.
+			sp := newStartProvider([]geom.Key{
+				{M: 6, N: 18},
+				{M: 2, N: 8},
+			})
+
+			entities := []ecs.Entity{}
+			for _, e := range participatingSquads {
+				cm.squads = append(cm.squads, e)
+				squad := cm.mgr.Component(e, "Squad").(*game.Squad)
+				entities = append(entities, squad.Members...)
+			}
+
+			// Create a Participating Entity for every Character we have.
+			for _, e := range entities {
+				team := cm.mgr.Component(e, "Team").(*game.Team)
+				char := cm.mgr.Component(e, "Character").(*game.Character)
+				near := sp.getNearby(team, cm.field)
+				h := cm.getStart(char.Size, near)
+
+				cm.createParticipation(e, char, team, h)
+			}
+
+			// Announce that the Combat has begun.
+			cm.bus.Publish(&game.CombatBegan{})
+		},
 	})
 	cm.camera.Center(cm.field.Width()/2, cm.field.Height()/2)
-
-	// Debug hacky code to add some terrain.
-	cm.addGrass()
-	cm.addTrees()
-
-	// TODO:
-	// There is some entity which stores info about a "level", and produces
-	// artifacts that can be used by the combat Manager. It should produce the
-	// shape of the level, and the terrain of each hex (grass, water, blocked by
-	// tree etc). It should also produce starting positions for teams... Some
-	// other entity should produce an opponent team for the player's squad to
-	// fight _on_ this level.
-
-	// FIXME: Hard-coded list of start locations.
-	sp := newStartProvider([]geom.Key{
-		{M: 6, N: 18},
-		{M: 2, N: 8},
-	})
-
-	entities := []ecs.Entity{}
-	for _, e := range participatingSquads {
-		cm.squads = append(cm.squads, e)
-		squad := cm.mgr.Component(e, "Squad").(*game.Squad)
-		entities = append(entities, squad.Members...)
-	}
-
-	// Create a Participating Entity for every Character we have.
-	for _, e := range entities {
-		team := cm.mgr.Component(e, "Team").(*game.Team)
-		char := cm.mgr.Component(e, "Character").(*game.Character)
-		near := sp.getNearby(team, cm.field)
-		h := cm.getStart(char.Size, near)
-
-		cm.createParticipation(e, char, team, h)
-	}
-
-	// Announce that the Combat has begun.
-	cm.bus.Publish(&game.CombatBegan{})
 }
 
 // End should be called at the resolution of a combat encounter. It removes

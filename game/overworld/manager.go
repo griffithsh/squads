@@ -363,10 +363,12 @@ func (m *Manager) Enable() {
 	if m.dormant {
 		m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
 			W: 1024, H: 768, // FIXME: need access to screen dimensions
+			OnInitialised: func() {
+				for _, e := range m.mgr.Tagged("overworld") {
+					m.mgr.RemoveComponent(e, &game.Hidden{})
+				}
+			},
 		})
-		for _, e := range m.mgr.Tagged("overworld") {
-			m.mgr.RemoveComponent(e, &game.Hidden{})
-		}
 		m.dormant = false
 	}
 }
