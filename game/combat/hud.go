@@ -629,11 +629,16 @@ func (hud *HUD) hideTurnQueue() {
 	if e == 0 {
 		return
 	}
+
 	hud.mgr.DestroyEntity(e)
 }
 
 func (hud *HUD) repaintTurnQueue() {
-	parent := hud.mgr.AnyTagged(turnQueueTag)
+	parents := hud.mgr.Tagged(turnQueueTag)
+	if len(parents) > 1 {
+		panic("incorrect use of " + turnQueueTag + ": multiple found")
+	}
+	parent := parents[0]
 	if parent == 0 {
 		return
 	}
