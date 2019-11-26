@@ -388,6 +388,7 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 		},
 	})
 	cm.camera.Center(cm.field.Width()/2, cm.field.Height()/2)
+	cm.hud.Enable()
 }
 
 // End should be called at the resolution of a combat encounter. It removes
@@ -414,6 +415,7 @@ func (cm *Manager) End() {
 			cm.mgr.RemoveType(e, comp)
 		}
 	}
+	cm.hud.Disable()
 }
 
 // Pause the combat Manager, ignoring input and not rendering the state of the
