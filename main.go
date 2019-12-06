@@ -334,6 +334,7 @@ func (s *system) run(screen *ebiten.Image) error {
 	s.traversals.Update(s.mgr, elapsed)
 	s.wipes.Update(s.mgr, elapsed)
 	s.hierarchy.Update()
+	s.camera.Update(elapsed)
 
 	w, h := float64(screen.Bounds().Max.X-screen.Bounds().Min.X), float64(screen.Bounds().Max.Y-screen.Bounds().Min.Y)
 

@@ -1,6 +1,11 @@
 package game
 
-import "github.com/griffithsh/squads/event"
+import (
+	"math"
+	"time"
+
+	"github.com/griffithsh/squads/event"
+)
 
 // Camera is a class that stores focus and zoom values
 type Camera struct {
@@ -8,6 +13,9 @@ type Camera struct {
 	focusX, focusY   float64
 	zoom             float64
 	screenW, screenH int
+
+	panning          bool
+	targetX, targetY float64
 }
 
 // NewCamera creates a new camera for a view of the requested width and height
@@ -23,6 +31,23 @@ func NewCamera(width, height int, bus *event.Bus) *Camera {
 	bus.Subscribe(WindowSizeChanged{}.Type(), c.handleWindowSizeChanged)
 	bus.Subscribe(SomethingInteresting{}.Type(), c.handleSomethingInteresting)
 	return &c
+}
+
+// Update the camera so that interesting things can be panned to.
+func (c *Camera) Update(elapsed time.Duration) {
+	if !c.panning {
+		return
+	}
+
+	a, b := c.targetX-c.focusX, c.targetY-c.focusY
+	hypo := math.Sqrt(a*a + b*b)
+	if hypo <= 1.0 {
+		// end
+		c.panning = false
+		c.Center(c.targetX, c.targetY)
+		return
+	}
+	c.Center(a/8+c.focusX, b/6+c.focusY)
 }
 
 // Center the view on a point.
@@ -68,7 +93,8 @@ func (c *Camera) handleWindowSizeChanged(e event.Typer) {
 
 func (c *Camera) handleSomethingInteresting(t event.Typer) {
 	ev := t.(*SomethingInteresting)
-	c.Center(ev.X, ev.Y)
+	c.panning = true
+	c.targetX, c.targetY = ev.X, ev.Y
 }
 
 // GetZoom of the camera.

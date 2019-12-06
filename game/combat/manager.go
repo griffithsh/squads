@@ -387,7 +387,10 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 			cm.bus.Publish(&game.CombatBegan{})
 		},
 	})
-	cm.camera.Center(cm.field.Width()/2, cm.field.Height()/2)
+	cm.bus.Publish(&game.SomethingInteresting{
+		X: cm.field.Width() / 2,
+		Y: cm.field.Height() / 2,
+	})
 	cm.hud.Enable()
 }
 
