@@ -155,7 +155,13 @@ func (m *Manager) playerTeam() *game.Team {
 
 // Begin a Manager session.
 func (m *Manager) Begin(d Data) {
-	m.setState(AwaitingInputState)
+	m.setState(FadingIn)
+	m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
+		W: 1024, H: 768, // FIXME: how big is screen?
+		OnComplete: func() {
+			m.setState(AwaitingInputState)
+		},
+	})
 	// Add new entities for the squad, overworld terrain, etc?
 	// TODO
 

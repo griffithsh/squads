@@ -1,7 +1,6 @@
 package embark
 
 import (
-	"fmt"
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
@@ -44,7 +43,6 @@ func (em *Manager) Begin() {
 		X: 0, Y: 0,
 		W: 64, H: 64,
 	})
-	fmt.Println("embark.Manager::Begin", em)
 	em.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
 			X: 64 + 12,
@@ -56,9 +54,16 @@ func (em *Manager) Begin() {
 	em.mgr.AddComponent(e, &ui.Interactive{
 		W: 48, H: 48,
 		Trigger: func(x, y float64) {
-			fmt.Println("embarking!")
 			em.setupSquad()
 			em.bus.Publish(&SquadSelected{})
+			e := em.mgr.NewEntity()
+			em.mgr.AddComponent(e, &game.DiagonalMatrixWipe{
+				W: 1024, H: 768, // FIXME: how big is screen?
+				Obscuring: true,
+				OnComplete: func() {
+					em.bus.Publish(&Embarked{})
+				},
+			})
 		},
 	})
 }
@@ -71,7 +76,6 @@ func (em *Manager) End() {
 }
 
 func (em *Manager) handleWindowSizeChanged(e event.Typer) {
-	fmt.Println("handleWindowSizeChanged", e)
 	wsc := e.(*game.WindowSizeChanged)
 	em.screenW, em.screenH = wsc.NewW, wsc.NewH
 }

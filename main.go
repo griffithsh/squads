@@ -175,7 +175,7 @@ func setup(w, h int) (*system, error) {
 		ev := t.(*overworld.CombatInitiated)
 		s.combat.Begin(ev.Squads)
 	})
-	bus.Subscribe(embark.SquadSelected{}.Type(), func(t event.Typer) {
+	bus.Subscribe(embark.Embarked{}.Type(), func(t event.Typer) {
 		s.embark.End()
 		rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 		s.overworld.Begin(data(rng))
