@@ -180,6 +180,12 @@ func setup(w, h int) (*system, error) {
 		rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 		s.overworld.Begin(data(rng))
 	})
+	s.bus.Publish(&game.WindowSizeChanged{
+		OldW: 0,
+		OldH: 0,
+		NewW: w,
+		NewH: h,
+	})
 
 	// Init combat?
 	// TODO: pass a thing that has enough information to construct a Field and

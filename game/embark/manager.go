@@ -58,7 +58,7 @@ func (em *Manager) Begin() {
 			em.bus.Publish(&SquadSelected{})
 			e := em.mgr.NewEntity()
 			em.mgr.AddComponent(e, &game.DiagonalMatrixWipe{
-				W: 1024, H: 768, // FIXME: how big is screen?
+				W: em.screenW, H: em.screenH,
 				Obscuring: true,
 				OnComplete: func() {
 					em.bus.Publish(&Embarked{})

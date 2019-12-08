@@ -20,6 +20,8 @@ type Manager struct {
 	mgr *ecs.World
 	bus *event.Bus
 
+	screenW, screenH int
+
 	dormant bool
 	state   State
 }
@@ -35,6 +37,7 @@ func NewManager(mgr *ecs.World, bus *event.Bus) *Manager {
 	}
 
 	bus.Subscribe(TokensCollided{}.Type(), m.handleTokensCollided)
+	bus.Subscribe(game.WindowSizeChanged{}.Type(), m.handleWindowSizeChanged)
 
 	return &m
 }
@@ -50,7 +53,7 @@ func (m *Manager) handleTokensCollided(t event.Typer) {
 
 	m.setState(FadingOut)
 	m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
-		W: 1024, H: 768, // FIXME: need access to screen dimensions
+		W: m.screenW, H: m.screenH,
 		Obscuring: true,
 		OnComplete: func() {
 			squads := []ecs.Entity{}
@@ -64,6 +67,11 @@ func (m *Manager) handleTokensCollided(t event.Typer) {
 			})
 		},
 	})
+}
+
+func (m *Manager) handleWindowSizeChanged(e event.Typer) {
+	wsc := e.(*game.WindowSizeChanged)
+	m.screenW, m.screenH = wsc.NewW, wsc.NewH
 }
 
 // randInHex generates a random point in an overworld hex.
@@ -157,7 +165,7 @@ func (m *Manager) playerTeam() *game.Team {
 func (m *Manager) Begin(d Data) {
 	m.setState(FadingIn)
 	m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
-		W: 1024, H: 768, // FIXME: how big is screen?
+		W: m.screenW, H: m.screenH,
 		OnComplete: func() {
 			m.setState(AwaitingInputState)
 		},
@@ -368,7 +376,7 @@ func (m *Manager) Begin(d Data) {
 func (m *Manager) Enable() {
 	if m.dormant {
 		m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
-			W: 1024, H: 768, // FIXME: need access to screen dimensions
+			W: m.screenW, H: m.screenH,
 			OnInitialised: func() {
 				for _, e := range m.mgr.Tagged("overworld") {
 					m.mgr.RemoveComponent(e, &game.Hidden{})

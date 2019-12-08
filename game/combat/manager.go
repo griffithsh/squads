@@ -67,7 +67,7 @@ type Manager struct {
 
 	x, y             int       // where the mouse last was in screen coordinates
 	wx, wy           float64   // where the mouse last was in world coordinates
-	screenW, screenH float64   // most recent dimensions of the window
+	screenW, screenH int       // most recent dimensions of the window
 	selectedHex      *geom.Key // most recent hex selected
 
 	intents      *IntentSystem
@@ -103,6 +103,7 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 	cm.bus.Subscribe(MoveModeRequested{}.Type(), cm.handleMoveModeRequested)
 	cm.bus.Subscribe(CancelSkillRequested{}.Type(), cm.handleCancelSkillRequested)
 	cm.bus.Subscribe(AttemptingEscape{}.Type(), cm.handleAttemptingEscape)
+	cm.bus.Subscribe(game.WindowSizeChanged{}.Type(), cm.handleWindowSizeChanged)
 
 	return &cm
 }
@@ -342,7 +343,7 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 	e := cm.mgr.NewEntity()
 	cm.mgr.Tag(e, "combat")
 	cm.mgr.AddComponent(e, &game.DiagonalMatrixWipe{
-		W: 1024, H: 768, // FIXME: need access to screen size
+		W: cm.screenW, H: cm.screenH,
 		Obscuring: false, // ergo revealing
 		OnComplete: func() {
 			cm.setState(PreparingState)
@@ -551,7 +552,7 @@ func (cm *Manager) Run(elapsed time.Duration) {
 		if cm.celebrations > time.Second*2 {
 			cm.celebrations = 0
 			cm.mgr.AddComponent(cm.mgr.NewEntity(), &game.DiagonalMatrixWipe{
-				W: 1024, H: 768, // FIXME: need access to screen dimensions!
+				W: cm.screenW, H: cm.screenH,
 				Obscuring: true,
 				OnComplete: func() {
 					cc := game.CombatConcluded{
@@ -710,6 +711,11 @@ func (cm *Manager) handleAttemptingEscape(t event.Typer) {
 	cm.bus.Publish(&ParticipantTurnChanged{Entity: cm.turnToken})
 
 	cm.setState(PreparingState)
+}
+
+func (cm *Manager) handleWindowSizeChanged(e event.Typer) {
+	wsc := e.(*game.WindowSizeChanged)
+	cm.screenW, cm.screenH = wsc.NewW, wsc.NewH
 }
 
 func (cm *Manager) addGrass() {
