@@ -16,6 +16,7 @@ import (
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/game/combat"
+	"github.com/griffithsh/squads/game/embark"
 	"github.com/griffithsh/squads/game/overworld"
 	"github.com/hajimehoshi/ebiten"
 )
@@ -32,8 +33,9 @@ type system struct {
 	wipes        *game.SceneWipeSystem
 	interactives *ui.InteractiveSystem
 
-	combat    *combat.Manager
+	embark    *embark.Manager
 	overworld *overworld.Manager
+	combat    *combat.Manager
 
 	mgr          *ecs.World
 	camera       *game.Camera
@@ -123,8 +125,9 @@ func setup(w, h int) (*system, error) {
 		anim:       &game.AnimationSystem{},
 		traversals: &overworld.TraversalSystem{},
 		collisions: overworld.NewCollisionSystem(mgr, bus),
-		combat:     combat.NewManager(mgr, camera, bus),
+		embark:     embark.NewManager(mgr, bus),
 		overworld:  overworld.NewManager(mgr, bus),
+		combat:     combat.NewManager(mgr, camera, bus),
 
 		mgr:    mgr,
 		camera: camera,
@@ -172,79 +175,20 @@ func setup(w, h int) (*system, error) {
 		ev := t.(*overworld.CombatInitiated)
 		s.combat.Begin(ev.Squads)
 	})
-
-	// Create a Squad Entity.
-	e := mgr.NewEntity()
-	mgr.Tag(e, "player")
-	mgr.AddComponent(e, &game.Squad{})
-	squad := mgr.Component(e, "Squad").(*game.Squad)
-	players := game.NewTeam()
-	mgr.AddComponent(e, players)
-
-	// Create Characters to Populate the player's Squad.
-	e = mgr.NewEntity()
-	mgr.AddComponent(e, players)
-	squad.Members = append(squad.Members, e)
-	mgr.AddComponent(e, &game.Character{
-		Name:                 "Samithee",
-		Size:                 game.SMALL,
-		Sex:                  game.Male,
-		Profession:           game.Villager,
-		PreparationThreshold: 701,
-		ActionPoints:         100,
-		SmallIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       0,
-			Y:       76,
-			W:       26,
-			H:       26,
-		},
-		BigIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       0,
-			Y:       24,
-			W:       52,
-			H:       52,
-		},
+	bus.Subscribe(embark.SquadSelected{}.Type(), func(t event.Typer) {
+		s.embark.End()
+		rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+		s.overworld.Begin(data(rng))
 	})
 
-	e = mgr.NewEntity()
-	mgr.AddComponent(e, players)
-	squad.Members = append(squad.Members, e)
-	mgr.AddComponent(e, &game.Character{
-		Name:                 "Timjamen",
-		Size:                 game.SMALL,
-		Sex:                  game.Male,
-		Profession:           game.Villager,
-		PreparationThreshold: 699,
-		ActionPoints:         100,
-
-		SmallIcon: game.Sprite{
-			Texture: "portraits.png",
-			X:       178,
-			Y:       230,
-			W:       26,
-			H:       26,
-		},
-		BigIcon: game.Sprite{
-			Texture: "portraits.png",
-			X:       204,
-			Y:       204,
-			W:       52,
-			H:       52,
-		},
-	})
-
-	// Start combat!
+	// Init combat?
 	// TODO: pass a thing that has enough information to construct a Field and
 	// the enemies you'll face in the combat
-	teams := []ecs.Entity{}
-	s.combat.Begin(teams)
-	s.combat.End()
+	// teams := []ecs.Entity{}
+	// s.combat.Begin(teams)
+	// s.combat.End()
 
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-	s.overworld.Begin(data(rng))
-	// s.overworld.Pause()
+	s.embark.Begin()
 
 	last = time.Now()
 
