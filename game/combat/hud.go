@@ -162,11 +162,12 @@ func (hud *HUD) handleCombatStateTransition(ev event.Typer) {
 	}
 
 	cst := ev.(*StateTransition)
-	hud.lastCombatState = cst.New
+	hud.lastCombatState = cst.New.Value()
+	n, o := cst.New.Value(), cst.Old.Value()
 
-	if cst.New == AwaitingInputState || cst.New == SelectingTargetState {
+	if n == AwaitingInputState || n == SelectingTargetState {
 		hud.showSkills()
-		if cst.Old != AwaitingInputState && cst.Old != SelectingTargetState {
+		if o != AwaitingInputState && o != SelectingTargetState {
 			hud.showCurrentParticipant()
 			hud.showCurrentParticipantStats()
 		}
@@ -510,10 +511,34 @@ func (hud *HUD) repaintSkills() {
 				interactive: &ui.Interactive{
 					W: 24, H: 24,
 					Trigger: func(x, y float64) {
-						hud.bus.Publish(&MoveModeRequested{})
+						hud.bus.Publish(&SkillRequested{
+							Code: game.BasicMovement,
+						})
 					},
 				},
 			},
+
+			// weapon 1
+			1: skill{
+				sprite: game.Sprite{
+					Texture: "hud.png",
+					X:       160,
+					Y:       0,
+					W:       24,
+					H:       24,
+				},
+				interactive: &ui.Interactive{
+					W: 24, H: 24,
+					Trigger: func(x, y float64) {
+						hud.bus.Publish(&SkillRequested{
+							Code: game.BasicAttack,
+						})
+					},
+				},
+			},
+			// 2 - weapon 2
+			// 8 - weapon 3
+			// 9 - weapon 4
 
 			// Consumables
 			7: skill{

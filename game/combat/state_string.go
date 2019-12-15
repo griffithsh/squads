@@ -11,17 +11,18 @@ func _() {
 	_ = x[Uninitialised-0]
 	_ = x[AwaitingInputState-1]
 	_ = x[SelectingTargetState-2]
-	_ = x[ExecutingState-3]
-	_ = x[ThinkingState-4]
-	_ = x[PreparingState-5]
-	_ = x[Celebration-6]
-	_ = x[FadingIn-7]
-	_ = x[FadingOut-8]
+	_ = x[ConfirmingSelectedTargetState-3]
+	_ = x[ExecutingState-4]
+	_ = x[ThinkingState-5]
+	_ = x[PreparingState-6]
+	_ = x[Celebration-7]
+	_ = x[FadingIn-8]
+	_ = x[FadingOut-9]
 }
 
-const _State_name = "UninitialisedAwaitingInputStateSelectingTargetStateExecutingStateThinkingStatePreparingStateCelebrationFadingInFadingOut"
+const _State_name = "UninitialisedAwaitingInputStateSelectingTargetStateConfirmingSelectedTargetStateExecutingStateThinkingStatePreparingStateCelebrationFadingInFadingOut"
 
-var _State_index = [...]uint8{0, 13, 31, 51, 65, 78, 92, 103, 111, 120}
+var _State_index = [...]uint8{0, 13, 31, 51, 80, 94, 107, 121, 132, 140, 149}
 
 func (i State) String() string {
 	if i < 0 || i >= State(len(_State_index)-1) {

@@ -14,35 +14,6 @@ import (
 	"github.com/griffithsh/squads/ui"
 )
 
-//go:generate stringer -type=State
-
-// State enumerates the States that a Combat could be in.
-type State int
-
-const (
-	// Uninitialised is that default state of the combat.Manager.
-	Uninitialised State = iota
-	// AwaitingInputState is when the combat is waiting for the local, human player to make a move.
-	AwaitingInputState
-	// SelectingTargetState is when the local player is picking a hex to use a skill on.
-	SelectingTargetState
-	// ExecutingState is when a move or action is being played out by a character.
-	ExecutingState
-	// ThinkingState is when an AI-controller player is waiting to get command.
-	ThinkingState
-	// PreparingState is when no characters is prepared enough to make a move.
-	PreparingState
-	// Celebration occurs when there is only one team left, and they are
-	// celebrating their victory.
-	Celebration
-	// FadingIn is when the combat is first starting, or returning from a menu,
-	// and the curtain that obscures the scene change is disappearing.
-	FadingIn
-	//FadingOut is when the combat is going to another scene, and the curtain
-	//that obscures the scene change is appearing.
-	FadingOut
-)
-
 // Manager is a game-mode. It processes turns-based Combat until one or the other
 // team is knocked out.
 type Manager struct {
@@ -61,7 +32,7 @@ type Manager struct {
 	// Manager has both a state and a paused flag, so that state transition
 	// logic can be isolated from pausing.
 	paused bool
-	state  State
+	state  StateContext
 
 	incrementAccumulator float64
 
@@ -100,29 +71,66 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 
 	cm.bus.Subscribe(ParticipantMovementConcluded{}.Type(), cm.handleMovementConcluded)
 	cm.bus.Subscribe(EndTurnRequested{}.Type(), cm.handleEndTurnRequested)
-	cm.bus.Subscribe(MoveModeRequested{}.Type(), cm.handleMoveModeRequested)
 	cm.bus.Subscribe(CancelSkillRequested{}.Type(), cm.handleCancelSkillRequested)
 	cm.bus.Subscribe(AttemptingEscape{}.Type(), cm.handleAttemptingEscape)
 	cm.bus.Subscribe(game.WindowSizeChanged{}.Type(), cm.handleWindowSizeChanged)
+	cm.bus.Subscribe(SkillRequested{}.Type(), cm.handleSkillRequested)
 
 	return &cm
 }
 
+func (cm *Manager) handleSelectedHex(x, y float64) {
+	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
+	field := game.AdaptField(cm.field, participant.Size)
+	obstacle := cm.mgr.Component(cm.turnToken, "Obstacle").(*game.Obstacle)
+	origin := field.Get(obstacle.M, obstacle.N)
+	selected := field.At(int(x), int(y))
+
+	ctx := cm.state.(*selectingTargetState)
+	if ctx.Skill == game.BasicMovement {
+		cm.mgr.AddComponent(cm.turnToken, &game.MoveIntent{X: x, Y: y})
+		cm.setState(ExecutingState)
+		return
+	}
+
+	// FIXME: For now we know that if this is not pathfinding, then it must be
+	// the basic attack, because I haven't added any other skills, but this is
+	// not supportable long term. There needs to be a way of finding out when
+	// the click on the hex is valid or not given the context of the skill.
+	// TODO: Extract skill info from ctx.Skill.
+	if ctx.Skill != game.BasicAttack {
+		panic("skills other than BasicAttack are not implemented")
+	}
+	adjacent := false
+	for _, key := range origin.Key().Adjacent() {
+		if key == selected.Key() {
+			adjacent = true
+			break
+		}
+	}
+	if !adjacent {
+		return
+	}
+	fmt.Println("adjacent")
+	cm.setState(AwaitingInputState)
+}
+
 // setState is the canonical way to change the CombatState.
-func (cm *Manager) setState(state State) {
-	if state == cm.state {
+func (cm *Manager) setState(stateContext StateContext) {
+	state := stateContext.Value()
+	if state == cm.state.Value() {
 		return
 	}
 	ev := StateTransition{
 		Old: cm.state,
-		New: state,
+		New: stateContext,
 	}
-	cm.state = state
+	cm.state = stateContext
 
 	// When entering Selecting Target State, we need to add an Interactive to
 	// cover all areas of the field, so that we can convert those clicks to
 	// MoveIntents.
-	if state == SelectingTargetState {
+	if state.Value() == SelectingTargetState {
 		// Using the max float value as the size and a position of 0,0 should
 		// work in all cases, and it's a lot faster than figuring out the actual
 		// dimensions of the field. The goal here is to catch *any* clicks in
@@ -130,12 +138,9 @@ func (cm *Manager) setState(state State) {
 		cm.mgr.AddComponent(cm.selectingInteractive, &game.Position{})
 		cm.mgr.AddComponent(cm.selectingInteractive, &ui.Interactive{
 			W: math.MaxFloat64, H: math.MaxFloat64,
-			Trigger: func(x, y float64) {
-				cm.mgr.AddComponent(cm.turnToken, &game.MoveIntent{X: x, Y: y})
-				cm.setState(ExecutingState)
-			},
+			Trigger: cm.handleSelectedHex,
 		})
-	} else if ev.Old == SelectingTargetState {
+	} else if ev.Old.Value() == SelectingTargetState {
 		cm.mgr.RemoveComponent(cm.selectingInteractive, &ui.Interactive{})
 	}
 
@@ -607,7 +612,7 @@ func (cm *Manager) Run(elapsed time.Duration) {
 func (cm *Manager) MousePosition(x, y int) {
 	wx, wy := cm.camera.ScreenToWorld(x, y)
 
-	if cm.state == SelectingTargetState {
+	if cm.state.Value() == SelectingTargetState {
 		// When we're selecting a target, we need to highlight some hexes to
 		// show where we're targeting.
 		// If the change in position means we're positioned over a new hex,
@@ -635,7 +640,8 @@ func (cm *Manager) MousePosition(x, y int) {
 				cm.selectedHex = newSelected
 
 				cm.bus.Publish(&DifferentHexSelected{
-					K: cm.selectedHex,
+					K:       cm.selectedHex,
+					Context: cm.state,
 				})
 
 			}
@@ -643,7 +649,8 @@ func (cm *Manager) MousePosition(x, y int) {
 			cm.selectedHex = newSelected
 
 			cm.bus.Publish(&DifferentHexSelected{
-				K: cm.selectedHex,
+				K:       cm.selectedHex,
+				Context: cm.state,
 			})
 		}
 	}
@@ -689,10 +696,6 @@ func (cm *Manager) handleEndTurnRequested(event.Typer) {
 	cm.setState(PreparingState)
 }
 
-func (cm *Manager) handleMoveModeRequested(event.Typer) {
-	cm.setState(SelectingTargetState)
-}
-
 func (cm *Manager) handleCancelSkillRequested(event.Typer) {
 	cm.setState(AwaitingInputState)
 }
@@ -716,6 +719,13 @@ func (cm *Manager) handleAttemptingEscape(t event.Typer) {
 func (cm *Manager) handleWindowSizeChanged(e event.Typer) {
 	wsc := e.(*game.WindowSizeChanged)
 	cm.screenW, cm.screenH = wsc.NewW, wsc.NewH
+}
+
+func (cm *Manager) handleSkillRequested(e event.Typer) {
+	evt := e.(*SkillRequested)
+	cm.setState(&selectingTargetState{
+		Skill: evt.Code,
+	})
 }
 
 func (cm *Manager) addGrass() {

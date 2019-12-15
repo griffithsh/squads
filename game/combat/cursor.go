@@ -59,7 +59,15 @@ func (cm *CursorManager) handleDifferentHexSelected(ev event.Typer) {
 
 	cm.selectedKey = value.K
 
-	cm.showPathNavigationCursor()
+	// if we're navigating
+	switch value.Context.Value() {
+	case SelectingTargetState:
+		ctx := value.Context.(*selectingTargetState)
+		switch ctx.Skill {
+		case game.BasicMovement:
+			cm.showPathNavigationCursor()
+		}
+	}
 }
 
 func (cm *CursorManager) handleCombatStateTransition(ev event.Typer) {

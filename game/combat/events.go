@@ -12,7 +12,7 @@ import (
 
 // StateTransition occurs when the combat's state changes
 type StateTransition struct {
-	Old, New State
+	Old, New StateContext
 }
 
 // Type of the Event.
@@ -23,7 +23,8 @@ func (StateTransition) Type() event.Type {
 // DifferentHexSelected occurs when the user has selected a different hex - i.e.
 // via mousing over.
 type DifferentHexSelected struct {
-	K *geom.Key
+	K       *geom.Key
+	Context StateContext
 }
 
 // Type of the Event.
@@ -63,15 +64,6 @@ func (EndTurnRequested) Type() event.Type {
 	return "combat.EndTurnRequested"
 }
 
-// MoveModeRequested occurs when the player indicates that they wish to move the
-// Character awaiting input.
-type MoveModeRequested struct{}
-
-// Type of the Event.
-func (MoveModeRequested) Type() event.Type {
-	return "combat.MoveModeRequested"
-}
-
 // CancelSkillRequested occurs when the player indicates they want to cancel
 // targeting of the skill they selected.
 type CancelSkillRequested struct{}
@@ -79,6 +71,17 @@ type CancelSkillRequested struct{}
 // Type of the Event.
 func (CancelSkillRequested) Type() event.Type {
 	return "combat.CancelSkillRequested"
+}
+
+// SkillRequested occurs when the player indicates they would like to use a
+// skill.
+type SkillRequested struct {
+	Code game.SkillCode
+}
+
+// Type of the Event.
+func (SkillRequested) Type() event.Type {
+	return "combat.SkillRequested"
 }
 
 // ParticipantMoving occurs when a Character has begun their movement.
