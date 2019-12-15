@@ -31,8 +31,6 @@ func NewManager(mgr *ecs.World, bus *event.Bus) *Manager {
 // Begin an embark Manager, setting up Entities required to display and interact
 // with the embark screen.
 func (em *Manager) Begin() {
-	// TODO:
-
 	// Create a button to press to embark
 	e := em.mgr.NewEntity()
 	em.mgr.Tag(e, "embark")
@@ -42,6 +40,9 @@ func (em *Manager) Begin() {
 
 		X: 0, Y: 0,
 		W: 64, H: 64,
+	})
+	em.mgr.AddComponent(e, &game.Scale{
+		X: 2.0, Y: 2.0,
 	})
 	em.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
