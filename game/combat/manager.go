@@ -612,7 +612,7 @@ func (cm *Manager) Run(elapsed time.Duration) {
 func (cm *Manager) MousePosition(x, y int) {
 	wx, wy := cm.camera.ScreenToWorld(x, y)
 
-	if cm.state.Value() == SelectingTargetState {
+	if false && cm.state.Value() == SelectingTargetState {
 		// When we're selecting a target, we need to highlight some hexes to
 		// show where we're targeting.
 		// If the change in position means we're positioned over a new hex,
