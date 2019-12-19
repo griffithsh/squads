@@ -84,3 +84,32 @@ func MByN(m, n int) []Key {
 	}
 	return result
 }
+
+// Adjacent determines if two Keys are next to each other.
+func Adjacent(a, b Key) bool {
+	if a.N-b.N == 2 || a.N-b.N == -2 {
+		return true
+	}
+	if a.N%2 == 1 {
+		if a.M == b.M {
+			if a.N-b.N == 1 || a.N-b.N == -1 {
+				return true
+			}
+		} else if a.M-b.M == 1 || a.M-b.M == -1 {
+			if a.N-b.N == 1 || a.N-b.N == -1 {
+				return true
+			}
+		}
+	} else {
+		if a.M == b.M {
+			if a.N-b.N == 1 || a.N-b.N == -1 {
+				return true
+			}
+		} else if a.M-b.M == 1 || a.M-b.M == -1 {
+			if a.N-b.N == 1 || a.N-b.N == -1 {
+				return true
+			}
+		}
+	}
+	return false
+}
