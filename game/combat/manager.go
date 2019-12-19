@@ -79,14 +79,58 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 	return &cm
 }
 
-func (cm *Manager) handleSelectedHex(x, y float64) {
+func (cm *Manager) handleTargetSelected(x, y float64) {
+	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
+	field := game.AdaptField(cm.field, participant.Size)
+	logicalSelected := field.At(int(x), int(y))
+	ctx := cm.state.(*selectingTargetState)
+
+	switch game.TargetingForSkill[ctx.Skill] {
+	case game.TargetAnywhere:
+		// No filtering is applicable.
+	case game.TargetAdjacent:
+		obstacle := cm.mgr.Component(cm.turnToken, "Obstacle").(*game.Obstacle)
+		origin := geom.Key{M: obstacle.M, N: obstacle.N}
+		if logicalSelected == nil {
+			return
+		}
+		if !geom.Adjacent(origin, logicalSelected.Key()) {
+			return
+		}
+	}
+
+	var selected *geom.Key
+	if logicalSelected != nil {
+		cm.setState(&confirmingSelectedTargetState{
+			Skill:  ctx.Skill,
+			Target: logicalSelected.Key(),
+		})
+		pselected := logicalSelected.Key()
+		selected = &pselected
+	}
+	cm.bus.Publish(&DifferentHexSelected{
+		K:       selected,
+		Context: ctx,
+	})
+}
+
+func (cm *Manager) handleTargetConfirmed(x, y float64) {
 	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
 	field := game.AdaptField(cm.field, participant.Size)
 	obstacle := cm.mgr.Component(cm.turnToken, "Obstacle").(*game.Obstacle)
 	origin := field.Get(obstacle.M, obstacle.N)
 	selected := field.At(int(x), int(y))
+	ctx := cm.state.(*confirmingSelectedTargetState)
 
-	ctx := cm.state.(*selectingTargetState)
+	// Go back to selectingTargetState.
+	if selected.Key() != ctx.Target {
+		cm.setState(&selectingTargetState{
+			Skill: ctx.Skill,
+		})
+		return
+	}
+
+	// Special handling for movement.
 	if ctx.Skill == game.BasicMovement {
 		cm.mgr.AddComponent(cm.turnToken, &game.MoveIntent{X: x, Y: y})
 		cm.setState(ExecutingState)
@@ -130,7 +174,11 @@ func (cm *Manager) setState(stateContext StateContext) {
 	// When entering Selecting Target State, we need to add an Interactive to
 	// cover all areas of the field, so that we can convert those clicks to
 	// MoveIntents.
-	if state.Value() == SelectingTargetState {
+	if ev.Old.Value() == SelectingTargetState || ev.Old.Value() == ConfirmingSelectedTargetState {
+		cm.mgr.RemoveComponent(cm.selectingInteractive, &ui.Interactive{})
+	}
+	switch state.Value() {
+	case SelectingTargetState:
 		// Using the max float value as the size and a position of 0,0 should
 		// work in all cases, and it's a lot faster than figuring out the actual
 		// dimensions of the field. The goal here is to catch *any* clicks in
@@ -138,10 +186,19 @@ func (cm *Manager) setState(stateContext StateContext) {
 		cm.mgr.AddComponent(cm.selectingInteractive, &game.Position{})
 		cm.mgr.AddComponent(cm.selectingInteractive, &ui.Interactive{
 			W: math.MaxFloat64, H: math.MaxFloat64,
-			Trigger: cm.handleSelectedHex,
+			Trigger: cm.handleTargetSelected,
 		})
-	} else if ev.Old.Value() == SelectingTargetState {
-		cm.mgr.RemoveComponent(cm.selectingInteractive, &ui.Interactive{})
+	case ConfirmingSelectedTargetState:
+		fmt.Println("set confirming state")
+		// Using the max float value as the size and a position of 0,0 should
+		// work in all cases, and it's a lot faster than figuring out the actual
+		// dimensions of the field. The goal here is to catch *any* clicks in
+		// the world, remember?
+		cm.mgr.AddComponent(cm.selectingInteractive, &game.Position{})
+		cm.mgr.AddComponent(cm.selectingInteractive, &ui.Interactive{
+			W: math.MaxFloat64, H: math.MaxFloat64,
+			Trigger: cm.handleTargetConfirmed,
+		})
 	}
 
 	cm.bus.Publish(&ev)

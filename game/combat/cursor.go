@@ -29,7 +29,8 @@ type CursorManager struct {
 	selectedKey *geom.Key
 
 	// Whose turn is it?
-	turnToken ecs.Entity
+	turnToken        ecs.Entity
+	highlightedHexes game.TargetingBrush
 }
 
 // NewCursorManager creates a new CursorManager.
@@ -57,21 +58,18 @@ func (cm *CursorManager) handleCombatBegan(ev event.Typer) {
 func (cm *CursorManager) handleDifferentHexSelected(ev event.Typer) {
 	value := ev.(*DifferentHexSelected)
 
-	cm.selectedKey = value.K
-
 	// if we're navigating
 	switch value.Context.Value() {
-	case SelectingTargetState:
+	case SelectingTargetState, ConfirmingSelectedTargetState:
+		cm.selectedKey = value.K
 		ctx := value.Context.(*selectingTargetState)
-		switch ctx.Skill {
-		case game.BasicMovement:
-			cm.showPathNavigationCursor()
-		}
+		cm.highlightedHexes = game.BrushForSkill[ctx.Skill]
+		cm.showHighlightedHexes()
 	}
 }
 
 func (cm *CursorManager) handleCombatStateTransition(ev event.Typer) {
-	cm.hidePathNavigationCursor()
+	cm.hideHighlightedHexes()
 }
 
 func (cm *CursorManager) handleParticipantTurnChanged(ev event.Typer) {
@@ -89,7 +87,7 @@ func (cm *CursorManager) Update(elapsed time.Duration) {
 	}
 	e = cm.mgr.AnyTagged(pathNavigationTag)
 	if e != 0 && cm.mgr.HasTag(e, invalidatedCursorsTag) {
-		cm.repaintPathNavigationCursor()
+		cm.repaintHighlightedHexes()
 	}
 }
 
@@ -157,7 +155,7 @@ func (cm *CursorManager) repaintLiveParticipants() {
 
 const maxPathNavigationCursors int = 100
 
-func (cm *CursorManager) showPathNavigationCursor() {
+func (cm *CursorManager) showHighlightedHexes() {
 	for _, e := range cm.mgr.Tagged(pathNavigationTag) {
 		cm.mgr.DestroyEntity(e)
 	}
@@ -171,13 +169,48 @@ func (cm *CursorManager) showPathNavigationCursor() {
 	}
 }
 
-func (cm *CursorManager) hidePathNavigationCursor() {
+func (cm *CursorManager) hideHighlightedHexes() {
 	for _, e := range cm.mgr.Tagged(pathNavigationTag) {
 		cm.mgr.DestroyEntity(e)
 	}
 }
 
-func (cm *CursorManager) repaintPathNavigationCursor() {
+func (cm *CursorManager) repaintHighlightedHexes() {
+	switch cm.highlightedHexes {
+	case game.SingleHex:
+		cm.paintSingleHex()
+	case game.Pathfinding:
+		cm.paintNavigationHighlights()
+	}
+}
+
+func (cm *CursorManager) paintSingleHex() {
+	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
+	f := game.AdaptField(cm.field, participant.Size)
+	h := f.Get(cm.selectedKey.M, cm.selectedKey.N)
+	for i, e := range cm.mgr.Tagged(pathNavigationTag) {
+		if i == 0 {
+			cm.mgr.AddComponent(e, &game.Sprite{
+				Texture: "cursors.png",
+
+				X: 0, Y: 16,
+				W: 24, H: 16,
+			})
+			cm.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: h.X(),
+					Y: h.Y(),
+				},
+				Layer: 10,
+			})
+			continue
+		}
+		cm.mgr.RemoveComponent(e, &game.Position{})
+		cm.mgr.RemoveComponent(e, &game.Sprite{})
+	}
+}
+
+func (cm *CursorManager) paintNavigationHighlights() {
 	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
 	pos := cm.mgr.Component(cm.turnToken, "Position").(*game.Position)
 
