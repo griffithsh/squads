@@ -60,9 +60,14 @@ func (cm *CursorManager) handleDifferentHexSelected(ev event.Typer) {
 
 	// if we're navigating
 	switch value.Context.Value() {
-	case SelectingTargetState, ConfirmingSelectedTargetState:
+	case SelectingTargetState:
 		cm.selectedKey = value.K
 		ctx := value.Context.(*selectingTargetState)
+		cm.highlightedHexes = game.BrushForSkill[ctx.Skill]
+		cm.showHighlightedHexes()
+	case ConfirmingSelectedTargetState:
+		cm.selectedKey = value.K
+		ctx := value.Context.(*confirmingSelectedTargetState)
 		cm.highlightedHexes = game.BrushForSkill[ctx.Skill]
 		cm.showHighlightedHexes()
 	}

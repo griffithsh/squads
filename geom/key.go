@@ -5,6 +5,20 @@ type Key struct {
 	M, N int
 }
 
+// Equal determines if the M and N values of the passed pointers differ. If
+// either value is nil, then it only returns true if the other is also nil.
+func Equal(a, b *Key) bool {
+	if a == nil && b != nil {
+		return false
+	} else if a != nil && b == nil {
+		return false
+	} else if a == nil && b == nil {
+		return true
+	} else {
+		return a.M == b.M && a.N == b.N
+	}
+}
+
 // Neighbors calculates the neighbors of a Key and returns them keyed by their Keys.
 func (k Key) Neighbors() map[Key]DirectionType {
 	result := map[Key]DirectionType{

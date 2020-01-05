@@ -120,6 +120,11 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 	obstacle := cm.mgr.Component(cm.turnToken, "Obstacle").(*game.Obstacle)
 	origin := field.Get(obstacle.M, obstacle.N)
 	selected := field.At(int(x), int(y))
+	if selected == nil {
+		// We cannot conform the selection of something outside the hexes of the
+		// field.
+		return
+	}
 	ctx := cm.state.(*confirmingSelectedTargetState)
 
 	// Go back to selectingTargetState.
@@ -155,6 +160,8 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 	if !adjacent {
 		return
 	}
+
+	// TODO:
 	fmt.Println("adjacent")
 	cm.setState(AwaitingInputState)
 }
@@ -189,7 +196,6 @@ func (cm *Manager) setState(stateContext StateContext) {
 			Trigger: cm.handleTargetSelected,
 		})
 	case ConfirmingSelectedTargetState:
-		fmt.Println("set confirming state")
 		// Using the max float value as the size and a position of 0,0 should
 		// work in all cases, and it's a lot faster than figuring out the actual
 		// dimensions of the field. The goal here is to catch *any* clicks in
@@ -669,54 +675,47 @@ func (cm *Manager) Run(elapsed time.Duration) {
 func (cm *Manager) MousePosition(x, y int) {
 	wx, wy := cm.camera.ScreenToWorld(x, y)
 
-	if false && cm.state.Value() == SelectingTargetState {
-		// When we're selecting a target, we need to highlight some hexes to
-		// show where we're targeting.
-		// If the change in position means we're positioned over a new hex,
-		// then publish a DifferentHexSelected event.
+	var skill game.SkillCode
+	var selecting bool
 
-		// The consumer needs to make a decision about what to repaint now that
-		// the hex that the mouse is hovering over has changed. It might be a
-		// path of hexes because we're selecting a place to move to, or it might
-		// be a glob of hexes because we're targeting an AoE fireball spell etc.
-		participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
-		var newSelected *geom.Key
-
-		f := game.AdaptField(cm.field, participant.Size)
-		h := f.At(int(wx), int(wy))
-		if h != nil {
-			k := h.Key()
-			newSelected = &geom.Key{
-				M: k.M,
-				N: k.N,
-			}
-		}
-
-		if newSelected != nil && cm.selectedHex != nil {
-			if *newSelected != *cm.selectedHex {
-				cm.selectedHex = newSelected
-
-				cm.bus.Publish(&DifferentHexSelected{
-					K:       cm.selectedHex,
-					Context: cm.state,
-				})
-
-			}
-		} else if newSelected != cm.selectedHex {
-			cm.selectedHex = newSelected
-
-			cm.bus.Publish(&DifferentHexSelected{
-				K:       cm.selectedHex,
-				Context: cm.state,
-			})
-		}
+	switch cm.state.Value() {
+	case SelectingTargetState:
+		ctx := cm.state.(*selectingTargetState)
+		skill = ctx.Skill
+		selecting = true
+	case ConfirmingSelectedTargetState:
+		ctx := cm.state.(*confirmingSelectedTargetState)
+		skill = ctx.Skill
+		// ctx.Target
+		selecting = false
+	default:
+		return
 	}
 
-	// Update local cached values
-	cm.x = x
-	cm.y = y
-	cm.wx = wx
-	cm.wy = wy
+	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
+
+	f := game.AdaptField(cm.field, participant.Size)
+	h := f.At(int(wx), int(wy))
+	var newSelected *geom.Key
+	if h != nil {
+		k := h.Key()
+		newSelected = &geom.Key{
+			M: k.M,
+			N: k.N,
+		}
+	}
+	if geom.Equal(newSelected, cm.selectedHex) {
+		return
+	}
+	if selecting {
+		cm.handleTargetSelected(wx, wy)
+	} else {
+		cm.setState(&selectingTargetState{
+			Skill: skill,
+		})
+		cm.handleTargetSelected(wx, wy)
+	}
+	cm.selectedHex = newSelected
 }
 
 // syncParticipantObstacle updates the Participant's Obstacle to be synchronised
