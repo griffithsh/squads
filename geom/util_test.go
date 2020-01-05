@@ -29,6 +29,8 @@ func TestAdjacent(t *testing.T) {
 		{Key{1, 4}, Key{0, 5}, true},
 
 		{Key{2, 1}, Key{1, 1}, false},
+
+		{Key{4, 16}, Key{0, 14}, false},
 	}
 
 	for _, tc := range tests {

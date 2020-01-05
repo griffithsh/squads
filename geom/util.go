@@ -87,7 +87,7 @@ func MByN(m, n int) []Key {
 
 // Adjacent determines if two Keys are next to each other.
 func Adjacent(a, b Key) bool {
-	if a.N-b.N == 2 || a.N-b.N == -2 {
+	if a.M == b.M && (a.N-b.N == 2 || a.N-b.N == -2) {
 		return true
 	}
 	if a.N%2 == 1 {
