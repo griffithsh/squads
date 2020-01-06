@@ -10,6 +10,8 @@ const (
 	BasicMovement SkillCode = iota
 	// BasicAttack is a generic attack to get attacking going.
 	BasicAttack
+	// MageLightning is a skill that can taret anywhere on the field.
+	MageLightning
 )
 
 // TargetingRule identifies where a skill can be targeted on a field.
@@ -42,10 +44,12 @@ const (
 var TargetingForSkill = map[SkillCode]TargetingRule{
 	BasicMovement: TargetAnywhere,
 	BasicAttack:   TargetAdjacent,
+	MageLightning: TargetAnywhere,
 }
 
 // BrushForSkill maps from SkillCodes to BrushForSkill.
 var BrushForSkill = map[SkillCode]TargetingBrush{
 	BasicMovement: Pathfinding,
 	BasicAttack:   SingleHex,
+	MageLightning: SingleHex,
 }

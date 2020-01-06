@@ -536,7 +536,24 @@ func (hud *HUD) repaintSkills() {
 					},
 				},
 			},
-			// 2 - weapon 2
+			// weapon 2
+			2: skill{
+				sprite: game.Sprite{
+					Texture: "hud.png",
+					X:       160,
+					Y:       24,
+					W:       24,
+					H:       24,
+				},
+				interactive: &ui.Interactive{
+					W: 24, H: 24,
+					Trigger: func(x, y float64) {
+						hud.bus.Publish(&SkillRequested{
+							Code: game.MageLightning,
+						})
+					},
+				},
+			},
 			// 8 - weapon 3
 			// 9 - weapon 4
 

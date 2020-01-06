@@ -142,27 +142,25 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 		return
 	}
 
-	// FIXME: For now we know that if this is not pathfinding, then it must be
-	// the basic attack, because I haven't added any other skills, but this is
-	// not supportable long term. There needs to be a way of finding out when
-	// the click on the hex is valid or not given the context of the skill.
-	// TODO: Extract skill info from ctx.Skill.
-	if ctx.Skill != game.BasicAttack {
-		panic("skills other than BasicAttack are not implemented")
-	}
-	adjacent := false
-	for _, key := range origin.Key().Adjacent() {
-		if key == selected.Key() {
-			adjacent = true
-			break
+	switch game.TargetingForSkill[ctx.Skill] {
+	case game.TargetAnywhere:
+		// Because we can target anywhere, there are no reasons to return out of
+		// this function for this case.
+	case game.TargetAdjacent:
+		adjacent := false
+		for _, key := range origin.Key().Adjacent() {
+			if key == selected.Key() {
+				adjacent = true
+				break
+			}
 		}
-	}
-	if !adjacent {
-		return
-	}
+		if !adjacent {
+			return
+		}
 
-	// TODO:
-	fmt.Println("adjacent")
+	}
+	// TODO: publish "$entity used $skill on $hex" event
+
 	cm.setState(AwaitingInputState)
 }
 
