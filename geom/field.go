@@ -560,6 +560,8 @@ func xyToMN(x, y, m, n int) (int, int) {
 type LogicalField interface {
 	At(x, y int) LogicalHex
 	Get(m, n int) LogicalHex
+
+	Surrounding(k Key) []Key
 }
 
 // LogicalHex is a Hex that does not specify its size. It might be a Hex, Hex4,
@@ -600,6 +602,15 @@ func (f1 *Field1) Get(m, n int) LogicalHex {
 	return h
 }
 
+// Surrounding Hexes of Hex with coordinates m,n.
+func (f1 *Field1) Surrounding(k Key) []Key {
+	result := []Key{}
+	for k := range k.Neighbors() {
+		result = append(result, k)
+	}
+	return result
+}
+
 // Field4 is a specialization of Field that provides At and Get for Hex4s.
 type Field4 struct {
 	f *Field
@@ -628,6 +639,28 @@ func (f4 *Field4) Get(m, n int) LogicalHex {
 	return h
 }
 
+// Surrounding Hexes of Hex with coordinates m,n.
+func (f4 *Field4) Surrounding(k Key) []Key {
+	result := []Key{}
+
+	originals := k.Adjacent()
+	result = append(result, originals[N], originals[NW], originals[NE])
+
+	// from S of origin, S, SW, SE
+	southerns := originals[S].Adjacent()
+	result = append(result, southerns[S], southerns[SW], southerns[SE])
+
+	// from SW of origin, NW, SW
+	westerns := originals[SW].Adjacent()
+	result = append(result, westerns[NW], westerns[SW])
+
+	// from SE of origin, NE, SE
+	easterns := originals[SE].Adjacent()
+	result = append(result, easterns[NE], easterns[SE])
+
+	return result
+}
+
 // Field7 is a specialization of Field that provides At and Get for Hex7s.
 type Field7 struct {
 	f *Field
@@ -654,4 +687,34 @@ func (f7 *Field7) Get(m, n int) LogicalHex {
 		return nil
 	}
 	return h
+}
+
+// Surrounding Hexes of Hex with coordinates m,n.
+func (f7 *Field7) Surrounding(k Key) []Key {
+	result := []Key{}
+	o := k.Adjacent()
+
+	// N, NW, SW of NW
+	nw := o[NW].Adjacent()
+	result = append(result, nw[N], nw[NW], nw[SW])
+
+	// S, SW of SW
+	sw := o[SW].Adjacent()
+	result = append(result, sw[S], sw[SW])
+
+	// N, NE, SE of NE
+	ne := o[NE].Adjacent()
+	result = append(result, ne[N], ne[NE], ne[SE])
+
+	// SE, S of SE
+	se := o[SE].Adjacent()
+	result = append(result, se[SE], se[S])
+
+	// N of N
+	result = append(result, o[N].Adjacent()[N])
+
+	// S of S
+	result = append(result, o[S].Adjacent()[S])
+
+	return result
 }
