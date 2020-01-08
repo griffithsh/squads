@@ -140,7 +140,6 @@ func (m *Manager) setState(new State) {
 }
 
 func (m *Manager) playerSquad() ecs.Entity {
-
 	for _, e := range m.mgr.Tagged("player") {
 		if m.mgr.Component(e, "Squad") != nil {
 			return e
@@ -291,9 +290,9 @@ func (m *Manager) Begin(d Data) {
 		case 1, 2:
 			m.createSkeletonBaddySquad(e, enemies)
 		case 3, 4:
-			m.createSkeletonBaddySquad(e, enemies)
+			m.createWolfBaddySquad(e, enemies)
 		case 5:
-			m.createSkeletonBaddySquad(e, enemies)
+			m.createGiantBaddySquad(e, enemies)
 		}
 	}
 
@@ -379,6 +378,119 @@ func (m *Manager) createSkeletonBaddySquad(e ecs.Entity, enemies *game.Team) {
 			Texture: "hud.png",
 			X:       0,
 			Y:       102,
+			W:       52,
+			H:       52,
+		},
+	})
+	squad.Members = append(squad.Members, e)
+}
+
+func (m *Manager) createWolfBaddySquad(e ecs.Entity, enemies *game.Team) {
+	// Add an icon to represent this squad in the overworld.
+	m.mgr.AddComponent(e, &game.Sprite{
+		Texture: "wolf.png",
+
+		X: 0, Y: 0,
+		W: 64, H: 64,
+	})
+
+	squad := m.mgr.Component(e, "Squad").(*game.Squad)
+
+	// Add a baddy to this Squad.
+	e = m.mgr.NewEntity()
+	m.mgr.Tag(e, "overworld")
+	m.mgr.Tag(e, "baddy")
+	m.mgr.AddComponent(e, enemies)
+	m.mgr.AddComponent(e, &game.Character{
+		Name:                 "Hustle",
+		Size:                 game.MEDIUM,
+		Sex:                  game.Male,
+		Profession:           game.Wolf,
+		PreparationThreshold: 1650,
+		ActionPoints:         60,
+		SmallIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       52,
+			Y:       76,
+			W:       26,
+			H:       26,
+		},
+		BigIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       52,
+			Y:       24,
+			W:       52,
+			H:       52,
+		},
+	})
+	squad.Members = append(squad.Members, e)
+
+	e = m.mgr.NewEntity()
+	m.mgr.Tag(e, "overworld")
+	m.mgr.Tag(e, "baddy")
+	m.mgr.AddComponent(e, enemies)
+	m.mgr.AddComponent(e, &game.Character{
+		Name:                 "Fang",
+		Size:                 game.MEDIUM,
+		Sex:                  game.Male,
+		Profession:           game.Wolf,
+		PreparationThreshold: 1650,
+		ActionPoints:         60,
+		SmallIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       52,
+			Y:       76,
+			W:       26,
+			H:       26,
+		},
+		BigIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       52,
+			Y:       24,
+			W:       52,
+			H:       52,
+		},
+	})
+	squad.Members = append(squad.Members, e)
+}
+
+func (m *Manager) createGiantBaddySquad(e ecs.Entity, enemies *game.Team) {
+	// Add an icon to represent this squad in the overworld.
+	m.mgr.AddComponent(e, &game.Sprite{
+		Texture: "giant.png",
+
+		X: 0, Y: 0,
+		W: 48, H: 96,
+	})
+	m.mgr.AddComponent(e, &game.RenderOffset{
+		Y: -24,
+	})
+
+	squad := m.mgr.Component(e, "Squad").(*game.Squad)
+
+	// Add a baddy to this Squad.
+	e = m.mgr.NewEntity()
+	m.mgr.Tag(e, "overworld")
+	m.mgr.Tag(e, "baddy")
+	m.mgr.AddComponent(e, enemies)
+	m.mgr.AddComponent(e, &game.Character{
+		Name:                 "Icarion",
+		Size:                 game.LARGE,
+		Sex:                  game.Male,
+		Profession:           game.Giant,
+		PreparationThreshold: 1050,
+		ActionPoints:         60,
+		SmallIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       104,
+			Y:       76,
+			W:       26,
+			H:       26,
+		},
+		BigIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       104,
+			Y:       24,
 			W:       52,
 			H:       52,
 		},
