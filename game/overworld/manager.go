@@ -276,13 +276,6 @@ func (m *Manager) Begin(d Data) {
 		enemies.Control = game.ComputerControl
 		m.mgr.AddComponent(e, enemies)
 		m.mgr.AddComponent(e, &game.Squad{})
-		squad := m.mgr.Component(e, "Squad").(*game.Squad)
-		m.mgr.AddComponent(e, &game.Sprite{
-			Texture: "wolf.png",
-
-			X: 0, Y: 0,
-			W: 64, H: 64,
-		})
 		m.mgr.AddComponent(e, enemies)
 		m.mgr.AddComponent(e, &game.Position{
 			Center: game.Center{
@@ -294,35 +287,14 @@ func (m *Manager) Begin(d Data) {
 			Key:   start.ID,
 			Squad: e,
 		})
-
-		// Add a baddy to this Squad.
-		e = m.mgr.NewEntity()
-		m.mgr.Tag(e, "overworld")
-		m.mgr.Tag(e, "baddy")
-		m.mgr.AddComponent(e, enemies)
-		m.mgr.AddComponent(e, &game.Character{
-			Name:                 "Dumble",
-			Size:                 game.SMALL,
-			Sex:                  game.Male,
-			Profession:           game.Skeleton,
-			PreparationThreshold: 1650,
-			ActionPoints:         60,
-			SmallIcon: game.Sprite{
-				Texture: "hud.png",
-				X:       0,
-				Y:       154,
-				W:       26,
-				H:       26,
-			},
-			BigIcon: game.Sprite{
-				Texture: "hud.png",
-				X:       0,
-				Y:       102,
-				W:       52,
-				H:       52,
-			},
-		})
-		squad.Members = append(squad.Members, e)
+		switch roll {
+		case 1, 2:
+			m.createSkeletonBaddySquad(e, enemies)
+		case 3, 4:
+			m.createSkeletonBaddySquad(e, enemies)
+		case 5:
+			m.createSkeletonBaddySquad(e, enemies)
+		}
 	}
 
 	// Now show connections between the nodes.
@@ -369,6 +341,49 @@ func (m *Manager) Begin(d Data) {
 			}
 		}
 	}
+}
+
+func (m *Manager) createSkeletonBaddySquad(e ecs.Entity, enemies *game.Team) {
+	// Add an icon to represent this squad in the overworld.
+	m.mgr.AddComponent(e, &game.Sprite{
+		Texture: "skeleton.png",
+
+		X: 0, Y: 0,
+		W: 24, H: 48,
+	})
+	m.mgr.AddComponent(e, &game.RenderOffset{
+		Y: -16,
+	})
+
+	// Add a baddy to this Squad.
+	squad := m.mgr.Component(e, "Squad").(*game.Squad)
+	e = m.mgr.NewEntity()
+	m.mgr.Tag(e, "overworld")
+	m.mgr.Tag(e, "baddy")
+	m.mgr.AddComponent(e, enemies)
+	m.mgr.AddComponent(e, &game.Character{
+		Name:                 "Dumble",
+		Size:                 game.SMALL,
+		Sex:                  game.Male,
+		Profession:           game.Skeleton,
+		PreparationThreshold: 1650,
+		ActionPoints:         60,
+		SmallIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       0,
+			Y:       154,
+			W:       26,
+			H:       26,
+		},
+		BigIcon: game.Sprite{
+			Texture: "hud.png",
+			X:       0,
+			Y:       102,
+			W:       52,
+			H:       52,
+		},
+	})
+	squad.Members = append(squad.Members, e)
 }
 
 // Enable the overworld Manager, responding to input and rendering the state of
