@@ -436,6 +436,67 @@ func (f *Field) At7(x, y int) *Hex7 {
 	return f.Get7(m, n)
 }
 
+// Surrounding determines the Hexes that surround the Key k.
+func (f *Field) Surrounding(k Key) []Key {
+	result := []Key{}
+	for k := range k.Neighbors() {
+		result = append(result, k)
+	}
+	return result
+}
+
+// Surrounding4 returns the Hex4s that surround the Hex4 at Key k.
+func (f *Field) Surrounding4(k Key) []Key {
+	result := []Key{}
+
+	originals := k.Adjacent()
+	result = append(result, originals[N], originals[NW], originals[NE])
+
+	// from S of origin, S, SW, SE
+	southerns := originals[S].Adjacent()
+	result = append(result, southerns[S], southerns[SW], southerns[SE])
+
+	// from SW of origin, NW, SW
+	westerns := originals[SW].Adjacent()
+	result = append(result, westerns[NW], westerns[SW])
+
+	// from SE of origin, NE, SE
+	easterns := originals[SE].Adjacent()
+	result = append(result, easterns[NE], easterns[SE])
+
+	return result
+}
+
+// Surrounding7 returns the Hex7s that surround the Hex7 at Key k.
+func (f *Field) Surrounding7(k Key) []Key {
+	result := []Key{}
+	o := k.Adjacent()
+
+	// N, NW, SW of NW
+	nw := o[NW].Adjacent()
+	result = append(result, nw[N], nw[NW], nw[SW])
+
+	// S, SW of SW
+	sw := o[SW].Adjacent()
+	result = append(result, sw[S], sw[SW])
+
+	// N, NE, SE of NE
+	ne := o[NE].Adjacent()
+	result = append(result, ne[N], ne[NE], ne[SE])
+
+	// SE, S of SE
+	se := o[SE].Adjacent()
+	result = append(result, se[SE], se[S])
+
+	// N of N
+	result = append(result, o[N].Adjacent()[N])
+
+	// S of S
+	result = append(result, o[S].Adjacent()[S])
+
+	return result
+}
+
 // Dimensions returns the maximum extent of the field in M and N dimensions.
 // FIXME: This needs to be refactored to account for negative Hexes I think.
 func (f *Field) Dimensions() (M, N int) {
@@ -604,11 +665,7 @@ func (f1 *Field1) Get(m, n int) LogicalHex {
 
 // Surrounding Hexes of Hex with coordinates m,n.
 func (f1 *Field1) Surrounding(k Key) []Key {
-	result := []Key{}
-	for k := range k.Neighbors() {
-		result = append(result, k)
-	}
-	return result
+	return f1.f.Surrounding(k)
 }
 
 // Field4 is a specialization of Field that provides At and Get for Hex4s.
@@ -641,24 +698,7 @@ func (f4 *Field4) Get(m, n int) LogicalHex {
 
 // Surrounding Hexes of Hex with coordinates m,n.
 func (f4 *Field4) Surrounding(k Key) []Key {
-	result := []Key{}
-
-	originals := k.Adjacent()
-	result = append(result, originals[N], originals[NW], originals[NE])
-
-	// from S of origin, S, SW, SE
-	southerns := originals[S].Adjacent()
-	result = append(result, southerns[S], southerns[SW], southerns[SE])
-
-	// from SW of origin, NW, SW
-	westerns := originals[SW].Adjacent()
-	result = append(result, westerns[NW], westerns[SW])
-
-	// from SE of origin, NE, SE
-	easterns := originals[SE].Adjacent()
-	result = append(result, easterns[NE], easterns[SE])
-
-	return result
+	return f4.f.Surrounding4(k)
 }
 
 // Field7 is a specialization of Field that provides At and Get for Hex7s.
@@ -691,30 +731,5 @@ func (f7 *Field7) Get(m, n int) LogicalHex {
 
 // Surrounding Hexes of Hex with coordinates m,n.
 func (f7 *Field7) Surrounding(k Key) []Key {
-	result := []Key{}
-	o := k.Adjacent()
-
-	// N, NW, SW of NW
-	nw := o[NW].Adjacent()
-	result = append(result, nw[N], nw[NW], nw[SW])
-
-	// S, SW of SW
-	sw := o[SW].Adjacent()
-	result = append(result, sw[S], sw[SW])
-
-	// N, NE, SE of NE
-	ne := o[NE].Adjacent()
-	result = append(result, ne[N], ne[NE], ne[SE])
-
-	// SE, S of SE
-	se := o[SE].Adjacent()
-	result = append(result, se[SE], se[S])
-
-	// N of N
-	result = append(result, o[N].Adjacent()[N])
-
-	// S of S
-	result = append(result, o[S].Adjacent()[S])
-
-	return result
+	return f7.f.Surrounding7(k)
 }

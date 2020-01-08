@@ -193,9 +193,7 @@ func (cm *CursorManager) paintSingleHex() {
 	for i, e := range cm.mgr.Tagged(pathNavigationTag) {
 		cm.mgr.RemoveTag(e, invalidatedCursorsTag)
 		if i == 0 && cm.selectedKey != nil {
-			participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
-			f := game.AdaptField(cm.field, participant.Size)
-			h := f.Get(cm.selectedKey.M, cm.selectedKey.N)
+			h := cm.field.Get(cm.selectedKey.M, cm.selectedKey.N)
 			cm.mgr.AddComponent(e, &game.Sprite{
 				Texture: "cursors.png",
 

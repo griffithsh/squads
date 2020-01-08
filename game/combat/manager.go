@@ -80,27 +80,42 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 }
 
 func (cm *Manager) handleTargetSelected(x, y float64) {
+	ctx := cm.state.(*selectingTargetState)
+
 	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
 	field := game.AdaptField(cm.field, participant.Size)
 	logicalSelected := field.At(int(x), int(y))
-	ctx := cm.state.(*selectingTargetState)
+	// If we're using anything other than participant size selection, then drop
+	// down to single hex selection for the logical Hex.
+	if game.TargetingForSkill[ctx.Skill] != game.TargetForNavigation {
+		logicalSelected = game.AdaptField(cm.field, game.SMALL).At(int(x), int(y))
+	}
 
 	switch game.TargetingForSkill[ctx.Skill] {
-	case game.TargetAnywhere:
+	case game.TargetAnywhere, game.TargetForNavigation:
 		// No filtering is applicable.
 	case game.TargetAdjacent:
-		obstacle := cm.mgr.Component(cm.turnToken, "Obstacle").(*game.Obstacle)
-		origin := geom.Key{M: obstacle.M, N: obstacle.N}
 		if logicalSelected == nil {
 			return
 		}
-		if !geom.Adjacent(origin, logicalSelected.Key()) {
+		obstacle := cm.mgr.Component(cm.turnToken, "Obstacle").(*game.Obstacle)
+		origin := geom.Key{M: obstacle.M, N: obstacle.N}
+		adjacent := false
+		for _, key := range field.Surrounding(origin) {
+			if key == logicalSelected.Key() {
+				adjacent = true
+				break
+			}
+		}
+		if !adjacent {
 			return
 		}
 	}
 
 	var selected *geom.Key
 	if logicalSelected != nil {
+		// Go to confirming state if a Hex was selected, and save the Key of the
+		// selected Hex.
 		cm.setState(&confirmingSelectedTargetState{
 			Skill:  ctx.Skill,
 			Target: logicalSelected.Key(),
@@ -108,6 +123,8 @@ func (cm *Manager) handleTargetSelected(x, y float64) {
 		pselected := logicalSelected.Key()
 		selected = &pselected
 	}
+	// Publish an event whether a Hex was selected or not, passing the Key if
+	// applicable.
 	cm.bus.Publish(&DifferentHexSelected{
 		K:       selected,
 		Context: ctx,
@@ -115,8 +132,16 @@ func (cm *Manager) handleTargetSelected(x, y float64) {
 }
 
 func (cm *Manager) handleTargetConfirmed(x, y float64) {
-	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
-	field := game.AdaptField(cm.field, participant.Size)
+	ctx := cm.state.(*confirmingSelectedTargetState)
+
+	// Only skills that use TargetForNavigation should select hexes at the same
+	// Field size as the participant.
+	field := game.AdaptField(cm.field, game.SMALL)
+	if game.TargetingForSkill[ctx.Skill] == game.TargetForNavigation {
+		participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
+		field = game.AdaptField(cm.field, participant.Size)
+	}
+
 	obstacle := cm.mgr.Component(cm.turnToken, "Obstacle").(*game.Obstacle)
 	origin := field.Get(obstacle.M, obstacle.N)
 	selected := field.At(int(x), int(y))
@@ -125,7 +150,6 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 		// field.
 		return
 	}
-	ctx := cm.state.(*confirmingSelectedTargetState)
 
 	// Go back to selectingTargetState.
 	if selected.Key() != ctx.Target {
@@ -148,7 +172,7 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 		// this function for this case.
 	case game.TargetAdjacent:
 		adjacent := false
-		for _, key := range origin.Key().Adjacent() {
+		for _, key := range field.Surrounding(origin.Key()) {
 			if key == selected.Key() {
 				adjacent = true
 				break
@@ -160,6 +184,7 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 
 	}
 	// TODO: publish "$entity used $skill on $hex" event
+	fmt.Println("$entity used $skill on $hex")
 
 	cm.setState(AwaitingInputState)
 }
@@ -690,9 +715,12 @@ func (cm *Manager) MousePosition(x, y int) {
 		return
 	}
 
-	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
+	f := game.AdaptField(cm.field, game.SMALL)
+	if game.TargetingForSkill[skill] == game.TargetForNavigation {
+		participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
+		f = game.AdaptField(cm.field, participant.Size)
+	}
 
-	f := game.AdaptField(cm.field, participant.Size)
 	h := f.At(int(wx), int(wy))
 	var newSelected *geom.Key
 	if h != nil {
