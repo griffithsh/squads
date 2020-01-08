@@ -82,27 +82,20 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
 func (cm *Manager) handleTargetSelected(x, y float64) {
 	ctx := cm.state.(*selectingTargetState)
 
-	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
-	field := game.AdaptField(cm.field, participant.Size)
-	logicalSelected := field.At(int(x), int(y))
-	// If we're using anything other than participant size selection, then drop
-	// down to single hex selection for the logical Hex.
-	if game.TargetingForSkill[ctx.Skill] != game.TargetForNavigation {
-		logicalSelected = game.AdaptField(cm.field, game.SMALL).At(int(x), int(y))
-	}
+	h := cm.field.At(int(x), int(y))
 
 	switch game.TargetingForSkill[ctx.Skill] {
-	case game.TargetAnywhere, game.TargetForNavigation:
+	case game.TargetAnywhere:
 		// No filtering is applicable.
 	case game.TargetAdjacent:
-		if logicalSelected == nil {
+		if h == nil {
 			return
 		}
 		obstacle := cm.mgr.Component(cm.turnToken, "Obstacle").(*game.Obstacle)
 		origin := geom.Key{M: obstacle.M, N: obstacle.N}
 		adjacent := false
-		for _, key := range field.Surrounding(origin) {
-			if key == logicalSelected.Key() {
+		for key := range origin.Neighbors() {
+			if key == h.Key() {
 				adjacent = true
 				break
 			}
@@ -113,14 +106,14 @@ func (cm *Manager) handleTargetSelected(x, y float64) {
 	}
 
 	var selected *geom.Key
-	if logicalSelected != nil {
+	if h != nil {
 		// Go to confirming state if a Hex was selected, and save the Key of the
 		// selected Hex.
 		cm.setState(&confirmingSelectedTargetState{
 			Skill:  ctx.Skill,
-			Target: logicalSelected.Key(),
+			Target: h.Key(),
 		})
-		pselected := logicalSelected.Key()
+		pselected := h.Key()
 		selected = &pselected
 	}
 	// Publish an event whether a Hex was selected or not, passing the Key if
@@ -134,19 +127,11 @@ func (cm *Manager) handleTargetSelected(x, y float64) {
 func (cm *Manager) handleTargetConfirmed(x, y float64) {
 	ctx := cm.state.(*confirmingSelectedTargetState)
 
-	// Only skills that use TargetForNavigation should select hexes at the same
-	// Field size as the participant.
-	field := game.AdaptField(cm.field, game.SMALL)
-	if game.TargetingForSkill[ctx.Skill] == game.TargetForNavigation {
-		participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
-		field = game.AdaptField(cm.field, participant.Size)
-	}
-
 	obstacle := cm.mgr.Component(cm.turnToken, "Obstacle").(*game.Obstacle)
-	origin := field.Get(obstacle.M, obstacle.N)
-	selected := field.At(int(x), int(y))
+	origin := cm.field.Get(obstacle.M, obstacle.N)
+	selected := cm.field.At(int(x), int(y))
 	if selected == nil {
-		// We cannot conform the selection of something outside the hexes of the
+		// We cannot confirm the selection of something outside the hexes of the
 		// field.
 		return
 	}
@@ -172,7 +157,8 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 		// this function for this case.
 	case game.TargetAdjacent:
 		adjacent := false
-		for _, key := range field.Surrounding(origin.Key()) {
+
+		for key := range origin.Key().Neighbors() {
 			if key == selected.Key() {
 				adjacent = true
 				break
@@ -272,14 +258,14 @@ func semiSort(m, n int, f *geom.Field) []*geom.Hex {
 	return result
 }
 
-// isBlocked determines if a Character with a CharacterSize of sz can be placed at m,n.
-func isBlocked(field *geom.Field, m, n int, sz game.CharacterSize, mgr *ecs.World) bool {
+// isBlocked determines if a Character can be placed at m,n.
+func isBlocked(field *geom.Field, m, n int, mgr *ecs.World) bool {
 	// blockages is a set of Keys that are taken by other things
 	blockages := map[geom.Key]struct{}{}
 	for _, e := range mgr.Get([]string{"Obstacle"}) {
 		o := mgr.Component(e, "Obstacle").(*game.Obstacle)
 
-		h := game.AdaptFieldObstacle(field, o.ObstacleType).Get(o.M, o.N)
+		h := field.Get(o.M, o.N)
 		if h == nil {
 			panic(fmt.Sprintf("there is no hex where Obstacle(%d,%s) is present (%d,%d)", e, o.ObstacleType, o.M, o.N))
 		}
@@ -292,7 +278,7 @@ func isBlocked(field *geom.Field, m, n int, sz game.CharacterSize, mgr *ecs.Worl
 		}
 	}
 
-	hex := game.AdaptField(field, sz).Get(m, n)
+	hex := field.Get(m, n)
 	if hex == nil {
 		return true
 	}
@@ -341,9 +327,9 @@ func (sp *startProvider) getNearby(team *game.Team, f *geom.Field) []*geom.Hex {
 	return sp.used[team.ID]
 }
 
-func (cm *Manager) getStart(sz game.CharacterSize, nearbys []*geom.Hex) *geom.Hex {
+func (cm *Manager) getStart(nearbys []*geom.Hex) *geom.Hex {
 	for _, h := range nearbys {
-		if isBlocked(cm.field, h.M, h.N, sz, cm.mgr) {
+		if isBlocked(cm.field, h.M, h.N, cm.mgr) {
 			continue
 		}
 
@@ -359,7 +345,6 @@ func CToP(char *game.Character) *Participant {
 		Level:      char.Level,
 		SmallIcon:  char.SmallIcon,
 		BigIcon:    char.BigIcon,
-		Size:       char.Size,
 		Profession: char.Profession,
 		Sex:        char.Sex,
 		PreparationThreshold: CurMax{
@@ -395,8 +380,7 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, char *game.Charact
 	cm.mgr.AddComponent(e, team)
 
 	// Add Position.
-	f := game.AdaptField(cm.field, char.Size)
-	start := f.Get(h.M, h.N)
+	start := cm.field.Get(h.M, h.N)
 	cm.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
 			X: start.X(),
@@ -409,13 +393,7 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, char *game.Charact
 	o := game.Obstacle{
 		M:            h.M,
 		N:            h.N,
-		ObstacleType: game.SmallCharacter,
-	}
-	switch char.Size {
-	case game.MEDIUM:
-		o.ObstacleType = game.MediumCharacter
-	case game.LARGE:
-		o.ObstacleType = game.LargeCharacter
+		ObstacleType: game.CharacterObstacle,
 	}
 	cm.mgr.AddComponent(e, &o)
 
@@ -470,7 +448,7 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 				team := cm.mgr.Component(e, "Team").(*game.Team)
 				char := cm.mgr.Component(e, "Character").(*game.Character)
 				near := sp.getNearby(team, cm.field)
-				h := cm.getStart(char.Size, near)
+				h := cm.getStart(near)
 
 				cm.createParticipation(e, char, team, h)
 			}
@@ -715,13 +693,7 @@ func (cm *Manager) MousePosition(x, y int) {
 		return
 	}
 
-	f := game.AdaptField(cm.field, game.SMALL)
-	if game.TargetingForSkill[skill] == game.TargetForNavigation {
-		participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
-		f = game.AdaptField(cm.field, participant.Size)
-	}
-
-	h := f.At(int(wx), int(wy))
+	h := cm.field.At(int(wx), int(wy))
 	var newSelected *geom.Key
 	if h != nil {
 		k := h.Key()
@@ -733,14 +705,13 @@ func (cm *Manager) MousePosition(x, y int) {
 	if geom.Equal(newSelected, cm.selectedHex) {
 		return
 	}
-	if selecting {
-		cm.handleTargetSelected(wx, wy)
-	} else {
+
+	if !selecting {
 		cm.setState(&selectingTargetState{
 			Skill: skill,
 		})
-		cm.handleTargetSelected(wx, wy)
 	}
+	cm.handleTargetSelected(wx, wy)
 	cm.selectedHex = newSelected
 }
 
@@ -748,11 +719,10 @@ func (cm *Manager) MousePosition(x, y int) {
 // with its position. It should be called when a Participant has completed a
 // move.
 func (cm *Manager) syncParticipantObstacle(evt *ParticipantMovementConcluded) {
-	participant := cm.mgr.Component(evt.Entity, "Participant").(*Participant)
 	obstacle := cm.mgr.Component(evt.Entity, "Obstacle").(*game.Obstacle)
 	position := cm.mgr.Component(evt.Entity, "Position").(*game.Position)
 
-	h := game.AdaptField(cm.field, participant.Size).At(int(position.Center.X), int(position.Center.Y))
+	h := cm.field.At(int(position.Center.X), int(position.Center.Y))
 	k := h.Key()
 	obstacle.M = k.M
 	obstacle.N = k.N
@@ -867,7 +837,7 @@ func (cm *Manager) addTrees() {
 				cm.mgr.AddComponent(e, &game.Obstacle{
 					M:            h.M,
 					N:            h.N,
-					ObstacleType: game.Tree,
+					ObstacleType: game.TreeObstacle,
 				})
 			}
 		}

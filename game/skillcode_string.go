@@ -10,11 +10,12 @@ func _() {
 	var x [1]struct{}
 	_ = x[BasicMovement-0]
 	_ = x[BasicAttack-1]
+	_ = x[MageLightning-2]
 }
 
-const _SkillCode_name = "BasicMovementBasicAttack"
+const _SkillCode_name = "BasicMovementBasicAttackMageLightning"
 
-var _SkillCode_index = [...]uint8{0, 13, 24}
+var _SkillCode_index = [...]uint8{0, 13, 24, 37}
 
 func (i SkillCode) String() string {
 	if i < 0 || i >= SkillCode(len(_SkillCode_index)-1) {

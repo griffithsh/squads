@@ -368,7 +368,6 @@ func (m *Manager) createSkeletonBaddySquad(e ecs.Entity, enemies *game.Team) {
 	m.mgr.AddComponent(e, enemies)
 	m.mgr.AddComponent(e, &game.Character{
 		Name:                 "Dumble",
-		Size:                 game.SMALL,
 		Sex:                  game.Male,
 		Profession:           game.Skeleton,
 		PreparationThreshold: 1650,
@@ -409,7 +408,6 @@ func (m *Manager) createWolfBaddySquad(e ecs.Entity, enemies *game.Team) {
 	m.mgr.AddComponent(e, enemies)
 	m.mgr.AddComponent(e, &game.Character{
 		Name:                 "Hustle",
-		Size:                 game.MEDIUM,
 		Sex:                  game.Male,
 		Profession:           game.Wolf,
 		PreparationThreshold: 1650,
@@ -437,7 +435,6 @@ func (m *Manager) createWolfBaddySquad(e ecs.Entity, enemies *game.Team) {
 	m.mgr.AddComponent(e, enemies)
 	m.mgr.AddComponent(e, &game.Character{
 		Name:                 "Fang",
-		Size:                 game.MEDIUM,
 		Sex:                  game.Male,
 		Profession:           game.Wolf,
 		PreparationThreshold: 1650,
@@ -481,7 +478,6 @@ func (m *Manager) createGiantBaddySquad(e ecs.Entity, enemies *game.Team) {
 	m.mgr.AddComponent(e, enemies)
 	m.mgr.AddComponent(e, &game.Character{
 		Name:                 "Icarion",
-		Size:                 game.LARGE,
 		Sex:                  game.Male,
 		Profession:           game.Giant,
 		PreparationThreshold: 1050,

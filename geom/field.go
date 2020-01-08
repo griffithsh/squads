@@ -69,16 +69,12 @@ This diagram shows a three by eight Field of Hexes.
 // Field to play out encounters on. A collection of Hexes.
 type Field struct {
 	hexes map[Key]*Hex
-	hex4s map[Key]*Hex4
-	hex7s map[Key]*Hex7
 }
 
 // NewField creates a new game field.
 func NewField() *Field {
 	return &Field{
 		hexes: map[Key]*Hex{},
-		hex4s: map[Key]*Hex4{},
-		hex7s: map[Key]*Hex7{},
 	}
 }
 
@@ -91,14 +87,8 @@ func (f *Field) Load(keys []Key) {
 	}
 
 	f.hexes = hexes
-	f.hex4s = map[Key]*Hex4{}
-	f.hex7s = map[Key]*Hex7{}
 
 	f.calcNeighbors()
-	f.calcHex4()
-	f.calcNeighbors4()
-	f.calcHex7()
-	f.calcNeighbors7()
 }
 
 func (f *Field) calcNeighbors() {
@@ -147,179 +137,6 @@ func (f *Field) calcNeighbors() {
 			hex.neighbors = append(hex.neighbors, neighbor)
 			hex.neighborsByDirection[candidate.d] = neighbor
 		}
-	}
-}
-
-func (f *Field) calcNeighbors4() {
-	for _, h4 := range f.hex4s {
-		h4.neighbors = []*Hex4{}
-		m, n := h4.M, h4.N
-		// Find neighbor candidates.
-		candidates := []struct {
-			m, n int
-			d    DirectionType
-		}{
-			{m, n - 2, N}, // N
-			{m, n + 2, S}, // S
-		}
-		if n%2 == 0 {
-			// then the E ones have the same M, and the W ones are -1 M
-			candidates = append(candidates, []struct {
-				m, n int
-				d    DirectionType
-			}{
-				{m - 1, n - 1, NW}, // NW
-				{m - 1, n + 1, SW}, // SW
-				{m, n + 1, SE},     // SE
-				{m, n - 1, NE},     // NE
-			}...)
-		} else {
-			// then the E ones are +1 M, and the W ones have the same M
-			candidates = append(candidates, []struct {
-				m, n int
-				d    DirectionType
-			}{
-				{m, n - 1, NW},     // NW
-				{m, n + 1, SW},     // SW
-				{m + 1, n + 1, SE}, // SE
-				{m + 1, n - 1, NE}, // NE
-			}...)
-		}
-
-		// Attach as neighbors only the ones that appear in the field.
-		for _, candidate := range candidates {
-			neighbor := f.Get4(candidate.m, candidate.n)
-			if neighbor == nil {
-				continue
-			}
-			h4.neighbors = append(h4.neighbors, neighbor)
-		}
-	}
-}
-
-func (f *Field) calcNeighbors7() {
-	for _, h7 := range f.hex7s {
-		h7.neighbors = []*Hex7{}
-		m, n := h7.M, h7.N
-		// Find neighbor candidates.
-		candidates := []struct {
-			m, n int
-			d    DirectionType
-		}{
-			{m, n - 2, N}, // N
-			{m, n + 2, S}, // S
-		}
-		if n%2 == 0 {
-			// then the E ones have the same M, and the W ones are -1 M
-			candidates = append(candidates, []struct {
-				m, n int
-				d    DirectionType
-			}{
-				{m - 1, n - 1, NW}, // NW
-				{m - 1, n + 1, SW}, // SW
-				{m, n + 1, SE},     // SE
-				{m, n - 1, NE},     // NE
-			}...)
-		} else {
-			// then the E ones are +1 M, and the W ones have the same M
-			candidates = append(candidates, []struct {
-				m, n int
-				d    DirectionType
-			}{
-				{m, n - 1, NW},     // NW
-				{m, n + 1, SW},     // SW
-				{m + 1, n + 1, SE}, // SE
-				{m + 1, n - 1, NE}, // NE
-			}...)
-		}
-
-		// Attach as neighbors only the ones that appear in the field.
-		for _, candidate := range candidates {
-			neighbor := f.Get7(candidate.m, candidate.n)
-			if neighbor == nil {
-				continue
-			}
-			h7.neighbors = append(h7.neighbors, neighbor)
-		}
-	}
-}
-
-func (f *Field) calcHex4() {
-	// For every Hex in the Field.
-	for _, hex := range f.hexes {
-		// If hex has a neighbor to the SW, S, and SE, then it's a valid Hex4.
-		h4 := Hex4{
-			M: hex.M,
-			N: hex.N,
-			hexes: map[DirectionType]*Hex{
-				N: hex,
-			},
-		}
-		if h, ok := hex.neighborsByDirection[SW]; !ok {
-			continue
-		} else {
-			h4.hexes[SW] = h
-		}
-		if h, ok := hex.neighborsByDirection[S]; !ok {
-			continue
-		} else {
-			h4.hexes[S] = h
-		}
-		if h, ok := hex.neighborsByDirection[SE]; !ok {
-			continue
-		} else {
-			h4.hexes[SE] = h
-		}
-
-		// If we passed all those continues, then we have a valid Hex4, and we can add it to the Field.
-		f.hex4s[Key{hex.M, hex.N}] = &h4
-	}
-}
-
-func (f *Field) calcHex7() {
-	// For every Hex in the Field.
-	for _, hex := range f.hexes {
-		// If hex has a neighbor to the SW, S, SE, NE, N and NW, then it's a valid Hex7.
-		h7 := Hex7{
-			M: hex.M,
-			N: hex.N,
-			hexes: map[DirectionType]*Hex{
-				CENTER: hex,
-			},
-		}
-		if h, ok := hex.neighborsByDirection[SW]; !ok {
-			continue
-		} else {
-			h7.hexes[SW] = h
-		}
-		if h, ok := hex.neighborsByDirection[S]; !ok {
-			continue
-		} else {
-			h7.hexes[S] = h
-		}
-		if h, ok := hex.neighborsByDirection[SE]; !ok {
-			continue
-		} else {
-			h7.hexes[SE] = h
-		}
-		if h, ok := hex.neighborsByDirection[NE]; !ok {
-			continue
-		} else {
-			h7.hexes[NE] = h
-		}
-		if h, ok := hex.neighborsByDirection[N]; !ok {
-			continue
-		} else {
-			h7.hexes[N] = h
-		}
-		if h, ok := hex.neighborsByDirection[NW]; !ok {
-			continue
-		} else {
-			h7.hexes[NW] = h
-		}
-
-		// If we passed all those continues, then we have a valid Hex7, and we can add it to the Field.
-		f.hex7s[Key{hex.M, hex.N}] = &h7
 	}
 }
 
@@ -385,26 +202,6 @@ func (f *Field) Get(m, n int) *Hex {
 	return hex
 }
 
-// Get4 accepts M,N coordinates and returns the Hex4 with those coordinates if it
-// exists in the field.
-func (f *Field) Get4(m, n int) *Hex4 {
-	hex, ok := f.hex4s[Key{m, n}]
-	if !ok {
-		return nil
-	}
-	return hex
-}
-
-// Get7 accepts M,N coordinates and returns the Hex7 with those coordinates if it
-// exists in the field.
-func (f *Field) Get7(m, n int) *Hex7 {
-	hex, ok := f.hex7s[Key{m, n}]
-	if !ok {
-		return nil
-	}
-	return hex
-}
-
 // At accepts world coordinates and returns the Hex there if there is one.
 func (f *Field) At(x, y int) *Hex {
 	rx, ry := relative(x, y)
@@ -413,88 +210,6 @@ func (f *Field) At(x, y int) *Hex {
 	m, n = xyToMN(rx, ry, m, n)
 
 	return f.Get(m, n)
-}
-
-// At4 accepts world coordinates and returns the Hex4 there if there is one.
-func (f *Field) At4(x, y int) *Hex4 {
-	// TODO: Is adding yStride to y the best solution here?
-	rx, ry := relative(x, y-yStride)
-	m, n := roughMN(x, y-yStride)
-
-	m, n = xyToMN(rx, ry, m, n)
-
-	return f.Get4(m, n)
-}
-
-// At7 accepts world coordinates and returns the Hex7 there if there is one.
-func (f *Field) At7(x, y int) *Hex7 {
-	rx, ry := relative(x, y)
-	m, n := roughMN(x, y)
-
-	m, n = xyToMN(rx, ry, m, n)
-
-	return f.Get7(m, n)
-}
-
-// Surrounding determines the Hexes that surround the Key k.
-func (f *Field) Surrounding(k Key) []Key {
-	result := []Key{}
-	for k := range k.Neighbors() {
-		result = append(result, k)
-	}
-	return result
-}
-
-// Surrounding4 returns the Hex4s that surround the Hex4 at Key k.
-func (f *Field) Surrounding4(k Key) []Key {
-	result := []Key{}
-
-	originals := k.Adjacent()
-	result = append(result, originals[N], originals[NW], originals[NE])
-
-	// from S of origin, S, SW, SE
-	southerns := originals[S].Adjacent()
-	result = append(result, southerns[S], southerns[SW], southerns[SE])
-
-	// from SW of origin, NW, SW
-	westerns := originals[SW].Adjacent()
-	result = append(result, westerns[NW], westerns[SW])
-
-	// from SE of origin, NE, SE
-	easterns := originals[SE].Adjacent()
-	result = append(result, easterns[NE], easterns[SE])
-
-	return result
-}
-
-// Surrounding7 returns the Hex7s that surround the Hex7 at Key k.
-func (f *Field) Surrounding7(k Key) []Key {
-	result := []Key{}
-	o := k.Adjacent()
-
-	// N, NW, SW of NW
-	nw := o[NW].Adjacent()
-	result = append(result, nw[N], nw[NW], nw[SW])
-
-	// S, SW of SW
-	sw := o[SW].Adjacent()
-	result = append(result, sw[S], sw[SW])
-
-	// N, NE, SE of NE
-	ne := o[NE].Adjacent()
-	result = append(result, ne[N], ne[NE], ne[SE])
-
-	// SE, S of SE
-	se := o[SE].Adjacent()
-	result = append(result, se[SE], se[S])
-
-	// N of N
-	result = append(result, o[N].Adjacent()[N])
-
-	// S of S
-	result = append(result, o[S].Adjacent()[S])
-
-	return result
 }
 
 // Dimensions returns the maximum extent of the field in M and N dimensions.
@@ -614,122 +329,4 @@ func xyToMN(x, y, m, n int) (int, int) {
 	default:
 		panic("lookup table contained a value other than -1, 0, or 1: incoherant state not handled")
 	}
-}
-
-// LogicalField is a representation of a Field that provides LogicalHexes from
-// calls to At() and Get().
-type LogicalField interface {
-	At(x, y int) LogicalHex
-	Get(m, n int) LogicalHex
-
-	Surrounding(k Key) []Key
-}
-
-// LogicalHex is a Hex that does not specify its size. It might be a Hex, Hex4,
-// or Hex7.
-type LogicalHex interface {
-	Hexes() []*Hex
-	X() float64
-	Y() float64
-	Key() Key
-}
-
-// Field1 is a specialization of Field that provides At and Get for single
-// Hexes.
-type Field1 struct {
-	f *Field
-}
-
-// NewField1 creates a new Field1.
-func NewField1(f *Field) *Field1 {
-	return &Field1{f: f}
-}
-
-// At converts world coordinates to a LogicalHex if it exists in the Field.
-func (f1 *Field1) At(x, y int) LogicalHex {
-	h := f1.f.At(x, y)
-	if h == nil {
-		return nil
-	}
-	return h
-}
-
-// Get returns the LogicalHex at M,N if it exists in the Field.
-func (f1 *Field1) Get(m, n int) LogicalHex {
-	h := f1.f.Get(m, n)
-	if h == nil {
-		return nil
-	}
-	return h
-}
-
-// Surrounding Hexes of Hex with coordinates m,n.
-func (f1 *Field1) Surrounding(k Key) []Key {
-	return f1.f.Surrounding(k)
-}
-
-// Field4 is a specialization of Field that provides At and Get for Hex4s.
-type Field4 struct {
-	f *Field
-}
-
-// NewField4 creates a new Field4.
-func NewField4(f *Field) *Field4 {
-	return &Field4{f: f}
-}
-
-// At converts world coordinates to a LogicalHex if it exists in the Field.
-func (f4 *Field4) At(x, y int) LogicalHex {
-	h := f4.f.At4(x, y)
-	if h == nil {
-		return nil
-	}
-	return h
-}
-
-// Get returns the LogicalHex at M,N if it exists in the Field.
-func (f4 *Field4) Get(m, n int) LogicalHex {
-	h := f4.f.Get4(m, n)
-	if h == nil {
-		return nil
-	}
-	return h
-}
-
-// Surrounding Hexes of Hex with coordinates m,n.
-func (f4 *Field4) Surrounding(k Key) []Key {
-	return f4.f.Surrounding4(k)
-}
-
-// Field7 is a specialization of Field that provides At and Get for Hex7s.
-type Field7 struct {
-	f *Field
-}
-
-// NewField7 creates a new Field7.
-func NewField7(f *Field) *Field7 {
-	return &Field7{f: f}
-}
-
-// At converts world coordinates to a LogicalHex if it exists in the Field.
-func (f7 *Field7) At(x, y int) LogicalHex {
-	h := f7.f.At7(x, y)
-	if h == nil {
-		return nil
-	}
-	return h
-}
-
-// Get returns the LogicalHex at M,N if it exists in the Field.
-func (f7 *Field7) Get(m, n int) LogicalHex {
-	h := f7.f.Get7(m, n)
-	if h == nil {
-		return nil
-	}
-	return h
-}
-
-// Surrounding Hexes of Hex with coordinates m,n.
-func (f7 *Field7) Surrounding(k Key) []Key {
-	return f7.f.Surrounding7(k)
 }

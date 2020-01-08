@@ -22,11 +22,6 @@ const (
 	// field.
 	TargetAnywhere TargetingRule = iota
 
-	// TargetForNavigation is like TargetAnywhere, but operates in terms of the
-	// size of the Participant. The hexes selected might be Hex4s or Hex7s. This
-	// is useful for moving, or for teleportation skills.
-	TargetForNavigation
-
 	// TargetAdjacent means that a skill can be targeted on any hex adjacent to
 	// the origin.
 	TargetAdjacent
@@ -47,7 +42,7 @@ const (
 
 // TargetingForSkill maps from SkillCodes to TargetingRules.
 var TargetingForSkill = map[SkillCode]TargetingRule{
-	BasicMovement: TargetForNavigation,
+	BasicMovement: TargetAnywhere,
 	BasicAttack:   TargetAdjacent,
 	MageLightning: TargetAnywhere,
 }

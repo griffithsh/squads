@@ -96,7 +96,6 @@ func (em *Manager) setupSquad() {
 	squad.Members = append(squad.Members, e)
 	em.mgr.AddComponent(e, &game.Character{
 		Name:                 "Samithee",
-		Size:                 game.SMALL,
 		Sex:                  game.Male,
 		Profession:           game.Villager,
 		PreparationThreshold: 701,
@@ -122,7 +121,6 @@ func (em *Manager) setupSquad() {
 	squad.Members = append(squad.Members, e)
 	em.mgr.AddComponent(e, &game.Character{
 		Name:                 "Timjamen",
-		Size:                 game.SMALL,
 		Sex:                  game.Male,
 		Profession:           game.Villager,
 		PreparationThreshold: 699,

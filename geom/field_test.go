@@ -2,8 +2,6 @@ package geom
 
 import (
 	"fmt"
-	"reflect"
-	"sort"
 	"testing"
 )
 
@@ -120,73 +118,6 @@ func TestRoughMN(t *testing.T) {
 
 			if m != tc.wantM || n != tc.wantN {
 				t.Errorf("\nwant %d,%d\ngot  %d,%d", tc.wantM, tc.wantN, m, n)
-			}
-		})
-	}
-}
-
-func TestSurrounding(t *testing.T) {
-	f := NewField()
-	f1 := NewField1(f)
-	f4 := NewField4(f)
-	f7 := NewField7(f)
-
-	tests := []struct {
-		name         string
-		origin       Key
-		surroundFunc func(k Key) []Key
-		want         []Key
-	}{
-		{"Field1", Key{0, 3}, f1.Surrounding, []Key{
-			Key{0, 1}, Key{1, 2}, Key{1, 4}, Key{0, 5}, Key{0, 4}, Key{0, 2},
-		}},
-		{"Field4", Key{2, 2}, f4.Surrounding, []Key{
-			Key{2, 0},
-			Key{2, 1},
-			Key{3, 2},
-			Key{3, 4},
-			Key{2, 5},
-			Key{2, 6},
-			Key{1, 5},
-			Key{1, 4},
-			Key{1, 2},
-			Key{1, 1},
-		}},
-		{"Field7", Key{1, 4}, f7.Surrounding, []Key{
-			Key{1, 0},
-			Key{1, 1},
-			Key{2, 2},
-			Key{2, 4},
-			Key{2, 6},
-			Key{1, 7},
-			Key{1, 8},
-			Key{0, 7},
-			Key{0, 6},
-			Key{0, 4},
-			Key{0, 2},
-			Key{0, 1},
-		}},
-	}
-
-	for _, tc := range tests {
-		t.Run(fmt.Sprintf("%s,%v", tc.name, tc.origin), func(t *testing.T) {
-			got := tc.surroundFunc(tc.origin)
-			// todo sort want and got
-			sort.Slice(got, func(i, j int) bool {
-				if got[i].M != got[j].M {
-					return got[i].M < got[j].M
-				}
-				return got[i].N < got[j].N
-			})
-			sort.Slice(tc.want, func(i, j int) bool {
-				if tc.want[i].M != tc.want[j].M {
-					return tc.want[i].M < tc.want[j].M
-				}
-				return tc.want[i].N < tc.want[j].N
-			})
-
-			if !reflect.DeepEqual(tc.want, got) {
-				t.Errorf("\nwant \n\t%v\ngot \n\t%v", tc.want, got)
 			}
 		})
 	}

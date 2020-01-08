@@ -9,11 +9,9 @@ type ObstacleType int
 // obstacle types, like a Tree or Rock, or another Character could be an Obstacle
 // too.
 const (
-	SmallCharacter ObstacleType = iota
-	MediumCharacter
-	LargeCharacter
-	Crevasse
-	Tree
+	CharacterObstacle ObstacleType = iota
+	CrevasseObstacle
+	TreeObstacle
 )
 
 // Obstacle is a Component that blocks a Hex.

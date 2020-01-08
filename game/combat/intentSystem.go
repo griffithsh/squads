@@ -10,12 +10,14 @@ import (
 	"github.com/griffithsh/squads/geom"
 )
 
+// IntentSystem processes intents of Participants in a combat.
 type IntentSystem struct {
 	mgr *ecs.World
 	*event.Bus
 	field *geom.Field
 }
 
+// NewIntentSystem constructs a new IntentSystem.
 func NewIntentSystem(mgr *ecs.World, bus *event.Bus, field *geom.Field) *IntentSystem {
 	return &IntentSystem{
 		mgr:   mgr,
@@ -49,12 +51,11 @@ func (s *IntentSystem) Update() {
 
 		var start, goal geom.Key
 		var stepToWaypoint func(geom.NavigateStep) Waypoint
-		exists := ExistsFuncFactory(s.field, participant.Size)
+		exists := ExistsFuncFactory(s.field)
 		costs := CostsFuncFactory(s.field, s.mgr, e)
 
-		f := game.AdaptField(s.field, participant.Size)
-		startHex := f.At(int(pos.Center.X), int(pos.Center.Y))
-		goalHex := f.At(int(intent.X), int(intent.Y))
+		startHex := s.field.At(int(pos.Center.X), int(pos.Center.Y))
+		goalHex := s.field.At(int(intent.X), int(intent.Y))
 		if startHex == nil || goalHex == nil {
 			// Don't navigate.
 			s.Publish(&ParticipantMovementConcluded{Entity: e})
@@ -63,7 +64,7 @@ func (s *IntentSystem) Update() {
 		start = startHex.Key()
 		goal = goalHex.Key()
 		stepToWaypoint = func(step geom.NavigateStep) Waypoint {
-			h := f.Get(step.M, step.N)
+			h := s.field.Get(step.M, step.N)
 			return Waypoint{
 				X: h.X(),
 				Y: h.Y(),
@@ -102,9 +103,9 @@ func (s *IntentSystem) Update() {
 type ExistsFunc func(geom.Key) bool
 
 // ExistsFuncFactory constructs ExistsFuncs from a context.
-func ExistsFuncFactory(f *geom.Field, sz game.CharacterSize) ExistsFunc {
+func ExistsFuncFactory(f *geom.Field) ExistsFunc {
 	return func(k geom.Key) bool {
-		return game.AdaptField(f, sz).Get(k.M, k.N) != nil
+		return f.Get(k.M, k.N) != nil
 	}
 }
 
@@ -122,7 +123,7 @@ func CostsFuncFactory(f *geom.Field, mgr *ecs.World, participantEntity ecs.Entit
 		}
 		obstacle := mgr.Component(e, "Obstacle").(*game.Obstacle)
 
-		h := game.AdaptFieldObstacle(f, obstacle.ObstacleType).Get(obstacle.M, obstacle.N)
+		h := f.Get(obstacle.M, obstacle.N)
 		if h == nil {
 			continue
 		}
@@ -136,10 +137,9 @@ func CostsFuncFactory(f *geom.Field, mgr *ecs.World, participantEntity ecs.Entit
 			})
 		}
 	}
-	participant := mgr.Component(participantEntity, "Participant").(*Participant)
 
 	return func(k geom.Key) float64 {
-		hex := game.AdaptField(f, participant.Size).Get(k.M, k.N)
+		hex := f.Get(k.M, k.N)
 
 		if hex == nil {
 			return math.Inf(0)

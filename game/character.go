@@ -1,17 +1,6 @@
 package game
 
-//go:generate stringer -output=./character_string.go -type=CharacterSize,CharacterProfession,CharacterSex,CharacterPerformance
-
-// CharacterSize enumerates Sizes for Character.
-type CharacterSize int
-
-// CharacterSize represents the sizes that an Character can be. Small Character
-// take only one Hex, Medium, take 4, and Large take 7.
-const (
-	SMALL CharacterSize = iota
-	MEDIUM
-	LARGE
-)
+//go:generate stringer -output=./character_string.go -type=CharacterProfession,CharacterSex,CharacterPerformance
 
 type CharacterProfession int
 
@@ -51,7 +40,6 @@ type Character struct {
 	BigIcon   Sprite // (52x52)
 
 	// Intrinsic to the Character
-	Size       CharacterSize
 	Profession CharacterProfession
 	Sex        CharacterSex
 

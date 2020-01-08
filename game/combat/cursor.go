@@ -124,24 +124,9 @@ func (cm *CursorManager) repaintLiveParticipants() {
 		if i < len(entities) {
 			spr := game.Sprite{
 				Texture: "cursors.png",
-			}
-			participant := cm.mgr.Component(entities[i], "Participant").(*Participant)
-			switch participant.Size {
-			case game.SMALL:
-				spr.X = 0
-				spr.Y = 0
-				spr.W = 24
-				spr.H = 16
-			case game.MEDIUM:
-				spr.X = 58
-				spr.Y = 32
-				spr.W = 58
-				spr.H = 32
-			case game.LARGE:
-				spr.X = 58
-				spr.Y = 64
-				spr.W = 58
-				spr.H = 48
+
+				X: 0, Y: 0,
+				W: 24, H: 16,
 			}
 			cm.mgr.AddComponent(slot, &spr)
 			cm.mgr.AddComponent(slot, &game.Leash{
@@ -218,14 +203,12 @@ func (cm *CursorManager) paintNavigationHighlights() {
 	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
 	pos := cm.mgr.Component(cm.turnToken, "Position").(*game.Position)
 
-	f := game.AdaptField(cm.field, participant.Size)
-
 	var start, goal geom.Key
 
-	sh := f.At(int(pos.Center.X), int(pos.Center.Y))
+	sh := cm.field.At(int(pos.Center.X), int(pos.Center.Y))
 	start = sh.Key()
 
-	exists := ExistsFuncFactory(cm.field, participant.Size)
+	exists := ExistsFuncFactory(cm.field)
 	costs := CostsFuncFactory(cm.field, cm.mgr, cm.turnToken)
 
 	type comps struct {
@@ -243,7 +226,7 @@ func (cm *CursorManager) paintNavigationHighlights() {
 	goal = *cm.selectedKey
 	steps, err = geom.Navigate(start, goal, exists, costs)
 	if err != nil {
-		h := f.Get(goal.M, goal.N)
+		h := cm.field.Get(goal.M, goal.N)
 		if h == nil {
 			goto repaintLabel
 		}
@@ -268,7 +251,7 @@ func (cm *CursorManager) paintNavigationHighlights() {
 	}
 
 	for _, step := range steps {
-		h := f.Get(step.M, step.N)
+		h := cm.field.Get(step.M, step.N)
 		for _, h := range h.Hexes() {
 			if _, ok := used[h]; ok {
 				continue
