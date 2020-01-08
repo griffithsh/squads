@@ -160,15 +160,7 @@ func (m *Manager) playerTeam() *game.Team {
 	return nil
 }
 
-// Begin a Manager session.
-func (m *Manager) Begin(d Data) {
-	m.setState(FadingIn)
-	m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
-		W: m.screenW, H: m.screenH,
-		OnComplete: func() {
-			m.setState(AwaitingInputState)
-		},
-	})
+func (m *Manager) boot(d Data) {
 	// Add new entities for the squad, overworld terrain, etc?
 	// TODO
 
@@ -340,6 +332,20 @@ func (m *Manager) Begin(d Data) {
 			}
 		}
 	}
+}
+
+// Begin a Manager session.
+func (m *Manager) Begin(d Data) {
+	m.setState(FadingIn)
+	m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
+		W: m.screenW, H: m.screenH,
+		OnComplete: func() {
+			m.setState(AwaitingInputState)
+		},
+		OnInitialised: func() {
+			m.boot(d)
+		},
+	})
 }
 
 func (m *Manager) createSkeletonBaddySquad(e ecs.Entity, enemies *game.Team) {
