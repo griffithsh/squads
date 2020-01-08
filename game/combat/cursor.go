@@ -190,11 +190,12 @@ func (cm *CursorManager) repaintHighlightedHexes() {
 }
 
 func (cm *CursorManager) paintSingleHex() {
-	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
-	f := game.AdaptField(cm.field, participant.Size)
-	h := f.Get(cm.selectedKey.M, cm.selectedKey.N)
 	for i, e := range cm.mgr.Tagged(pathNavigationTag) {
-		if i == 0 {
+		cm.mgr.RemoveTag(e, invalidatedCursorsTag)
+		if i == 0 && cm.selectedKey != nil {
+			participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
+			f := game.AdaptField(cm.field, participant.Size)
+			h := f.Get(cm.selectedKey.M, cm.selectedKey.N)
 			cm.mgr.AddComponent(e, &game.Sprite{
 				Texture: "cursors.png",
 
