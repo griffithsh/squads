@@ -90,55 +90,31 @@ func (em *Manager) setupSquad() {
 	players := game.NewTeam()
 	em.mgr.AddComponent(e, players)
 
+	g := newGenerator()
+
 	// Create Characters to Populate the player's Squad.
 	e = em.mgr.NewEntity()
 	em.mgr.AddComponent(e, players)
 	squad.Members = append(squad.Members, e)
-	em.mgr.AddComponent(e, &game.Character{
-		Name:                 "Samithee",
-		Sex:                  game.Male,
-		Profession:           game.Villager,
-		PreparationThreshold: 701,
-		ActionPoints:         100,
-		SmallIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       0,
-			Y:       76,
-			W:       26,
-			H:       26,
-		},
-		BigIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       0,
-			Y:       24,
-			W:       52,
-			H:       52,
-		},
-	})
+	em.mgr.AddComponent(e, g.generateChar())
 
 	e = em.mgr.NewEntity()
 	em.mgr.AddComponent(e, players)
 	squad.Members = append(squad.Members, e)
-	em.mgr.AddComponent(e, &game.Character{
-		Name:                 "Timjamen",
-		Sex:                  game.Male,
-		Profession:           game.Villager,
-		PreparationThreshold: 699,
-		ActionPoints:         100,
+	em.mgr.AddComponent(e, g.generateChar())
 
-		SmallIcon: game.Sprite{
-			Texture: "portraits.png",
-			X:       178,
-			Y:       230,
-			W:       26,
-			H:       26,
-		},
-		BigIcon: game.Sprite{
-			Texture: "portraits.png",
-			X:       204,
-			Y:       204,
-			W:       52,
-			H:       52,
-		},
-	})
+	e = em.mgr.NewEntity()
+	em.mgr.AddComponent(e, players)
+	squad.Members = append(squad.Members, e)
+	em.mgr.AddComponent(e, g.generateChar())
+
+	e = em.mgr.NewEntity()
+	em.mgr.AddComponent(e, players)
+	squad.Members = append(squad.Members, e)
+	em.mgr.AddComponent(e, g.generateChar())
+
+	e = em.mgr.NewEntity()
+	em.mgr.AddComponent(e, players)
+	squad.Members = append(squad.Members, e)
+	em.mgr.AddComponent(e, g.generateChar())
 }
