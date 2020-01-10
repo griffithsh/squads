@@ -114,38 +114,19 @@ var femaleNames = []string{
 }
 
 func (g *generator) generateIcons(sex game.CharacterSex) (small game.Sprite, big game.Sprite) {
-	switch g.r.Int() % 2 {
-	case 0:
-		small = game.Sprite{
-			Texture: "hud.png",
-			X:       0,
-			Y:       76,
-			W:       26,
-			H:       26,
-		}
-		big = game.Sprite{
-			Texture: "hud.png",
-			X:       0,
-			Y:       24,
-			W:       52,
-			H:       52,
-		}
-	default:
-		small = game.Sprite{
-			Texture: "portraits.png",
-			X:       178,
-			Y:       230,
-			W:       26,
-			H:       26,
-		}
-		big = game.Sprite{
-			Texture: "portraits.png",
-			X:       204,
-			Y:       204,
-			W:       52,
-			H:       52,
-		}
-	}
+	i := g.r.Int() % 2
 
-	return small, big
+	return game.Sprite{
+			Texture: "portraits-26.png",
+			X:       i * 26,
+			Y:       0,
+			W:       26,
+			H:       26,
+		}, game.Sprite{
+			Texture: "portraits-52.png",
+			X:       i * 52,
+			Y:       0,
+			W:       52,
+			H:       52,
+		}
 }
