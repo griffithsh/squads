@@ -7,8 +7,9 @@ import (
 // NewWorld creates an Entity Component System World.
 func NewWorld() *World {
 	return &World{
-		entities:   map[Entity]struct{}{},
-		components: map[string]map[Entity]Component{},
+		entities:     map[Entity]struct{}{},
+		components:   map[string]map[Entity]Component{},
+		dependencies: map[Entity][]Entity{},
 	}
 }
 
@@ -16,6 +17,8 @@ func NewWorld() *World {
 type World struct {
 	entities   map[Entity]struct{}
 	components map[string]map[Entity]Component
+
+	dependencies map[Entity][]Entity
 }
 
 // Get returns the list of entities that have all of the provided types.
@@ -96,6 +99,13 @@ func (mgr *World) NewEntity() Entity {
 
 // DestroyEntity removes an Entity and all its Components.
 func (mgr *World) DestroyEntity(e Entity) {
+	if dependants, ok := mgr.dependencies[e]; ok {
+		for _, e := range dependants {
+			mgr.DestroyEntity(e)
+		}
+		delete(mgr.dependencies, e)
+	}
+
 	for _, entities := range mgr.components {
 		delete(entities, e)
 	}
@@ -221,4 +231,10 @@ func (mgr *World) RemoveTag(e Entity, tag string) {
 	} else {
 		mgr.RemoveComponent(e, tags)
 	}
+}
+
+// Dependency adds a cascading destroy rule for a pair of Entities. When parent
+// is destroyed, then child is also destroyed.
+func (mgr *World) Dependency(parent, child Entity) {
+	mgr.dependencies[parent] = append(mgr.dependencies[parent], child)
 }
