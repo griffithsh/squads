@@ -272,15 +272,15 @@ func (hud *HUD) showCurrentParticipant() {
 	hud.mgr.Tag(parent, invalidatedTag)
 
 	e = hud.mgr.NewEntity()
-	hud.mgr.AddComponent(e, &ecs.Parent{Value: parent})
+	hud.mgr.Dependency(parent, e)
 	hud.mgr.Tag(e, currentParticipantHovererTag)
 
 	e = hud.mgr.NewEntity()
-	hud.mgr.AddComponent(e, &ecs.Parent{Value: parent})
+	hud.mgr.Dependency(parent, e)
 	hud.mgr.Tag(e, currentParticipantPortraitTag)
 
 	e = hud.mgr.NewEntity()
-	hud.mgr.AddComponent(e, &ecs.Parent{Value: parent})
+	hud.mgr.Dependency(parent, e)
 	hud.mgr.Tag(e, currentParticipantNameTag)
 }
 
