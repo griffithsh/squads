@@ -386,9 +386,7 @@ func (s *FontSystem) construct(parent ecs.Entity) {
 	f := func(w, h, x, y int) {
 		e := s.mgr.NewEntity()
 		children.Value = append(children.Value, e)
-		s.mgr.AddComponent(e, &ecs.Parent{
-			Value: parent,
-		})
+		s.mgr.Dependency(parent, e)
 
 		// letterSpace is the distance between letters.
 		letterSpace := 1.0 * scale.X

@@ -357,6 +357,7 @@ func (hud *HUD) repaintCurrentParticipant() {
 		Layer:    hud.layer + 1,
 		Absolute: true,
 	})
+
 	hud.mgr.RemoveTag(parent, invalidatedTag)
 }
 
@@ -374,9 +375,7 @@ func (hud *HUD) showCurrentParticipantStats() {
 	children := make([]ecs.Entity, 8)
 	for i := 0; i < 8; i++ {
 		e := hud.mgr.NewEntity()
-		hud.mgr.AddComponent(e, &ecs.Parent{
-			Value: parent,
-		})
+		hud.mgr.Dependency(parent, e)
 		children[i] = e
 	}
 	hud.mgr.AddComponent(parent, &ecs.Children{
@@ -449,9 +448,7 @@ func (hud *HUD) showSkills() {
 	children := make([]ecs.Entity, 14)
 	for i := 0; i < 14; i++ {
 		children[i] = hud.mgr.NewEntity()
-		hud.mgr.AddComponent(children[i], &ecs.Parent{
-			Value: e,
-		})
+		hud.mgr.Dependency(e, children[i])
 	}
 
 	// Append all child entities to parent
@@ -656,9 +653,7 @@ func (hud *HUD) showTurnQueue() {
 	children := make([]ecs.Entity, turnQueueSlots*entitiesPerTurnQueueSlot)
 	for i := 0; i < turnQueueSlots*entitiesPerTurnQueueSlot; i++ {
 		child := hud.mgr.NewEntity()
-		hud.mgr.AddComponent(child, &ecs.Parent{
-			Value: e,
-		})
+		hud.mgr.Dependency(e, child)
 		children[i] = child
 	}
 	hud.mgr.AddComponent(e, &ecs.Children{
@@ -751,9 +746,7 @@ func (hud *HUD) repaintTurnQueue() {
 		// current preparation progressbar
 		prepPerc := float64(v.current) / float64(v.max)
 		child = children.Value[i*3+1]
-		hud.mgr.AddComponent(child, &ecs.Parent{
-			Value: parent,
-		})
+		hud.mgr.Dependency(parent, child)
 		hud.mgr.AddComponent(child, &game.Sprite{
 			Texture: "tranquility-plus-39-palette.png",
 			X:       1,
@@ -776,9 +769,7 @@ func (hud *HUD) repaintTurnQueue() {
 
 		// current/max preparation text
 		child = children.Value[i*3+2]
-		hud.mgr.AddComponent(child, &ecs.Parent{
-			Value: parent,
-		})
+		hud.mgr.Dependency(parent, child)
 		hud.mgr.AddComponent(child, &game.Font{
 			Text: fmt.Sprintf("%d/%d", v.current, v.max),
 			Size: "small",

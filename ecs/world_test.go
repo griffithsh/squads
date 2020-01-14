@@ -58,12 +58,12 @@ func TestRemoveTag(t *testing.T) {
 func TestListComponents(t *testing.T) {
 	mgr := NewWorld()
 	e := mgr.NewEntity()
-	mgr.AddComponent(e, &Parent{})
+	mgr.AddComponent(e, &Children{})
 	mgr.Tag(e, "Anything")
 
 	got := mgr.ListComponents(e)
 
-	want := []string{"Parent", "Tags"}
+	want := []string{"Children", "Tags"}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("want %v, got %v", want, got)
 	}
