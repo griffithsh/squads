@@ -30,6 +30,8 @@ func (g *generator) generateChar() *game.Character {
 		ActionPoints:         100,
 		SmallIcon:            small,
 		BigIcon:              big,
+
+		Disambiguator: g.r.Float64(),
 	}
 }
 

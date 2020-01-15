@@ -361,6 +361,7 @@ func CToP(char *game.Character) *Participant {
 		// Dexterity:    0,
 		// Intelligence: 0,
 		// Vitality:     0,
+		Disambiguator: char.Disambiguator,
 	}
 }
 
@@ -594,9 +595,16 @@ func (cm *Manager) Run(elapsed time.Duration) {
 			}
 		}
 
-		// N.B. It's non-deterministic whose turn it is when multiple
+		// FIXME: It's non-deterministic whose turn it is when multiple
 		// Participants finish preparing at the same time.
 		if len(prepared) > 0 {
+
+			sort.Slice(prepared, func(i, j int) bool {
+				p1 := cm.mgr.Component(prepared[i], "Participant").(*Participant)
+				p2 := cm.mgr.Component(prepared[j], "Participant").(*Participant)
+
+				return p1.Disambiguator < p2.Disambiguator
+			})
 			e := prepared[0]
 			participant := cm.mgr.Component(e, "Participant").(*Participant)
 

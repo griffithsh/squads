@@ -680,11 +680,12 @@ func (hud *HUD) repaintTurnQueue() {
 		return
 	}
 	type v struct {
-		e            ecs.Entity
-		remaining    int
-		textureY     int
-		current, max int
-		icon         *game.Sprite
+		e             ecs.Entity
+		remaining     int
+		textureY      int
+		current, max  int
+		icon          *game.Sprite
+		disambiguator float64
 	}
 
 	var q []v
@@ -702,15 +703,19 @@ func (hud *HUD) repaintTurnQueue() {
 		}
 
 		q = append(q, v{
-			e:         e,
-			remaining: participant.PreparationThreshold.Max - participant.PreparationThreshold.Cur,
-			current:   participant.PreparationThreshold.Cur,
-			max:       participant.PreparationThreshold.Max,
-			icon:      &participant.SmallIcon,
+			e:             e,
+			remaining:     participant.PreparationThreshold.Max - participant.PreparationThreshold.Cur,
+			current:       participant.PreparationThreshold.Cur,
+			max:           participant.PreparationThreshold.Max,
+			icon:          &participant.SmallIcon,
+			disambiguator: participant.Disambiguator,
 		})
 	}
 	sort.Slice(q, func(i, j int) bool {
-		return q[i].remaining < q[j].remaining
+		if q[i].remaining != q[j].remaining {
+			return q[i].remaining < q[j].remaining
+		}
+		return q[i].disambiguator < q[j].disambiguator
 	})
 
 	children := hud.mgr.Component(parent, "Children").(*ecs.Children)

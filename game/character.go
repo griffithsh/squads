@@ -53,6 +53,8 @@ type Character struct {
 	DexterityPerLevel    float64
 	IntelligencePerLevel float64
 	VitalityPerLevel     float64
+
+	Disambiguator float64 // random number to order Characters when their Preparation etc collide.
 }
 
 // Type of this Component.

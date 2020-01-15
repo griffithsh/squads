@@ -55,6 +55,8 @@ type Participant struct {
 	Vitality     int
 
 	Status EngagementStatus // Alive, Knocked down, or Escaped
+
+	Disambiguator float64
 }
 
 // Type of this Component.
