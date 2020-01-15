@@ -114,7 +114,7 @@ var femaleNames = []string{
 }
 
 func (g *generator) generateIcons(sex game.CharacterSex) (small game.Sprite, big game.Sprite) {
-	i := g.r.Int() % 2
+	i := g.r.Int() % 4
 
 	return game.Sprite{
 			Texture: "portraits-26.png",
