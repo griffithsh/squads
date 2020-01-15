@@ -428,6 +428,9 @@ func (s *FontSystem) construct(parent ecs.Entity) {
 
 // Update Fonts in the World.
 func (s *FontSystem) Update() {
+	// FIXME: Potentially a bug here because hashes are never removed from
+	// s.hashes? I think this would be hard to trigger though. You would need to
+	// be Removing the Font component instead of Destroying the entity.
 	entities := s.mgr.Get([]string{"Font", "Position"})
 	for _, e := range entities {
 		font := s.mgr.Component(e, "Font").(*Font)
