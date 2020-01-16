@@ -36,13 +36,15 @@ func (g *generator) generateChar() *game.Character {
 }
 
 func (g *generator) generateSex() game.CharacterSex {
-	switch g.r.Int() % 2 {
+	// N.B. 33% female.
+	switch g.r.Int() % 3 {
 	case 0:
-		return game.Male
-	default:
 		return game.Female
+	default:
+		return game.Male
 	}
 }
+
 func (g *generator) generateName(sex game.CharacterSex) string {
 	switch sex {
 	case game.Male:
