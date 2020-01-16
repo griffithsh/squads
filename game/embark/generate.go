@@ -141,9 +141,24 @@ var femaleNames = []string{
 	"Zenta",
 }
 
-func (g *generator) generateIcons(sex game.CharacterSex) (small game.Sprite, big game.Sprite) {
-	i := g.r.Int() % 9
+var maleIcons = []int{
+	0, 1, 3, 4, 5, 6,
+}
 
+var femaleIcons = []int{
+	0, 2, 3, 5, 7, 8,
+}
+
+func (g *generator) generateIcons(sex game.CharacterSex) (small game.Sprite, big game.Sprite) {
+	i := 0
+	switch sex {
+	case game.Male:
+		i = g.r.Intn(len(maleIcons))
+		i = maleIcons[i]
+	default:
+		i = g.r.Intn(len(femaleIcons))
+		i = femaleIcons[i]
+	}
 	return game.Sprite{
 			Texture: "portraits-26.png",
 			X:       i * 26,
