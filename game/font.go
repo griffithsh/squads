@@ -422,8 +422,9 @@ func (s *FontSystem) construct(parent ecs.Entity) {
 			py += lineHeight + lineSpace
 		} else if rn == ' ' {
 			px += 4
+		} else {
+			f(switchRune(rn))
 		}
-		f(switchRune(rn))
 	}
 }
 
