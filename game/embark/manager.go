@@ -17,6 +17,11 @@ type Manager struct {
 	bus *event.Bus
 
 	screenW, screenH int
+
+	// prepared lists Characters who are about to embark.
+	prepared []ecs.Entity
+	// villagers lists Characters who could be selected for embarking.
+	villagers []ecs.Entity
 }
 
 // NewManager creates a new Manager in a default state. You should call Begin to start the Manager.
@@ -33,21 +38,44 @@ func NewManager(mgr *ecs.World, bus *event.Bus) *Manager {
 // Begin an embark Manager, setting up Entities required to display and interact
 // with the embark screen.
 func (em *Manager) Begin() {
-	// Create a button to press to embark
-	e := em.mgr.NewEntity()
-	em.mgr.Tag(e, "embark")
+	em.rollVillagers()
+	em.repaint()
+}
 
-	// TODO: Generate 5 Characters, render "stat sheet" type things next to a
-	// little villager avatar for each.
+// End an embark Manager, resetting it to a default state.
+func (em *Manager) End() {
+	for _, e := range em.mgr.Tagged("embark") {
+		em.mgr.DestroyEntity(e)
+	}
+}
+
+func (em *Manager) handleWindowSizeChanged(e event.Typer) {
+	wsc := e.(*game.WindowSizeChanged)
+	em.screenW, em.screenH = wsc.NewW, wsc.NewH
+}
+
+// repaint synchronises the renderable Components to the Characters in
+// em.prepared and em.villagers. It should be called after a change is made to
+// who will embark.
+func (em *Manager) repaint() {
+	// Destroy all existing Entities used to render this Character.
+	for _, e := range em.mgr.Tagged("embark-characters") {
+		em.mgr.DestroyEntity(e)
+	}
+
+	for _, e := range em.mgr.Tagged("embark-hud") {
+		em.mgr.DestroyEntity(e)
+	}
+
 	lMargin := 64.0
 	tMargin := 16.0
-	sheetW := 144.0
-	g := newGenerator()
-	for i := 0; i < 5; i++ {
-		char := g.generateChar()
+	sheetW := 144.0 // sheetW is the width of each character sheet
+	for i, villager := range em.villagers {
+		char := em.mgr.Component(villager, "Character").(*game.Character)
 
 		container := em.mgr.NewEntity()
 		em.mgr.Tag(container, "embark")
+		em.mgr.Tag(container, "embark-characters")
 
 		var e ecs.Entity
 
@@ -122,7 +150,7 @@ func (em *Manager) Begin() {
 			Layer: 100,
 		})
 
-		// Prep?
+		// Prep
 		e = em.mgr.NewEntity()
 		em.mgr.Dependency(container, e)
 		em.mgr.AddComponent(e, &game.Font{
@@ -222,7 +250,7 @@ func (em *Manager) Begin() {
 			used++
 		}
 
-		// Embark button?
+		// embark button
 		e = em.mgr.NewEntity()
 		em.mgr.Dependency(container, e)
 		em.mgr.AddComponent(e, &game.Sprite{
@@ -238,6 +266,47 @@ func (em *Manager) Begin() {
 			},
 			Layer: 90,
 		})
+
+		handlePrepare := func(i int, villager ecs.Entity) func(x, y float64) {
+			return func(x, y float64) {
+				em.villagers = append(em.villagers[:i], em.villagers[i+1:]...)
+				em.prepared = append(em.prepared, villager)
+				em.repaint()
+			}
+		}
+		em.mgr.AddComponent(e, &ui.Interactive{
+			W: 48, H: 48,
+			Trigger: handlePrepare(i, villager),
+		})
+	}
+
+	// for _, e := range em.prepared {
+	// 	// TODO
+	// }
+
+	if len(em.prepared) > 0 {
+		// You can embark!
+		e := em.mgr.NewEntity()
+		em.mgr.Tag(e, "embark")
+		em.mgr.Tag(e, "embark-hud")
+		em.mgr.AddComponent(e, &game.Sprite{
+			Texture: "embark-button.png",
+
+			X: 0, Y: 0,
+			W: 64, H: 64,
+		})
+		em.mgr.AddComponent(e, &game.Scale{
+			X: 2,
+			Y: 2,
+		})
+		em.mgr.AddComponent(e, &game.Position{
+			Center: game.Center{
+				X: float64(em.screenW) / 2,
+				Y: float64(em.screenH) - 64,
+			},
+			Layer:    100,
+			Absolute: true,
+		})
 		em.mgr.AddComponent(e, &ui.Interactive{
 			W: 48, H: 48,
 			Trigger: func(x, y float64) {
@@ -250,11 +319,12 @@ func (em *Manager) Begin() {
 				players := game.NewTeam()
 				em.mgr.AddComponent(e, players)
 
-				// Create Characters to Populate the player's Squad.
-				e = em.mgr.NewEntity()
-				em.mgr.AddComponent(e, players)
-				squad.Members = append(squad.Members, e)
-				em.mgr.AddComponent(e, char)
+				// Add prepared villagers to the team and squad
+				for _, e := range em.prepared {
+					em.mgr.AddComponent(e, players)
+					squad.Members = append(squad.Members, e)
+					em.mgr.RemoveTag(e, "embark")
+				}
 
 				e = em.mgr.NewEntity()
 				em.mgr.AddComponent(e, &game.DiagonalMatrixWipe{
@@ -266,18 +336,23 @@ func (em *Manager) Begin() {
 				})
 			},
 		})
-
 	}
 }
 
-// End an embark Manager, resetting it to a default state.
-func (em *Manager) End() {
-	for _, e := range em.mgr.Tagged("embark") {
+// rollVillagers removes any Characters in em.villagers, and generates new ones.
+func (em *Manager) rollVillagers() {
+	for _, e := range em.villagers {
 		em.mgr.DestroyEntity(e)
 	}
-}
 
-func (em *Manager) handleWindowSizeChanged(e event.Typer) {
-	wsc := e.(*game.WindowSizeChanged)
-	em.screenW, em.screenH = wsc.NewW, wsc.NewH
+	// Empty villagers slice while preserving capacity.
+	em.villagers = em.villagers[:0]
+
+	g := newGenerator()
+	for i := 0; i < 5; i++ {
+		e := em.mgr.NewEntity()
+		em.mgr.Tag(e, "embark")
+		em.mgr.AddComponent(e, g.generateChar())
+		em.villagers = append(em.villagers, e)
+	}
 }
