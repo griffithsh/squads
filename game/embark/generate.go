@@ -39,6 +39,7 @@ func (g *generator) generateChar() *game.Character {
 		AgilityPerLevel:      1.25 + g.r.Float64()*2.00,
 		IntelligencePerLevel: 0.75 + g.r.Float64()*1.25,
 		VitalityPerLevel:     1.50 + g.r.Float64()*1.50,
+		Masteries:            g.generateMasteries(),
 	}
 }
 
@@ -180,4 +181,47 @@ func (g *generator) generateIcons(sex game.CharacterSex) (small game.Sprite, big
 			W:       52,
 			H:       52,
 		}
+}
+
+func (g *generator) generateMasteries() map[game.Mastery]int {
+	result := map[game.Mastery]int{
+		// Randomly distributed 0-2
+		game.ShortRangeMeleeMastery: 0,
+		game.LongRangeMeleeMastery:  0,
+		game.RangedCombatMastery:    0,
+
+		// 33% chance of 1
+		game.CraftsmanshipMastery: 0,
+
+		// Randomly distributed 0-2
+		game.FireMastery:      0,
+		game.WaterMastery:     0,
+		game.EarthMastery:     0,
+		game.AirMastery:       0,
+		game.LightningMastery: 0,
+
+		// 25% chance of 1
+		game.DarkMastery:  0,
+		game.LightMastery: 0,
+	}
+
+	for i := 0; i < g.r.Intn(3); i++ {
+		result[game.Mastery(g.r.Intn(3))]++
+	}
+
+	switch g.r.Intn(3) {
+	case 2:
+		result[game.CraftsmanshipMastery]++
+	}
+
+	for i := 0; i < g.r.Intn(3); i++ {
+		result[game.Mastery(g.r.Intn(5)+4)]++
+	}
+
+	switch g.r.Intn(4) {
+	case 3:
+		result[game.Mastery(g.r.Intn(2)+9)]++
+	}
+
+	return result
 }

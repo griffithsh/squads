@@ -55,6 +55,9 @@ type Character struct {
 	VitalityPerLevel     float64
 
 	Disambiguator float64 // random number to order Characters when their Preparation etc collide.
+
+	// Masteries indexed by the enum value.
+	Masteries map[Mastery]int
 }
 
 // Type of this Component.
