@@ -12,12 +12,13 @@ import (
 // Font is renderable text.
 type Font struct {
 	Text string
-	Size string // (small|normal|large)
-	// Align string // (left|wrap|center|right)
-	// Width int // relevant for wrap, center, and right Alignments
+	Size string // Size should be (small|normal|large)
+	// Align string // Align should be (left|wrap|center|right)
+	// Width int // Width is relevant to wrap, center, and right Alignments
 
 	// N.B. Don't add Color here! A Color tint would need to be applied to a
-	// sprite anyway in order to tint the underlying Sprite-base Entities.
+	// sprite anyway in order to tint the underlying Sprite-base Entities, so it
+	// should be it's one Component that could also be applied to Sprite directly.
 }
 
 // Type of this Component.
