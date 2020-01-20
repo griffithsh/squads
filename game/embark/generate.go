@@ -1,6 +1,7 @@
 package embark
 
 import (
+	"fmt"
 	"math/rand"
 	"time"
 
@@ -23,6 +24,9 @@ func (g *generator) generateChar() *game.Character {
 
 	small, big := g.generateIcons(sex)
 	return &game.Character{
+		Level:         1,
+		Disambiguator: g.r.Float64(),
+
 		Name:                 g.generateName(sex),
 		Sex:                  sex,
 		Profession:           game.Villager,
@@ -31,7 +35,6 @@ func (g *generator) generateChar() *game.Character {
 		SmallIcon:            small,
 		BigIcon:              big,
 
-		Disambiguator: g.r.Float64(),
 		StrengthPerLevel:     1.25 + g.r.Float64()*2.00,
 		AgilityPerLevel:      1.25 + g.r.Float64()*2.00,
 		IntelligencePerLevel: 0.75 + g.r.Float64()*1.25,
@@ -58,7 +61,7 @@ func (g *generator) generateName(sex game.CharacterSex) string {
 		i := g.r.Intn(len(femaleNames))
 		return femaleNames[i]
 	}
-	return "Samithee"
+	return fmt.Sprintf("Unhandled Sex %s", sex)
 }
 
 var maleNames = []string{
@@ -135,6 +138,7 @@ var femaleNames = []string{
 	"Rimcy",
 	"Sallivoce",
 	"Sera",
+	"Shanto",
 	"Theodora",
 	"Undine",
 	"Victohia",
