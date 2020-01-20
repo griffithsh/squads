@@ -50,7 +50,7 @@ type Participant struct {
 	Health               CurMax
 
 	Strength     int
-	Dexterity    int
+	Agility      int
 	Intelligence int
 	Vitality     int
 

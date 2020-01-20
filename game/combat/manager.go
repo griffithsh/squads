@@ -358,7 +358,7 @@ func CToP(char *game.Character) *Participant {
 		// 	Max: char.MaxHealth,
 		// },
 		// Strength:     int(char.StrengthPerLevel * float64(char.Level)),
-		// Dexterity:    0,
+		// Agility:    0,
 		// Intelligence: 0,
 		// Vitality:     0,
 		Disambiguator: char.Disambiguator,

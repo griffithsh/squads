@@ -50,7 +50,7 @@ type Character struct {
 
 	Level                uint
 	StrengthPerLevel     float64
-	DexterityPerLevel    float64
+	AgilityPerLevel      float64
 	IntelligencePerLevel float64
 	VitalityPerLevel     float64
 
