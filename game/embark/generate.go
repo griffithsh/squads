@@ -32,6 +32,10 @@ func (g *generator) generateChar() *game.Character {
 		BigIcon:              big,
 
 		Disambiguator: g.r.Float64(),
+		StrengthPerLevel:     1.25 + g.r.Float64()*2.00,
+		AgilityPerLevel:      1.25 + g.r.Float64()*2.00,
+		IntelligencePerLevel: 0.75 + g.r.Float64()*1.25,
+		VitalityPerLevel:     1.50 + g.r.Float64()*1.50,
 	}
 }
 
