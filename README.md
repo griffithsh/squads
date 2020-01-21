@@ -17,4 +17,4 @@ $GOPATH/bin/squads
 Pan the camera with the arrow keys. Zoom the camera with Z and X.
 
 ![20200121](https://user-images.githubusercontent.com/11085049/72780648-78929780-3c73-11ea-98a2-2d5f1f990625.png "Squads")
-![20200121](https://user-images.githubusercontent.com/11085049/72780648-78929780-3c73-11ea-98a2-2d5f1f990625.png "Squads")
+![20200121](https://user-images.githubusercontent.com/11085049/72780650-792b2e00-3c73-11ea-9ca1-f11c06d08aa2.png "Squads")
