@@ -69,203 +69,9 @@ func (em *Manager) repaint() {
 
 	lMargin := 64.0
 	tMargin := 16.0
-	sheetW := 144.0 // sheetW is the width of each character sheet
+	const sheetW float64 = 144 // sheetW is the width of each character sheet
 	for i, villager := range em.villagers {
 		char := em.mgr.Component(villager, "Character").(*game.Character)
-
-		container := em.mgr.NewEntity()
-		em.mgr.Tag(container, "embark")
-		em.mgr.Tag(container, "embark-characters")
-
-		var e ecs.Entity
-
-		// Name
-		e = em.mgr.NewEntity()
-		em.mgr.Dependency(container, e)
-		em.mgr.AddComponent(e, &game.Font{
-			Text: char.Name,
-		})
-		em.mgr.AddComponent(e, &game.Position{
-			Center: game.Center{
-				X: float64(i)*sheetW + lMargin,
-				Y: tMargin,
-			},
-			Layer: 100,
-		})
-
-		// Icon
-		e = em.mgr.NewEntity()
-		em.mgr.Dependency(container, e)
-		em.mgr.AddComponent(e, &char.BigIcon)
-		em.mgr.AddComponent(e, &game.Position{
-			Center: game.Center{
-				X: float64(i)*sheetW + lMargin + sheetW - 56/2 - 16,
-				Y: tMargin + 56/2,
-			},
-			Layer: 100,
-		})
-
-		// Profession
-		e = em.mgr.NewEntity()
-		em.mgr.Dependency(container, e)
-		em.mgr.AddComponent(e, &game.Font{
-			Text: char.Profession.String(),
-			Size: "small",
-		})
-		em.mgr.AddComponent(e, &game.Position{
-			Center: game.Center{
-				X: float64(i)*sheetW + lMargin,
-				Y: tMargin + 12,
-			},
-			Layer: 100,
-		})
-
-		// Level
-		e = em.mgr.NewEntity()
-		em.mgr.Dependency(container, e)
-		em.mgr.AddComponent(e, &game.Font{
-			Text: fmt.Sprintf("Level: %d", char.Level),
-			Size: "small",
-		})
-		em.mgr.AddComponent(e, &game.Position{
-			Center: game.Center{
-				X: float64(i)*sheetW + lMargin,
-				Y: tMargin + 12 + 8,
-			},
-			Layer: 100,
-		})
-
-		// Sex
-		e = em.mgr.NewEntity()
-		em.mgr.Dependency(container, e)
-		em.mgr.AddComponent(e, &game.Font{
-			Text: fmt.Sprintf("Sex: %s", char.Sex),
-			Size: "small",
-		})
-		em.mgr.AddComponent(e, &game.Position{
-			Center: game.Center{
-				X: float64(i)*sheetW + lMargin,
-				Y: tMargin + 12 + 16,
-			},
-			Layer: 100,
-		})
-
-		// Prep
-		e = em.mgr.NewEntity()
-		em.mgr.Dependency(container, e)
-		em.mgr.AddComponent(e, &game.Font{
-			Text: fmt.Sprintf("Preparation: %d", char.PreparationThreshold),
-			Size: "small",
-		})
-		em.mgr.AddComponent(e, &game.Position{
-			Center: game.Center{
-				X: float64(i)*sheetW + lMargin,
-				Y: tMargin + 12 + 24,
-			},
-			Layer: 100,
-		})
-
-		// Str per level
-		e = em.mgr.NewEntity()
-		em.mgr.Dependency(container, e)
-		em.mgr.AddComponent(e, &game.Font{
-			Text: fmt.Sprintf("Str/Lvl: %.2f", char.StrengthPerLevel),
-			Size: "small",
-		})
-		em.mgr.AddComponent(e, &game.Position{
-			Center: game.Center{
-				X: float64(i)*sheetW + lMargin,
-				Y: tMargin + 12 + 32,
-			},
-			Layer: 100,
-		})
-		// Agi per level
-		e = em.mgr.NewEntity()
-		em.mgr.Dependency(container, e)
-		em.mgr.AddComponent(e, &game.Font{
-			Text: fmt.Sprintf("Agi/Lvl: %.2f", char.AgilityPerLevel),
-			Size: "small",
-		})
-		em.mgr.AddComponent(e, &game.Position{
-			Center: game.Center{
-				X: float64(i)*sheetW + lMargin,
-				Y: tMargin + 12 + 40,
-			},
-			Layer: 100,
-		})
-
-		// Int per level
-		e = em.mgr.NewEntity()
-		em.mgr.Dependency(container, e)
-		em.mgr.AddComponent(e, &game.Font{
-			Text: fmt.Sprintf("Int/Lvl: %.2f", char.IntelligencePerLevel),
-			Size: "small",
-		})
-		em.mgr.AddComponent(e, &game.Position{
-			Center: game.Center{
-				X: float64(i)*sheetW + lMargin,
-				Y: tMargin + 12 + 48,
-			},
-			Layer: 100,
-		})
-
-		// Vit per level
-		e = em.mgr.NewEntity()
-		em.mgr.Dependency(container, e)
-		em.mgr.AddComponent(e, &game.Font{
-			Text: fmt.Sprintf("Vit/Lvl: %.2f", char.VitalityPerLevel),
-			Size: "small",
-		})
-		em.mgr.AddComponent(e, &game.Position{
-			Center: game.Center{
-				X: float64(i)*sheetW + lMargin,
-				Y: tMargin + 12 + 56,
-			},
-			Layer: 100,
-		})
-
-		// Masteries
-		used := 0
-		for j := 0; j < 11; j++ {
-			m := game.Mastery(j)
-			mastery := char.Masteries[m]
-			if mastery == 0 {
-				continue
-			}
-
-			e = em.mgr.NewEntity()
-			em.mgr.Dependency(container, e)
-			em.mgr.AddComponent(e, &game.Font{
-				Text: fmt.Sprintf("%s: %d", m.String(), mastery),
-				Size: "small",
-			})
-			em.mgr.AddComponent(e, &game.Position{
-				Center: game.Center{
-					X: float64(i)*sheetW + lMargin,
-					Y: tMargin + 80 + float64(used)*8,
-				},
-				Layer: 100,
-			})
-
-			used++
-		}
-
-		// embark button
-		e = em.mgr.NewEntity()
-		em.mgr.Dependency(container, e)
-		em.mgr.AddComponent(e, &game.Sprite{
-			Texture: "embark-button.png",
-
-			X: 0, Y: 0,
-			W: 64, H: 64,
-		})
-		em.mgr.AddComponent(e, &game.Position{
-			Center: game.Center{
-				X: float64(i)*sheetW + lMargin + 32,
-				Y: tMargin + 80 + float64(used)*8 + 32,
-			},
-			Layer: 90,
-		})
 
 		handlePrepare := func(i int, villager ecs.Entity) func(x, y float64) {
 			return func(x, y float64) {
@@ -274,15 +80,13 @@ func (em *Manager) repaint() {
 				em.repaint()
 			}
 		}
-		em.mgr.AddComponent(e, &ui.Interactive{
-			W: 48, H: 48,
-			Trigger: handlePrepare(i, villager),
-		})
+		em.paintChar(char, float64(i)*sheetW+lMargin, tMargin, handlePrepare(i, villager))
 	}
 
-	// for _, e := range em.prepared {
-	// 	// TODO
-	// }
+	for i, villager := range em.prepared {
+		char := em.mgr.Component(villager, "Character").(*game.Character)
+		em.paintChar(char, float64(i)*sheetW+lMargin, tMargin+200, nil)
+	}
 
 	if len(em.prepared) > 0 {
 		// You can embark!
@@ -355,4 +159,221 @@ func (em *Manager) rollVillagers() {
 		em.mgr.AddComponent(e, g.generateChar())
 		em.villagers = append(em.villagers, e)
 	}
+}
+
+func (em *Manager) paintChar(char *game.Character, left float64, top float64, handlePrepare func(x, y float64)) {
+	container := em.mgr.NewEntity()
+	em.mgr.Tag(container, "embark")
+	em.mgr.Tag(container, "embark-characters")
+
+	var e ecs.Entity
+
+	// Name
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &game.Font{
+		Text: char.Name,
+	})
+	em.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: left,
+			Y: top,
+		},
+		Layer: 100,
+	})
+
+	// Icon
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &char.BigIcon)
+	em.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: left + 108,
+			Y: top + 56/2,
+		},
+		Layer: 100,
+	})
+
+	// Profession
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &game.Font{
+		Text: char.Profession.String(),
+		Size: "small",
+	})
+	em.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: left,
+			Y: top + 12,
+		},
+		Layer: 100,
+	})
+
+	// Level
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &game.Font{
+		Text: fmt.Sprintf("Level: %d", char.Level),
+		Size: "small",
+	})
+	em.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: left,
+			Y: top + 12 + 8,
+		},
+		Layer: 100,
+	})
+
+	// Sex
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &game.Font{
+		Text: fmt.Sprintf("Sex: %s", char.Sex),
+		Size: "small",
+	})
+	em.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: left,
+			Y: top + 12 + 16,
+		},
+		Layer: 100,
+	})
+
+	// Prep
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &game.Font{
+		Text: fmt.Sprintf("Preparation: %d", char.PreparationThreshold),
+		Size: "small",
+	})
+	em.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: left,
+			Y: top + 12 + 24,
+		},
+		Layer: 100,
+	})
+
+	// Str per level
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &game.Font{
+		Text: fmt.Sprintf("Str/Lvl: %.2f", char.StrengthPerLevel),
+		Size: "small",
+	})
+	em.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: left,
+			Y: top + 12 + 32,
+		},
+		Layer: 100,
+	})
+	// Agi per level
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &game.Font{
+		Text: fmt.Sprintf("Agi/Lvl: %.2f", char.AgilityPerLevel),
+		Size: "small",
+	})
+	em.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: left,
+			Y: top + 12 + 40,
+		},
+		Layer: 100,
+	})
+
+	// Int per level
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &game.Font{
+		Text: fmt.Sprintf("Int/Lvl: %.2f", char.IntelligencePerLevel),
+		Size: "small",
+	})
+	em.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: left,
+			Y: top + 12 + 48,
+		},
+		Layer: 100,
+	})
+
+	// Vit per level
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &game.Font{
+		Text: fmt.Sprintf("Vit/Lvl: %.2f", char.VitalityPerLevel),
+		Size: "small",
+	})
+	em.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: left,
+			Y: top + 12 + 56,
+		},
+		Layer: 100,
+	})
+
+	// Masteries
+	used := 0
+	for j := 0; j < 11; j++ {
+		m := game.Mastery(j)
+		mastery := char.Masteries[m]
+		if mastery == 0 {
+			continue
+		}
+
+		e = em.mgr.NewEntity()
+		em.mgr.Dependency(container, e)
+		em.mgr.AddComponent(e, &game.Font{
+			Text: fmt.Sprintf("%s: %d", m.String(), mastery),
+			Size: "small",
+		})
+		em.mgr.AddComponent(e, &game.Position{
+			Center: game.Center{
+				X: left,
+				Y: top + 80 + float64(used)*8,
+			},
+			Layer: 100,
+		})
+
+		used++
+	}
+
+	if handlePrepare == nil {
+		// Don't add a button if there is no handler provided.
+		return
+	}
+
+	// embark button
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: left + 32,
+			Y: top + 80 + float64(used)*8 + 32,
+		},
+		Layer: 90,
+	})
+	em.mgr.AddComponent(e, &game.Font{})
+
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &game.Sprite{
+		Texture: "embark-button.png",
+
+		X: 0, Y: 0,
+		W: 64, H: 64,
+	})
+	em.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: left + 32,
+			Y: top + 80 + float64(used)*8 + 32,
+		},
+		Layer: 90,
+	})
+
+	em.mgr.AddComponent(e, &ui.Interactive{
+		W: 48, H: 48,
+		Trigger: handlePrepare,
+	})
 }
