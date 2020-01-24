@@ -28,6 +28,54 @@ type entity struct {
 	p      *Position
 	offset *RenderOffset
 	scale  *Scale
+	repeat *SpriteRepeat
+}
+
+// drawImageOptions creates an newebite.DrawImageOptions for this entity.
+func (e entity) drawImageOptions(x, y, zoom, w, h, xOff, yOff float64) *ebiten.DrawImageOptions {
+	op := ebiten.DrawImageOptions{}
+
+	// ebiten uses top-left corner coordinates, so we need to translate
+	// from center-based coordinates by subtracting half the width/height.
+	op.GeoM.Translate(-0.5*float64(e.s.W), -0.5*float64(e.s.H))
+
+	// Some Entities might have an intrinsic scale.
+	if e.scale != nil {
+		op.GeoM.Scale(e.scale.X, e.scale.Y)
+	}
+
+	// If we are dealing in world-coordinates, then translate for the values
+	// of what the camera is focused on.
+	if !e.p.Absolute {
+		op.GeoM.Translate(-x, -y)
+	}
+
+	// Translate for the location of the Entity
+	op.GeoM.Translate(e.p.Center.X, e.p.Center.Y)
+
+	// Apply passed offset.
+	op.GeoM.Translate(xOff, yOff)
+
+	// Some Sprites may have an offset configured.
+	op.GeoM.Translate(float64(e.s.OffsetX), float64(e.s.OffsetY))
+
+	// There could also be an offset configured at the Entity level.
+	if e.offset != nil {
+		op.GeoM.Translate(float64(e.offset.X), float64(e.offset.Y))
+	}
+
+	if !e.p.Absolute {
+		// Scale the rendered entities based on the zoom value from the camera.
+		// NB: This needs to happen after the other translations!
+		op.GeoM.Scale(zoom, zoom)
+
+		// We also need to correct for the dimensions of the screen, or the
+		// focus will appear in the top-left corner of the screen. This comes
+		// after the scaling, because the screen size does not change based on
+		// the zoom.
+		op.GeoM.Translate(w/2, h/2)
+	}
+	return &op
 }
 
 // getEntities returns a sorted list of entities that have renderable
@@ -58,6 +106,9 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 		}
 		if scale, ok := mgr.Component(e, "Scale").(*Scale); ok {
 			entities[len(entities)-1].scale = scale
+		}
+		if repeat, ok := mgr.Component(e, "SpriteRepeat").(*SpriteRepeat); ok {
+			entities[len(entities)-1].repeat = repeat
 		}
 	}
 
@@ -120,69 +171,11 @@ func (r *Renderer) picForTexture(filename string) (*ebiten.Image, error) {
 // Render all sprites in the world to the Target. We need to know where in the
 // world we are focused, as well as how zoomed in we are, and the dimensions of
 // the screen.
-func (r *Renderer) Render(screen *ebiten.Image, mgr *ecs.World, x, y, zoom, w, h float64) error {
+func (r *Renderer) Render(screen *ebiten.Image, mgr *ecs.World, focusX, focusY, zoom, screenW, screenH float64) error {
 	entities := r.getEntities(mgr)
 
 	screen.Fill(color.NRGBA{40, 34, 31, 0xff})
 	for _, e := range entities {
-		op := &ebiten.DrawImageOptions{}
-
-		if e.p.Absolute {
-			// ebiten uses top-left corner coordinates, so we need to translate
-			// from center-based coordinates by subtracting half the width/height.
-			op.GeoM.Translate(-0.5*float64(e.s.W), -0.5*float64(e.s.H))
-
-			// Some Entities might have an intrinsic scale.
-			if e.scale != nil {
-				op.GeoM.Scale(e.scale.X, e.scale.Y)
-			}
-
-			x, y := e.p.Center.X, e.p.Center.Y
-
-			x += float64(e.s.OffsetX)
-			y += float64(e.s.OffsetY)
-
-			// Translate for the location of the Entity
-			op.GeoM.Translate(x, y)
-
-			// Some sprites may need to be drawn with an offset.
-			if e.offset != nil {
-				op.GeoM.Translate(float64(e.offset.X), float64(e.offset.Y))
-			}
-
-		} else {
-			// ebiten uses top-left corner coordinates, so we need to translate
-			// from center-based coordinates by subtracting half the width/height.
-			op.GeoM.Translate(-0.5*float64(e.s.W), -0.5*float64(e.s.H))
-
-			// Some Entities might have an intrinsic scale.
-			if e.scale != nil {
-				op.GeoM.Scale(e.scale.X, e.scale.Y)
-			}
-
-			// Translate for the focus values from the camera
-			op.GeoM.Translate(-x, -y)
-
-			// Translate for the location of the Entity
-			op.GeoM.Translate(e.p.Center.X, e.p.Center.Y)
-
-			// Some sprites may need to be rendered with an offset.
-			op.GeoM.Translate(float64(e.s.OffsetX), float64(e.s.OffsetY))
-			if e.offset != nil {
-				op.GeoM.Translate(float64(e.offset.X), float64(e.offset.Y))
-			}
-
-			// Scale the rendered entities based on the zoom value
-			// NB: This needs to happen after the other translations!
-			op.GeoM.Scale(zoom, zoom)
-
-			// We also need to correct for the dimensions of the screen, or the
-			// focus will appear in the top-left corner of the screen. This comes
-			// after the scaling, because the screen size does not change based on
-			// the zoom.
-			op.GeoM.Translate(w/2, h/2)
-		}
-
 		img, err := r.picForTexture(e.s.Texture)
 		if err != nil {
 			return fmt.Errorf("get texture: %v", err)
@@ -193,6 +186,50 @@ func (r *Renderer) Render(screen *ebiten.Image, mgr *ecs.World, x, y, zoom, w, h
 			return fmt.Errorf("SubImage %s: invalid type cast", e.s.Texture)
 		}
 
+		if e.repeat != nil {
+			tileW, tileH := img.Size()
+
+			for y := 0; y < e.repeat.H/tileH+1; y++ {
+				if y == e.repeat.H/tileH {
+					// last
+					remainder := e.repeat.H % tileH
+					if remainder == 0 {
+						continue
+					}
+					// FIXME: this is unfinished and not usable for cicada
+					// layers with non-evenly divisible bounds.
+					// TODO: cut off the bottom of the img for the last row,
+					// then continue into the for x ...
+					// TODO: set tileH to be what's in remainder ...
+				}
+
+				for x := 0; x < e.repeat.W/tileW+1; x++ {
+					if x == e.repeat.W/tileW {
+						// last
+						remainder := e.repeat.W % tileW
+						if remainder == 0 {
+							continue
+						}
+						// FIXME: this is unfinished and not usable for cicada
+						// layers with non-evenly divisible bounds.
+						// TODO: cut off the right of the img for the last
+						// column, then continue onto the DrawImage call ...
+						// TODO: set tileW to be what's in the remainder ...
+					}
+					offX := float64(x*tileW) - float64(e.repeat.W)/2 + float64(tileW)/2
+					offY := float64(y*tileH) - float64(e.repeat.H)/2 + float64(tileH)/2
+
+					op := e.drawImageOptions(focusX, focusY, zoom, screenW, screenH, offX, offY)
+					screen.DrawImage(img, op)
+				}
+			}
+			if err != nil {
+				return fmt.Errorf("SpriteRepeat: %v", err)
+			}
+			continue
+		}
+
+		op := e.drawImageOptions(focusX, focusY, zoom, screenW, screenH, 0, 0)
 		if err := screen.DrawImage(img, op); err != nil {
 			return fmt.Errorf("DrawImage: %v", err)
 		}
