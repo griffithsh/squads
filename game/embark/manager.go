@@ -69,7 +69,7 @@ func (em *Manager) repaint() {
 
 	lMargin := 64.0
 	tMargin := 16.0
-	const sheetW float64 = 144 // sheetW is the width of each character sheet
+	const sheetW float64 = 148 // sheetW is the width of each character sheet
 	for i, villager := range em.villagers {
 		char := em.mgr.Component(villager, "Character").(*game.Character)
 
@@ -167,6 +167,10 @@ func (em *Manager) paintChar(char *game.Character, left float64, top float64, ha
 	em.mgr.Tag(container, "embark-characters")
 
 	var e ecs.Entity
+
+	// Panel
+	e = ui.Panel(em.mgr, 144, 200, left-8, top-8, 90, false)
+	em.mgr.Dependency(container, e)
 
 	// Name
 	e = em.mgr.NewEntity()
