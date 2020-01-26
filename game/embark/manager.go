@@ -272,6 +272,7 @@ func (em *Manager) paintChar(char *game.Character, left float64, top float64, ha
 		},
 		Layer: 100,
 	})
+
 	// Agi per level
 	e = em.mgr.NewEntity()
 	em.mgr.Dependency(container, e)
@@ -360,14 +361,11 @@ func (em *Manager) paintChar(char *game.Character, left float64, top float64, ha
 	})
 	em.mgr.AddComponent(e, &game.Font{})
 
+	e = ui.ButtonBackground(em.mgr, 36, 12, left, top+80+float64(used)*8+32, 90, false)
+	em.mgr.Dependency(container, e)
+
 	e = em.mgr.NewEntity()
 	em.mgr.Dependency(container, e)
-	em.mgr.AddComponent(e, &game.Sprite{
-		Texture: "embark-button.png",
-
-		X: 0, Y: 0,
-		W: 64, H: 64,
-	})
 	em.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
 			X: left + 32,
