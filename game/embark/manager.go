@@ -99,6 +99,7 @@ func (em *Manager) repaint() {
 			X: 0, Y: 0,
 			W: 64, H: 64,
 		})
+
 		em.mgr.AddComponent(e, &game.Scale{
 			X: 2,
 			Y: 2,
@@ -361,21 +362,33 @@ func (em *Manager) paintChar(char *game.Character, left float64, top float64, ha
 	})
 	em.mgr.AddComponent(e, &game.Font{})
 
-	e = ui.ButtonBackground(em.mgr, 36, 12, left, top+80+float64(used)*8+32, 90, false)
+	e = ui.ButtonBackground(em.mgr, 48, 15, left, top+170, 90, false)
 	em.mgr.Dependency(container, e)
+
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &game.Font{
+		Text: "Prepare",
+	})
+	em.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: left + 3,
+			Y: top + 173,
+		},
+		Layer: 100,
+	})
 
 	e = em.mgr.NewEntity()
 	em.mgr.Dependency(container, e)
 	em.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
-			X: left + 32,
-			Y: top + 80 + float64(used)*8 + 32,
+			X: left + 48/2,
+			Y: top + 177,
 		},
 		Layer: 90,
 	})
-
 	em.mgr.AddComponent(e, &ui.Interactive{
-		W: 48, H: 48,
+		W: 48, H: 15,
 		Trigger: handlePrepare,
 	})
 }
