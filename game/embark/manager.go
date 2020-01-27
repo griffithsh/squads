@@ -90,20 +90,20 @@ func (em *Manager) repaint() {
 
 	if len(em.prepared) > 0 {
 		// You can embark!
-		e := em.mgr.NewEntity()
+		var e ecs.Entity
+
+		e = ui.ButtonBackground(em.mgr, 30, 15, float64(em.screenW)/2-10, float64(em.screenH)-67, 100, true)
 		em.mgr.Tag(e, "embark")
 		em.mgr.Tag(e, "embark-hud")
-		em.mgr.AddComponent(e, &game.Sprite{
-			Texture: "embark-button.png",
 
-			X: 0, Y: 0,
-			W: 64, H: 64,
+		e = em.mgr.NewEntity()
+		em.mgr.Tag(e, "embark")
+		em.mgr.Tag(e, "embark-hud")
+
+		em.mgr.AddComponent(e, &game.Font{
+			Text: "Go",
 		})
 
-		em.mgr.AddComponent(e, &game.Scale{
-			X: 2,
-			Y: 2,
-		})
 		em.mgr.AddComponent(e, &game.Position{
 			Center: game.Center{
 				X: float64(em.screenW) / 2,
@@ -350,18 +350,7 @@ func (em *Manager) paintChar(char *game.Character, left float64, top float64, ha
 		return
 	}
 
-	// embark button
-	e = em.mgr.NewEntity()
-	em.mgr.Dependency(container, e)
-	em.mgr.AddComponent(e, &game.Position{
-		Center: game.Center{
-			X: left + 32,
-			Y: top + 80 + float64(used)*8 + 32,
-		},
-		Layer: 90,
-	})
-	em.mgr.AddComponent(e, &game.Font{})
-
+	// Prepare button (add villager to the preparing squad).
 	e = ui.ButtonBackground(em.mgr, 48, 15, left, top+170, 90, false)
 	em.mgr.Dependency(container, e)
 
