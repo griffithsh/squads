@@ -24,6 +24,8 @@ type Manager struct {
 
 	dormant bool
 	state   State
+
+	fogged map[geom.Key]ecs.Entity
 }
 
 // NewManager creates a new overworld Manager.
@@ -34,6 +36,8 @@ func NewManager(mgr *ecs.World, bus *event.Bus) *Manager {
 
 		dormant: false,
 		state:   Uninitialised,
+
+		fogged: make(map[geom.Key]ecs.Entity),
 	}
 
 	bus.Subscribe(TokensCollided{}.Type(), m.handleTokensCollided)
@@ -129,6 +133,18 @@ func (m *Manager) newNodeClickHandler(n *Node) func(x, y float64) {
 					})
 					t.Key = n.ID
 					m.setState(AwaitingInputState)
+
+					// We've arrived at a new node, so update what is fogged.
+					for _, key := range m.playerVision() {
+						e, ok := m.fogged[key]
+						if !ok {
+							continue
+						}
+						// TODO: instead of Destroying the entity, swap to a
+						// fog-lifting/"revealing" animation.
+						m.mgr.DestroyEntity(e)
+						delete(m.fogged, key)
+					}
 				},
 			})
 		}
@@ -146,6 +162,24 @@ func (m *Manager) playerSquad() ecs.Entity {
 		}
 	}
 	return 0
+}
+
+// playerVision returns the Keys that the player can currently see, but not
+// necessarily all of the hexes currently revealed in this overworld.
+func (m *Manager) playerVision() []geom.Key {
+	for _, e := range m.mgr.Tagged("player") {
+		token, ok := m.mgr.Component(e, "Token").(*Token)
+		if !ok {
+			continue
+		}
+		// First entity tagged with "player" that has a Token Component is selected.
+		result := []geom.Key{token.Key}
+		for key := range token.Key.Neighbors() {
+			result = append(result, key)
+		}
+		return result
+	}
+	return []geom.Key{}
 }
 
 func (m *Manager) playerTeam() *game.Team {
@@ -286,6 +320,48 @@ func (m *Manager) boot(d Data) {
 		case 5:
 			m.createGiantBaddySquad(e, enemies)
 		}
+	}
+
+	// Construct the list of "fogged" nodes by expanding the list of nodes by
+	// their immediate neighbors.
+	for k, v := range d.Nodes {
+		if _, ok := m.fogged[k]; !ok {
+			e := m.mgr.NewEntity()
+			m.mgr.Tag(e, "overworld")
+			m.fogged[k] = e
+		}
+		// Expand fog nodes by one neighbor.
+		for _, k := range v.ID.Adjacent() {
+			if _, ok := m.fogged[k]; !ok {
+				e := m.mgr.NewEntity()
+				m.mgr.Tag(e, "overworld")
+				m.fogged[k] = e
+			}
+		}
+	}
+
+	// Remove anything the player can currently see from the fogged list.
+	for _, key := range m.playerVision() {
+		m.mgr.DestroyEntity(m.fogged[key])
+		delete(m.fogged, key)
+	}
+
+	// Now add fog-of-war sprites over the fogged nodes.
+	for k, e := range m.fogged {
+		x, y := geom.XY(k.M, k.N, 144, 96)
+
+		m.mgr.AddComponent(e, &game.Sprite{
+			Texture: "overworld-grass.png",
+
+			X: 144, Y: 0,
+			W: 144, H: 96,
+		})
+		m.mgr.AddComponent(e, &game.Position{
+			Center: game.Center{
+				X: x, Y: y,
+			},
+			Layer: 100,
+		})
 	}
 
 	// Now show connections between the nodes.
