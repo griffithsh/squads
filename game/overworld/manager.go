@@ -97,8 +97,9 @@ func (m *Manager) newNodeClickHandler(n *Node) func(x, y float64) {
 			return
 		}
 
-		// We need to know if n - the node we clicked on - is
-		// connected to the node the overworld token is on.
+		// We need to know if n (the node we clicked on) is connected to the
+		// node the overworld token is on. If it's not, it's invalid to move
+		// there.
 
 		// Find the Token that belongs to the player's squad.
 		var e ecs.Entity
@@ -247,10 +248,12 @@ func (m *Manager) boot(d Data) {
 		})
 	}
 
+	// Add squads to the nodes.
 	keys := make([]geom.Key, 0, len(d.Nodes))
 	for k := range d.Nodes {
 		keys = append(keys, k)
 	}
+	// FIXME: Should sort before shuffle for deterministic behaviour.
 	rand.Shuffle(len(keys), func(i, j int) { keys[i], keys[j] = keys[j], keys[i] })
 	enemies := game.NewTeam()
 	for i, k := range keys {
@@ -364,7 +367,7 @@ func (m *Manager) boot(d Data) {
 		})
 	}
 
-	// Now show connections between the nodes.
+	// Now show the visible paths between the nodes.
 	type connectKey struct {
 		M1, N1, M2, N2 int
 	}
