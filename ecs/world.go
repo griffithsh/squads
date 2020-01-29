@@ -238,3 +238,8 @@ func (mgr *World) RemoveTag(e Entity, tag string) {
 func (mgr *World) Dependency(parent, child Entity) {
 	mgr.dependencies[parent] = append(mgr.dependencies[parent], child)
 }
+
+// Len returns the number of Entites currently in the world.
+func (mgr *World) Len() int {
+	return len(mgr.entities)
+}

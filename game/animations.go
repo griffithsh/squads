@@ -5,6 +5,23 @@ import (
 	"time"
 
 	"github.com/griffithsh/squads/ecs"
+	"github.com/griffithsh/squads/res"
+)
+
+// AnimationEndBehavior is an enum that describes what happens when a
+// FrameAnimation Component finishes all of its frames.
+type AnimationEndBehavior int
+
+const (
+	// AnimationLoops means that the Animation will restart from the first frame
+	// after the last frame expires.
+	AnimationLoops AnimationEndBehavior = iota
+	// HoldLastFrame means that the Animation will run through all frames, and
+	// then stick on the last frame, removing the FrameAnimation Component.
+	HoldLastFrame
+	// DestroyEntity means that after the Animation is complete, the Entity that
+	// owns it is destroyed.
+	DestroyEntity
 )
 
 // FrameAnimation sets the Sprite of the Entity based what how far through the
@@ -13,8 +30,28 @@ type FrameAnimation struct {
 	Frames  []Sprite
 	Timings []time.Duration
 	Pointer time.Duration
+
 	// by default, loops forever
 	// on end - maybe another animation, maybe a single frame, maybe some behaviour like trigger event
+	EndBehavior AnimationEndBehavior
+}
+
+// NewFrameAnimation creates a new FrameAnimation Component from a res.Animation.
+func NewFrameAnimation(a res.Animation) FrameAnimation {
+	fa := FrameAnimation{}
+	for _, frame := range a.Frames {
+		fa.Frames = append(fa.Frames, Sprite{
+			Texture: frame.Texture,
+			X:       frame.X,
+			Y:       frame.Y,
+			W:       frame.W,
+			H:       frame.H,
+			OffsetX: frame.OffsetX,
+			OffsetY: frame.OffsetY,
+		})
+		fa.Timings = append(fa.Timings, frame.Duration)
+	}
+	return fa
 }
 
 // Duration of the entire Animation.
@@ -114,12 +151,28 @@ func (as *AnimationSystem) Update(mgr *ecs.World, elapsed time.Duration) {
 		anim.Pointer += elapsed
 
 		i := anim.Index()
-		if i >= len(anim.Frames) {
-			anim.Pointer = anim.Pointer % anim.Duration()
-			i = anim.Index()
+		complete := i >= len(anim.Frames)
+
+		// If the animation is not complete, assign the current frame as the
+		// Entity's Sprite, and continue to the next Entity.
+		if !complete {
+			mgr.AddComponent(e, &anim.Frames[i])
+			continue
 		}
 
-		mgr.AddComponent(e, &anim.Frames[i])
+		// If the Animation _is_ complete, examine the FrameAnimation's
+		// EndBehavior to figure how to handle it.
+		switch anim.EndBehavior {
+		case AnimationLoops:
+			anim.Pointer = anim.Pointer % anim.Duration()
+			i = anim.Index()
+
+		case HoldLastFrame:
+			mgr.AddComponent(e, &anim.Frames[len(anim.Frames)-1])
+			mgr.RemoveComponent(e, &FrameAnimation{})
+		case DestroyEntity:
+			mgr.DestroyEntity(e)
+		}
 	}
 
 	for _, e := range mgr.Get([]string{"HoverAnimation"}) {

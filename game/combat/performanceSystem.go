@@ -137,7 +137,7 @@ type animationId struct {
 }
 
 // links is the declaration map between animationId and string keys present in
-// res.All.
+// res.Performances.
 var links = map[animationId]string{
 	animationId{game.Villager, game.Male, game.PerformIdle, geom.N}:  "Villager-Male-Idle",
 	animationId{game.Villager, game.Male, game.PerformIdle, geom.S}:  "Villager-Male-Idle",
@@ -200,26 +200,14 @@ var links = map[animationId]string{
 var all = map[animationId]game.FrameAnimation{}
 
 // init function that populates the "all" map with the keys from links and the
-// values from res.All.
+// values from res.Performances.
 func init() {
 	for k, name := range links {
-		a, ok := res.All[name]
+		a, ok := res.Performances[name]
 		if !ok {
-			panic(fmt.Sprintf("links misconfigured: \"%s\" not found in res.All", name))
+			panic(fmt.Sprintf("links misconfigured: \"%s\" not found in res.Performances", name))
 		}
-		fa := game.FrameAnimation{}
-		for _, frame := range a.Frames {
-			fa.Frames = append(fa.Frames, game.Sprite{
-				Texture: frame.Texture,
-				X:       frame.X,
-				Y:       frame.Y,
-				W:       frame.W,
-				H:       frame.H,
-				OffsetX: frame.OffsetX,
-				OffsetY: frame.OffsetY,
-			})
-			fa.Timings = append(fa.Timings, frame.Duration)
-		}
+		fa := game.NewFrameAnimation(a)
 		all[k] = fa
 	}
 }

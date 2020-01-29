@@ -5,6 +5,7 @@ import (
 	"math/rand"
 	"time"
 
+	"github.com/griffithsh/squads/res"
 	"github.com/griffithsh/squads/ui"
 
 	"github.com/griffithsh/squads/game"
@@ -141,9 +142,11 @@ func (m *Manager) newNodeClickHandler(n *Node) func(x, y float64) {
 						if !ok {
 							continue
 						}
-						// TODO: instead of Destroying the entity, swap to a
-						// fog-lifting/"revealing" animation.
-						m.mgr.DestroyEntity(e)
+
+						// Start the "fog-revealing" animation.
+						fa := game.NewFrameAnimation(res.Animations["overworld-reveal-grass"])
+						fa.EndBehavior = game.DestroyEntity
+						m.mgr.AddComponent(e, &fa)
 						delete(m.fogged, key)
 					}
 				},

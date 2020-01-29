@@ -299,7 +299,8 @@ func (s *system) run(screen *ebiten.Image) error {
 		if time.Duration(frames) > 0 {
 			fps = time.Second / (accumulated / time.Duration(frames))
 		}
-		ebiten.SetWindowTitle(fmt.Sprintf("%s | FPS: %d", "Hexagons, Strategy, Entities, Components, and Systems, Oh my!", fps))
+		title := "Project Never"
+		ebiten.SetWindowTitle(fmt.Sprintf("%s | FPS: %d | Entites: %d", title, fps, s.mgr.Len()))
 	default:
 	}
 
