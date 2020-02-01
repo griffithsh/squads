@@ -1,5 +1,7 @@
 package geom
 
+import "math"
+
 func neighbors(M, N int) []Key {
 	result := []Key{
 		Key{M, N - 2}, // North
@@ -67,8 +69,8 @@ func NeighborSet(M, N int) KeySet {
 
 // XY calculates the X and Y centre of a hexagon.
 func XY(m, n, hexW, hexH int) (float64, float64) {
-	xOffset := hexW - ((hexH - 2) / 2)
-	x := float64(hexW/2) + float64(m*2*xOffset) + float64(n%2*xOffset)
+	xOffset := float64(hexW - ((hexH - 2) / 2))
+	x := float64(hexW/2) + float64(m*2)*xOffset + math.Abs(float64(n%2))*xOffset
 	y := float64(hexH/2) + float64((hexH/2)*n)
 
 	return x, y

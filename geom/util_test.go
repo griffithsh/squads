@@ -49,3 +49,48 @@ func TestAdjacent(t *testing.T) {
 		})
 	}
 }
+
+func TestXY(t *testing.T) {
+	tests := []struct {
+		m, n         int
+		wantX, wantY float64
+	}{
+		// even M, even N
+		{0, -4, 72, 48 - 96 - 96},
+		{0, -2, 72, 48 - 96},
+		{0, 0, 72, 48},
+		{0, 2, 72, 48 + 96},
+		{0, 4, 72, 48 + 96 + 96},
+
+		// odd M, even N
+		{1, -4, 266, 48 - 96 - 96},
+		{1, -2, 266, 48 - 96},
+		{1, 0, 266, 48},
+		{1, 2, 266, 48 + 96},
+		{1, 4, 266, 48 + 96 + 96},
+
+		// even M, odd N
+		{0, -3, 169, 96 - 96 - 96},
+		{0, -1, 169, 96 - 96},
+		{0, 1, 169, 96},
+		{0, 3, 169, 96 + 96},
+		{0, 5, 169, 96 + 96 + 96},
+
+		// odd M, odd N
+		{1, -3, 363, 96 - 96 - 96},
+		{1, -1, 363, 96 - 96},
+		{1, 1, 363, 96},
+		{1, 3, 363, 96 + 96},
+		{1, 5, 363, 96 + 96 + 96},
+	}
+
+	for _, tc := range tests {
+		t.Run(fmt.Sprintf("for(%d,%d)", tc.m, tc.n), func(t *testing.T) {
+			gotX, gotY := XY(tc.m, tc.n, 144, 96)
+
+			if gotX != tc.wantX || gotY != tc.wantY {
+				t.Errorf("want %f,%f, got %f,%f", tc.wantX, tc.wantY, gotX, gotY)
+			}
+		})
+	}
+}
