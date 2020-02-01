@@ -37,3 +37,13 @@ func Direction(x, y float64) (DirectionType, error) {
 	}
 	return DirectionType(0), fmt.Errorf("unhandled: %f,%f", x, y)
 }
+
+// Opposite provides the 180 degree opposite to any cardinal DirectionType.
+var Opposite = map[DirectionType]DirectionType{
+	S:  N,
+	SW: NE,
+	NW: SE,
+	N:  S,
+	NE: SW,
+	SE: NW,
+}

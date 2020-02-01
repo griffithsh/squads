@@ -23,15 +23,7 @@ func connect(n1 *overworld.Node, n2 *overworld.Node) error {
 		return fmt.Errorf("n1 (%v) is not a neighbor of n2 (%v)", n1, n2)
 	}
 
-	opposites := map[geom.DirectionType]geom.DirectionType{
-		geom.S:  geom.N,
-		geom.SW: geom.NE,
-		geom.NW: geom.SE,
-		geom.N:  geom.S,
-		geom.NE: geom.SW,
-		geom.SE: geom.NW,
-	}
-	dirOfN1 := opposites[dirOfN2]
+	dirOfN1 := geom.Opposite[dirOfN2]
 
 	if n1.Directions == nil {
 		n1.Directions = map[geom.DirectionType]geom.Key{}
