@@ -178,7 +178,10 @@ func setup(w, h int) (*system, error) {
 	bus.Subscribe(embark.Embarked{}.Type(), func(t event.Typer) {
 		s.embark.End()
 		rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-		s.overworld.Begin(data(rng))
+		recipe := overworld.Recipe{
+			Terrain: available(),
+		}
+		s.overworld.Begin(data(rng, recipe))
 	})
 	s.bus.Publish(&game.WindowSizeChanged{
 		OldW: 0,

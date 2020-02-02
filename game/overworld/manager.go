@@ -1,6 +1,7 @@
 package overworld
 
 import (
+	"fmt"
 	"math"
 	"math/rand"
 	"time"
@@ -114,7 +115,7 @@ func (m *Manager) newNodeClickHandler(n *Node) func(x, y float64) {
 
 		t := m.mgr.Component(e, "Token").(*Token)
 		var connected bool
-		for _, neighbor := range n.Directions {
+		for _, neighbor := range n.Connected {
 			if neighbor == t.Key {
 				connected = true
 				break
@@ -198,11 +199,10 @@ func (m *Manager) playerTeam() *game.Team {
 	return nil
 }
 
-func (m *Manager) boot(d Data) {
+func (m *Manager) boot(d Map) {
 	// Add new entities for the squad, overworld terrain, etc?
-	// TODO
 
-	// Show nodes/cities/halts.
+	// Add a Sprite for every Node.
 	positions := map[geom.Key]game.Center{}
 	for _, n := range d.Nodes {
 		e := m.mgr.NewEntity()
@@ -231,17 +231,39 @@ func (m *Manager) boot(d Data) {
 			Layer: 10,
 		})
 		positions[n.ID] = game.Center{X: x, Y: y}
+	}
 
-		e = m.mgr.NewEntity()
+	// Add terrain tiles.
+	for k, tile := range d.Terrain {
+		e := m.mgr.NewEntity()
 		m.mgr.Tag(e, "overworld")
-		m.mgr.AddComponent(e, &game.Sprite{
-			Texture: "overworld-grass.png",
+		switch tile {
+		case Grass:
+			m.mgr.AddComponent(e, &game.Sprite{
+				Texture: "overworld-grass.png",
 
-			X: 0, Y: 0,
-			W: 144, H: 96,
-		})
+				X: 144, Y: 0,
+				W: 144, H: 96,
+			})
+		case Stone:
+			m.mgr.AddComponent(e, &game.Sprite{
+				Texture: "overworld-grass.png",
 
-		x, y = geom.XY(n.ID.M, n.ID.N, 144, 96)
+				X: 144, Y: 96,
+				W: 144, H: 96,
+			})
+		case Trees:
+			m.mgr.AddComponent(e, &game.Sprite{
+				Texture: "overworld-grass.png",
+
+				X: 288, Y: 0,
+				W: 144, H: 96,
+			})
+		default:
+			fmt.Printf("unknown tile %d at %v\n", tile, k)
+		}
+
+		x, y := geom.XY(k.M, k.N, 144, 96)
 
 		m.mgr.AddComponent(e, &game.Position{
 			Center: game.Center{
@@ -328,21 +350,22 @@ func (m *Manager) boot(d Data) {
 		}
 	}
 
-	// Construct the list of "fogged" nodes by expanding the list of nodes by
+	// Construct the list of "fogged" nodes by expanding the terrain tiles by
 	// their immediate neighbors.
-	for k, v := range d.Nodes {
+	for k := range d.Terrain {
 		if _, ok := m.fogged[k]; !ok {
 			e := m.mgr.NewEntity()
 			m.mgr.Tag(e, "overworld")
 			m.fogged[k] = e
 		}
 		// Expand fog nodes by one neighbor.
-		for _, k := range v.ID.Adjacent() {
-			if _, ok := m.fogged[k]; !ok {
-				e := m.mgr.NewEntity()
-				m.mgr.Tag(e, "overworld")
-				m.fogged[k] = e
+		for _, k := range k.Adjacent() {
+			if _, ok := m.fogged[k]; ok {
+				continue
 			}
+			e := m.mgr.NewEntity()
+			m.mgr.Tag(e, "overworld")
+			m.fogged[k] = e
 		}
 	}
 
@@ -359,7 +382,7 @@ func (m *Manager) boot(d Data) {
 		m.mgr.AddComponent(e, &game.Sprite{
 			Texture: "overworld-grass.png",
 
-			X: 144, Y: 0,
+			X: 0, Y: 0,
 			W: 144, H: 96,
 		})
 		m.mgr.AddComponent(e, &game.Position{
@@ -376,7 +399,7 @@ func (m *Manager) boot(d Data) {
 	}
 	connected := map[connectKey]struct{}{}
 	for _, n := range d.Nodes {
-		for _, other := range n.Directions {
+		for _, other := range n.Connected {
 			conn := connectKey{other.M, other.N, n.ID.M, n.ID.N}
 			if _, ok := connected[conn]; ok {
 				continue
@@ -417,7 +440,7 @@ func (m *Manager) boot(d Data) {
 }
 
 // Begin a Manager session.
-func (m *Manager) Begin(d Data) {
+func (m *Manager) Begin(d Map) {
 	m.setState(FadingIn)
 	m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
 		W: m.screenW, H: m.screenH,

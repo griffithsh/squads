@@ -13,6 +13,7 @@ import (
  * semi-solid as to an implementation.
  */
 
+// connect two Nodes by adding each to the other's Connected map.
 func connect(n1 *overworld.Node, n2 *overworld.Node) error {
 	n1Neighbors := n1.ID.Neighbors()
 	dirOfN2, ok := n1Neighbors[n2.ID]
@@ -25,31 +26,33 @@ func connect(n1 *overworld.Node, n2 *overworld.Node) error {
 
 	dirOfN1 := geom.Opposite[dirOfN2]
 
-	if n1.Directions == nil {
-		n1.Directions = map[geom.DirectionType]geom.Key{}
+	if n1.Connected == nil {
+		n1.Connected = map[geom.DirectionType]geom.Key{}
 	}
-	n1.Directions[dirOfN2] = n2.ID
+	n1.Connected[dirOfN2] = n2.ID
 
-	if n2.Directions == nil {
-		n2.Directions = map[geom.DirectionType]geom.Key{}
+	if n2.Connected == nil {
+		n2.Connected = map[geom.DirectionType]geom.Key{}
 	}
-	n2.Directions[dirOfN1] = n1.ID
+	n2.Connected[dirOfN1] = n1.ID
 
 	return nil
 }
 
-func available() map[geom.Key]struct{} {
-	result := make(map[geom.Key]struct{})
+// available generates random terrain.
+func available() map[geom.Key]overworld.TileID {
+	result := make(map[geom.Key]overworld.TileID)
 
 	for m := 0; m < 4; m++ {
 		for n := 0; n < 16; n++ {
-			result[geom.Key{M: m, N: n}] = struct{}{}
+			id := overworld.TileID((n * m) % 3)
+			result[geom.Key{M: m, N: n}] = id
 		}
 	}
 	return result
 }
 
-func recurse(rng *rand.Rand, start geom.Key, d *overworld.Data, potentials map[geom.Key]struct{}) {
+func recurse(rng *rand.Rand, start geom.Key, d *overworld.Map, potentials map[geom.Key]overworld.TileID) {
 	dirs := []geom.DirectionType{geom.S, geom.SW, geom.NW, geom.N, geom.NE, geom.SE}
 	rng.Shuffle(len(dirs), func(i, j int) {
 		dirs[i], dirs[j] = dirs[j], dirs[i]
@@ -59,7 +62,7 @@ func recurse(rng *rand.Rand, start geom.Key, d *overworld.Data, potentials map[g
 		// threshold is how likely this neighbor is to not continue in this
 		// direction
 		threshold := 0.0
-		switch len(d.Nodes[start].Directions) {
+		switch len(d.Nodes[start].Connected) {
 		case 0: // 100% chance of this node connecting to anything
 		case 1: // 65% chance of this node connecting to 2 things
 			threshold = 0.45
@@ -96,19 +99,24 @@ func recurse(rng *rand.Rand, start geom.Key, d *overworld.Data, potentials map[g
 	}
 }
 
-func data(rng *rand.Rand) overworld.Data {
-	var d overworld.Data
+func data(rng *rand.Rand, recipe overworld.Recipe) overworld.Map {
+	d := overworld.Map{
+		Terrain: recipe.Terrain,
+	}
 	d.Nodes = map[geom.Key]*overworld.Node{}
-	potentials := available()
+	potentials := recipe.Terrain
 
-	// pick any potential as the start? Or 0,0?
+	// FIXME: pick any potential as the start? Or 0,0? Need a deterministic way
+	// of picking this.
 	start := geom.Key{M: 0, N: 0}
 	for k := range potentials {
 		start = k
 		break
 	}
 	d.Nodes[start] = &overworld.Node{ID: start}
-	recurse(rng, start, &d, potentials)
+	d.Start = start
+
+	recurse(rng, d.Start, &d, potentials)
 
 	return d
 }
