@@ -311,6 +311,10 @@ func (m *Manager) boot(d Map) {
 		Y: position.Center.Y,
 	})
 
+	// TODO: Add a token for the exit gate!
+	// ...
+
+	// Add a Token for every enemy Squad.
 	enemyTeam := game.NewTeam()
 	for key, squadRecipe := range d.Enemies {
 		position := m.mgr.Component(d.Nodes[key].e, "Position").(*game.Position)

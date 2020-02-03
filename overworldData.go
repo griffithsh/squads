@@ -128,6 +128,10 @@ func data(rng *rand.Rand, recipe overworld.Recipe) overworld.Map {
 			// First key is the player start.
 			d.Start = key
 			continue
+		} else if i == 1 {
+			// Second key is the exit gate.
+			d.Gate = key
+			continue
 		}
 
 		// FIXME: The selection of squads should be controlled by the

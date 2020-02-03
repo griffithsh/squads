@@ -34,6 +34,9 @@ type Map struct {
 	// Start stores the rolled location for where the player should start in
 	// this overworld map.
 	Start geom.Key
+
+	// Gate stores the location of the exit to this overworld.
+	Gate geom.Key
 }
 
 // SortedNodeKeys provides the geom.Keys that appear in the Nodes map, sorted by
