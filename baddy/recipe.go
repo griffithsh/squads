@@ -1,6 +1,8 @@
 package baddy
 
 import (
+	"math/rand"
+
 	"github.com/griffithsh/squads/game"
 )
 
@@ -24,7 +26,7 @@ type Recipe struct {
 }
 
 // Construct a baddy from a Recipe.
-func (recipe Recipe) Construct() *game.Character {
+func (recipe Recipe) Construct(rng *rand.Rand) *game.Character {
 	return &game.Character{
 		Name:                 recipe.Name,
 		Sex:                  recipe.Sex,

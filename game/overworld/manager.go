@@ -200,7 +200,9 @@ func (m *Manager) playerTeam() *game.Team {
 }
 
 func (m *Manager) boot(d Map) {
+	// FIXME: Do not construct PRNG here
 	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
+
 	// Add new entities for the squad, overworld terrain, etc?
 
 	// Add a Sprite for every Node.
@@ -280,60 +282,44 @@ func (m *Manager) boot(d Map) {
 		keys = append(keys, k)
 	}
 
-	// FIXME: Should sort before shuffle for deterministic behaviour. Won't be
-	// relevant after rolling for baddy spawns is moved to that data() func in
-	// overworldData.go.
-	rng.Shuffle(len(keys), func(i, j int) { keys[i], keys[j] = keys[j], keys[i] })
+	// Add a Token to mark where the player's squad is.
+	e := m.mgr.NewEntity()
+	m.mgr.Tag(e, "overworld")
+	m.mgr.Tag(e, "player")
+	m.mgr.AddComponent(e, m.playerTeam())
+	m.mgr.AddComponent(e, &game.Sprite{
+		Texture: "figure.png",
+
+		X: 0, Y: 0,
+		W: 24, H: 48,
+		OffsetY: -16,
+	})
+	position := m.mgr.Component(d.Nodes[d.Start].e, "Position").(*game.Position)
+	m.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: position.Center.X, Y: position.Center.Y,
+		},
+		Layer: position.Layer + 1,
+	})
+	m.mgr.AddComponent(e, &Token{
+		Key:   d.Start,
+		Squad: m.playerSquad(),
+	})
+	// Publish a focus event for the camera.
+	m.bus.Publish(&game.SomethingInteresting{
+		X: position.Center.X,
+		Y: position.Center.Y,
+	})
+
 	enemyTeam := game.NewTeam()
-	for i, k := range keys {
-		start := d.Nodes[k]
-		position := m.mgr.Component(start.e, "Position").(*game.Position)
-		if i == 0 {
-			// Add a Token to mark where the player's squad is.
-			e := m.mgr.NewEntity()
-			m.mgr.Tag(e, "overworld")
-			m.mgr.Tag(e, "player")
-			m.mgr.AddComponent(e, m.playerTeam())
-			m.mgr.AddComponent(e, &game.Sprite{
-				Texture: "figure.png",
-
-				X: 0, Y: 0,
-				W: 24, H: 48,
-				OffsetY: -16,
-			})
-			m.mgr.AddComponent(e, &game.Position{
-				Center: game.Center{
-					X: position.Center.X, Y: position.Center.Y,
-				},
-				Layer: position.Layer + 1,
-			})
-			m.mgr.AddComponent(e, &Token{
-				Key:   start.ID,
-				Squad: m.playerSquad(),
-			})
-
-			// Publish a focus event for the camera.
-			m.bus.Publish(&game.SomethingInteresting{
-				X: position.Center.X,
-				Y: position.Center.Y,
-			})
-
-			continue
-		}
-
-		roll := rng.Intn(6)
-		if roll == 0 {
-			// Luckily, no baddies on this node.
-			continue
-		}
-
+	for key, squadRecipe := range d.Enemies {
+		position := m.mgr.Component(d.Nodes[key].e, "Position").(*game.Position)
 		// Add a Squad, and visible Token to the overworld map.
 		e := m.mgr.NewEntity()
 		m.mgr.Tag(e, "overworld")
 		enemyTeam.Control = game.ComputerControl
 		m.mgr.AddComponent(e, enemyTeam)
 		m.mgr.AddComponent(e, &game.Squad{})
-		m.mgr.AddComponent(e, enemyTeam)
 		m.mgr.AddComponent(e, &game.Position{
 			Center: game.Center{
 				X: position.Center.X, Y: position.Center.Y,
@@ -341,18 +327,10 @@ func (m *Manager) boot(d Map) {
 			Layer: position.Layer + 1,
 		})
 		m.mgr.AddComponent(e, &Token{
-			Key:   start.ID,
+			Key:   key,
 			Squad: e,
 		})
-		baddies := []baddy.RecipeID{}
-		switch roll {
-		case 1, 2:
-			baddies = squad.Recipes[squad.SoloSkellington].Construct(rng)
-		case 3, 4:
-			baddies = squad.Recipes[squad.WolfPack1].Construct(rng)
-		case 5:
-			baddies = squad.Recipes[squad.SoloGiant].Construct(rng)
-		}
+		baddies := squad.Recipes[squadRecipe].Construct(rng)
 
 		m.mgr.AddComponent(e, &game.Sprite{
 			Texture: "overworld-tokens.png",
@@ -366,7 +344,7 @@ func (m *Manager) boot(d Map) {
 			e = m.mgr.NewEntity()
 			m.mgr.Tag(e, "overworld")
 			m.mgr.Tag(e, "baddy")
-			m.mgr.AddComponent(e, baddy.Recipes[id].Construct())
+			m.mgr.AddComponent(e, baddy.Recipes[id].Construct(rng))
 			m.mgr.AddComponent(e, enemyTeam)
 			squad.Members = append(squad.Members, e)
 		}

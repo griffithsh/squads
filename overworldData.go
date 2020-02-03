@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/griffithsh/squads/squad"
+
 	"github.com/griffithsh/squads/game/overworld"
 	"github.com/griffithsh/squads/geom"
 )
@@ -100,28 +102,48 @@ func recurse(rng *rand.Rand, start geom.Key, d *overworld.Map, potentials map[ge
 	}
 }
 
-// data generates a Map from a recipe.
+// data generates a Map from a Recipe by calling randomness from rng.
 func data(rng *rand.Rand, recipe overworld.Recipe) overworld.Map {
 	d := overworld.Map{
 		Terrain: recipe.Terrain,
+		Nodes:   map[geom.Key]*overworld.Node{},
+		Enemies: map[geom.Key]squad.RecipeID{},
 	}
-	d.Nodes = map[geom.Key]*overworld.Node{}
-	potentials := recipe.Terrain
 
-	// FIXME: pick any potential as the start? Or 0,0? Need a deterministic way
-	// of picking this.
-	start := geom.Key{M: 0, N: 0}
-	for k := range potentials {
-		start = k
-		break
+	origin := geom.Key{M: 0, N: 0}
+	d.Nodes[origin] = &overworld.Node{ID: origin}
+	recurse(rng, origin, &d, recipe.Terrain)
+
+	if len(d.Nodes) < 2 {
+		panic("impossible Map generated: not enough room for both start and exit")
 	}
-	d.Nodes[start] = &overworld.Node{ID: start}
-	d.Start = start
+	// Sort then shuffle keys, so that the results of this function are
+	// deterministic based on the provided PRNG.
+	keys := d.SortedNodeKeys()
+	rand.Shuffle(len(keys), func(i, j int) {
+		keys[i], keys[j] = keys[j], keys[i]
+	})
+	for i, key := range keys {
+		if i == 0 {
+			// First key is the player start.
+			d.Start = key
+			continue
+		}
 
-	// TODO: also roll enemy squads here instead of in overworld.Manager::boot.
-	// ...
-
-	recurse(rng, d.Start, &d, potentials)
+		// FIXME: The selection of squads should be controlled by the
+		// overworld Recipe.
+		// 1 in 3 chance of adding an enemy squad here.
+		if rng.Intn(3) == 0 {
+			switch rng.Intn(3) {
+			case 0:
+				d.Enemies[key] = squad.SoloSkellington
+			case 1:
+				d.Enemies[key] = squad.WolfPack1
+			case 2:
+				d.Enemies[key] = squad.SoloGiant
+			}
+		}
+	}
 
 	return d
 }
