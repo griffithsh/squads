@@ -4,8 +4,8 @@ import (
 	"sort"
 
 	"github.com/griffithsh/squads/ecs"
+	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
-	"github.com/griffithsh/squads/squad"
 )
 
 // Node is a stop on the overworld that might be occupied by the player, an
@@ -29,7 +29,7 @@ type Map struct {
 	Nodes map[geom.Key]*Node
 
 	// Enemies stores rolled enemy squad locations and their types.
-	Enemies map[geom.Key]squad.RecipeID
+	Enemies map[geom.Key][]*game.Character
 
 	// Start stores the rolled location for where the player should start in
 	// this overworld map.

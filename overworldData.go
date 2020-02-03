@@ -4,10 +4,11 @@ import (
 	"fmt"
 	"math/rand"
 
-	"github.com/griffithsh/squads/squad"
-
+	"github.com/griffithsh/squads/baddy"
+	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/game/overworld"
 	"github.com/griffithsh/squads/geom"
+	"github.com/griffithsh/squads/squad"
 )
 
 /*
@@ -107,7 +108,7 @@ func data(rng *rand.Rand, recipe overworld.Recipe) overworld.Map {
 	d := overworld.Map{
 		Terrain: recipe.Terrain,
 		Nodes:   map[geom.Key]*overworld.Node{},
-		Enemies: map[geom.Key]squad.RecipeID{},
+		Enemies: map[geom.Key][]*game.Character{},
 	}
 
 	origin := geom.Key{M: 0, N: 0}
@@ -138,13 +139,20 @@ func data(rng *rand.Rand, recipe overworld.Recipe) overworld.Map {
 		// overworld Recipe.
 		// 1 in 3 chance of adding an enemy squad here.
 		if rng.Intn(3) == 0 {
+			rollCharacters := func(rng *rand.Rand, id squad.RecipeID) []*game.Character {
+				result := []*game.Character{}
+				for _, recipeID := range squad.Recipes[id].Construct(rng) {
+					result = append(result, baddy.Recipes[recipeID].Construct(rng))
+				}
+				return result
+			}
 			switch rng.Intn(3) {
 			case 0:
-				d.Enemies[key] = squad.SoloSkellington
+				d.Enemies[key] = rollCharacters(rng, squad.SoloSkellington)
 			case 1:
-				d.Enemies[key] = squad.WolfPack1
+				d.Enemies[key] = rollCharacters(rng, squad.WolfPack1)
 			case 2:
-				d.Enemies[key] = squad.SoloGiant
+				d.Enemies[key] = rollCharacters(rng, squad.SoloGiant)
 			}
 		}
 	}

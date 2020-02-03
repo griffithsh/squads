@@ -6,13 +6,11 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/griffithsh/squads/baddy"
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
 	"github.com/griffithsh/squads/res"
-	"github.com/griffithsh/squads/squad"
 	"github.com/griffithsh/squads/ui"
 )
 
@@ -200,11 +198,6 @@ func (m *Manager) playerTeam() *game.Team {
 }
 
 func (m *Manager) boot(d Map) {
-	// FIXME: Do not construct PRNG here
-	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
-
-	// Add new entities for the squad, overworld terrain, etc?
-
 	// Add a Sprite for every Node.
 	positions := map[geom.Key]game.Center{}
 	for _, n := range d.Nodes {
@@ -316,7 +309,7 @@ func (m *Manager) boot(d Map) {
 
 	// Add a Token for every enemy Squad.
 	enemyTeam := game.NewTeam()
-	for key, squadRecipe := range d.Enemies {
+	for key, squadMembers := range d.Enemies {
 		position := m.mgr.Component(d.Nodes[key].e, "Position").(*game.Position)
 		// Add a Squad, and visible Token to the overworld map.
 		e := m.mgr.NewEntity()
@@ -334,7 +327,6 @@ func (m *Manager) boot(d Map) {
 			Key:   key,
 			Squad: e,
 		})
-		baddies := squad.Recipes[squadRecipe].Construct(rng)
 
 		m.mgr.AddComponent(e, &game.Sprite{
 			Texture: "overworld-tokens.png",
@@ -344,11 +336,11 @@ func (m *Manager) boot(d Map) {
 		})
 
 		squad := m.mgr.Component(e, "Squad").(*game.Squad)
-		for _, id := range baddies {
+		for _, character := range squadMembers {
 			e = m.mgr.NewEntity()
 			m.mgr.Tag(e, "overworld")
 			m.mgr.Tag(e, "baddy")
-			m.mgr.AddComponent(e, baddy.Recipes[id].Construct(rng))
+			m.mgr.AddComponent(e, character)
 			m.mgr.AddComponent(e, enemyTeam)
 			squad.Members = append(squad.Members, e)
 		}
