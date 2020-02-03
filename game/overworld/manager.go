@@ -6,14 +6,14 @@ import (
 	"math/rand"
 	"time"
 
-	"github.com/griffithsh/squads/res"
-	"github.com/griffithsh/squads/ui"
-
-	"github.com/griffithsh/squads/game"
-	"github.com/griffithsh/squads/geom"
-
+	"github.com/griffithsh/squads/baddy"
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
+	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/geom"
+	"github.com/griffithsh/squads/res"
+	"github.com/griffithsh/squads/squad"
+	"github.com/griffithsh/squads/ui"
 )
 
 // Manager is a game state that allows the player to pick which path to take,
@@ -200,6 +200,7 @@ func (m *Manager) playerTeam() *game.Team {
 }
 
 func (m *Manager) boot(d Map) {
+	rng := rand.New(rand.NewSource(time.Now().UnixNano()))
 	// Add new entities for the squad, overworld terrain, etc?
 
 	// Add a Sprite for every Node.
@@ -278,9 +279,12 @@ func (m *Manager) boot(d Map) {
 	for k := range d.Nodes {
 		keys = append(keys, k)
 	}
-	// FIXME: Should sort before shuffle for deterministic behaviour.
-	rand.Shuffle(len(keys), func(i, j int) { keys[i], keys[j] = keys[j], keys[i] })
-	enemies := game.NewTeam()
+
+	// FIXME: Should sort before shuffle for deterministic behaviour. Won't be
+	// relevant after rolling for baddy spawns is moved to that data() func in
+	// overworldData.go.
+	rng.Shuffle(len(keys), func(i, j int) { keys[i], keys[j] = keys[j], keys[i] })
+	enemyTeam := game.NewTeam()
 	for i, k := range keys {
 		start := d.Nodes[k]
 		position := m.mgr.Component(start.e, "Position").(*game.Position)
@@ -317,7 +321,7 @@ func (m *Manager) boot(d Map) {
 			continue
 		}
 
-		roll := rand.Intn(6)
+		roll := rng.Intn(6)
 		if roll == 0 {
 			// Luckily, no baddies on this node.
 			continue
@@ -326,10 +330,10 @@ func (m *Manager) boot(d Map) {
 		// Add a Squad, and visible Token to the overworld map.
 		e := m.mgr.NewEntity()
 		m.mgr.Tag(e, "overworld")
-		enemies.Control = game.ComputerControl
-		m.mgr.AddComponent(e, enemies)
+		enemyTeam.Control = game.ComputerControl
+		m.mgr.AddComponent(e, enemyTeam)
 		m.mgr.AddComponent(e, &game.Squad{})
-		m.mgr.AddComponent(e, enemies)
+		m.mgr.AddComponent(e, enemyTeam)
 		m.mgr.AddComponent(e, &game.Position{
 			Center: game.Center{
 				X: position.Center.X, Y: position.Center.Y,
@@ -340,13 +344,31 @@ func (m *Manager) boot(d Map) {
 			Key:   start.ID,
 			Squad: e,
 		})
+		baddies := []baddy.RecipeID{}
 		switch roll {
 		case 1, 2:
-			m.createSkeletonBaddySquad(e, enemies)
+			baddies = squad.Recipes[squad.SoloSkellington].Construct(rng)
 		case 3, 4:
-			m.createWolfBaddySquad(e, enemies)
+			baddies = squad.Recipes[squad.WolfPack1].Construct(rng)
 		case 5:
-			m.createGiantBaddySquad(e, enemies)
+			baddies = squad.Recipes[squad.SoloGiant].Construct(rng)
+		}
+
+		m.mgr.AddComponent(e, &game.Sprite{
+			Texture: "overworld-tokens.png",
+
+			X: 64, Y: 32,
+			W: 32, H: 32,
+		})
+
+		squad := m.mgr.Component(e, "Squad").(*game.Squad)
+		for _, id := range baddies {
+			e = m.mgr.NewEntity()
+			m.mgr.Tag(e, "overworld")
+			m.mgr.Tag(e, "baddy")
+			m.mgr.AddComponent(e, baddy.Recipes[id].Construct())
+			m.mgr.AddComponent(e, enemyTeam)
+			squad.Members = append(squad.Members, e)
 		}
 	}
 
@@ -451,158 +473,6 @@ func (m *Manager) Begin(d Map) {
 			m.boot(d)
 		},
 	})
-}
-
-func (m *Manager) createSkeletonBaddySquad(e ecs.Entity, enemies *game.Team) {
-	// Add an icon to represent this squad in the overworld.
-	m.mgr.AddComponent(e, &game.Sprite{
-		Texture: "skeleton.png",
-
-		X: 0, Y: 0,
-		W: 24, H: 48,
-	})
-	m.mgr.AddComponent(e, &game.RenderOffset{
-		Y: -16,
-	})
-
-	// Add a baddy to this Squad.
-	squad := m.mgr.Component(e, "Squad").(*game.Squad)
-	e = m.mgr.NewEntity()
-	m.mgr.Tag(e, "overworld")
-	m.mgr.Tag(e, "baddy")
-	m.mgr.AddComponent(e, enemies)
-	m.mgr.AddComponent(e, &game.Character{
-		Name:                 "Dumble",
-		Sex:                  game.Male,
-		Profession:           game.Skeleton,
-		PreparationThreshold: 1650,
-		ActionPoints:         60,
-		SmallIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       0,
-			Y:       154,
-			W:       26,
-			H:       26,
-		},
-		BigIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       0,
-			Y:       102,
-			W:       52,
-			H:       52,
-		},
-	})
-	squad.Members = append(squad.Members, e)
-}
-
-func (m *Manager) createWolfBaddySquad(e ecs.Entity, enemies *game.Team) {
-	// Add an icon to represent this squad in the overworld.
-	m.mgr.AddComponent(e, &game.Sprite{
-		Texture: "wolf.png",
-
-		X: 0, Y: 0,
-		W: 64, H: 64,
-	})
-
-	squad := m.mgr.Component(e, "Squad").(*game.Squad)
-
-	// Add a baddy to this Squad.
-	e = m.mgr.NewEntity()
-	m.mgr.Tag(e, "overworld")
-	m.mgr.Tag(e, "baddy")
-	m.mgr.AddComponent(e, enemies)
-	m.mgr.AddComponent(e, &game.Character{
-		Name:                 "Hustle",
-		Sex:                  game.Male,
-		Profession:           game.Wolf,
-		PreparationThreshold: 1650,
-		ActionPoints:         60,
-		SmallIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       52,
-			Y:       76,
-			W:       26,
-			H:       26,
-		},
-		BigIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       52,
-			Y:       24,
-			W:       52,
-			H:       52,
-		},
-	})
-	squad.Members = append(squad.Members, e)
-
-	e = m.mgr.NewEntity()
-	m.mgr.Tag(e, "overworld")
-	m.mgr.Tag(e, "baddy")
-	m.mgr.AddComponent(e, enemies)
-	m.mgr.AddComponent(e, &game.Character{
-		Name:                 "Fang",
-		Sex:                  game.Male,
-		Profession:           game.Wolf,
-		PreparationThreshold: 1650,
-		ActionPoints:         60,
-		SmallIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       52,
-			Y:       76,
-			W:       26,
-			H:       26,
-		},
-		BigIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       52,
-			Y:       24,
-			W:       52,
-			H:       52,
-		},
-	})
-	squad.Members = append(squad.Members, e)
-}
-
-func (m *Manager) createGiantBaddySquad(e ecs.Entity, enemies *game.Team) {
-	// Add an icon to represent this squad in the overworld.
-	m.mgr.AddComponent(e, &game.Sprite{
-		Texture: "giant.png",
-
-		X: 0, Y: 0,
-		W: 48, H: 96,
-	})
-	m.mgr.AddComponent(e, &game.RenderOffset{
-		Y: -24,
-	})
-
-	squad := m.mgr.Component(e, "Squad").(*game.Squad)
-
-	// Add a baddy to this Squad.
-	e = m.mgr.NewEntity()
-	m.mgr.Tag(e, "overworld")
-	m.mgr.Tag(e, "baddy")
-	m.mgr.AddComponent(e, enemies)
-	m.mgr.AddComponent(e, &game.Character{
-		Name:                 "Icarion",
-		Sex:                  game.Male,
-		Profession:           game.Giant,
-		PreparationThreshold: 1050,
-		ActionPoints:         60,
-		SmallIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       104,
-			Y:       76,
-			W:       26,
-			H:       26,
-		},
-		BigIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       104,
-			Y:       24,
-			W:       52,
-			H:       52,
-		},
-	})
-	squad.Members = append(squad.Members, e)
 }
 
 // Enable the overworld Manager, responding to input and rendering the state of

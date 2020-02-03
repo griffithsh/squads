@@ -52,6 +52,7 @@ func available() map[geom.Key]overworld.TileID {
 	return result
 }
 
+// recurse generates pathways between nodes by iterating through hexes adjacent to start.
 func recurse(rng *rand.Rand, start geom.Key, d *overworld.Map, potentials map[geom.Key]overworld.TileID) {
 	dirs := []geom.DirectionType{geom.S, geom.SW, geom.NW, geom.N, geom.NE, geom.SE}
 	rng.Shuffle(len(dirs), func(i, j int) {
@@ -99,6 +100,7 @@ func recurse(rng *rand.Rand, start geom.Key, d *overworld.Map, potentials map[ge
 	}
 }
 
+// data generates a Map from a recipe.
 func data(rng *rand.Rand, recipe overworld.Recipe) overworld.Map {
 	d := overworld.Map{
 		Terrain: recipe.Terrain,
@@ -115,6 +117,9 @@ func data(rng *rand.Rand, recipe overworld.Recipe) overworld.Map {
 	}
 	d.Nodes[start] = &overworld.Node{ID: start}
 	d.Start = start
+
+	// TODO: also roll enemy squads here instead of in overworld.Manager::boot.
+	// ...
 
 	recurse(rng, d.Start, &d, potentials)
 
