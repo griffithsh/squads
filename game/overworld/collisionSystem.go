@@ -26,7 +26,7 @@ func (cs *CollisionSystem) handleTokenMoved(t event.Typer) {
 	ev := t.(*TokenMoved)
 	team := cs.mgr.Component(ev.E, "Team").(*game.Team)
 	for _, e := range cs.mgr.Get([]string{"Token", "Team"}) {
-		// Entities don't collide with themself.
+		// Entities don't collide with themselves.
 		if ev.E == e {
 			continue
 		}

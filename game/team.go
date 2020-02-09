@@ -11,10 +11,11 @@ const (
 	// LocalControl means that the player is controlling this team.
 	LocalControl TeamControl = iota
 
+	// NoControl is for things that do not move
+	NoControl
+
 	// ComputerControl means that an AI script is controlling this team.
 	ComputerControl
-
-	// NetworkControl ?
 )
 
 // Team is a Component that represents a grouping of Characters that work

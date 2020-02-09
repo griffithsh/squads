@@ -9,12 +9,13 @@ func _() {
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
 	_ = x[LocalControl-0]
-	_ = x[ComputerControl-1]
+	_ = x[NoControl-1]
+	_ = x[ComputerControl-2]
 }
 
-const _TeamControl_name = "LocalControlComputerControl"
+const _TeamControl_name = "LocalControlNoControlComputerControl"
 
-var _TeamControl_index = [...]uint8{0, 12, 27}
+var _TeamControl_index = [...]uint8{0, 12, 21, 36}
 
 func (i TeamControl) String() string {
 	if i < 0 || i >= TeamControl(len(_TeamControl_index)-1) {

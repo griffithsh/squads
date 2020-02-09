@@ -55,22 +55,36 @@ func (m *Manager) handleTokensCollided(t event.Typer) {
 		Y: p.Center.Y,
 	})
 
-	m.setState(FadingOut)
-	m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
-		W: m.screenW, H: m.screenH,
-		Obscuring: true,
-		OnComplete: func() {
-			squads := []ecs.Entity{}
-			for _, e := range []ecs.Entity{ev.E1, ev.E2} {
-				token := m.mgr.Component(e, "Token").(*Token)
-				squads = append(squads, token.Squad)
-			}
-			m.bus.Publish(&CombatInitiated{
-				Squads: squads,
-				// info about terrain
-			})
-		},
-	})
+	var sum int
+	for _, e := range []ecs.Entity{ev.E1, ev.E2} {
+		sum += int(m.mgr.Component(e, "Token").(*Token).Category)
+	}
+
+	switch sum {
+	case int(SquadToken + SquadToken):
+		m.setState(FadingOut)
+		m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
+			W: m.screenW, H: m.screenH,
+			Obscuring: true,
+			OnComplete: func() {
+				squads := []ecs.Entity{}
+				for _, e := range []ecs.Entity{ev.E1, ev.E2} {
+					token := m.mgr.Component(e, "Token").(*Token)
+					if m.mgr.Component(token.Presence, "Squad") != nil {
+						squads = append(squads, token.Presence)
+					}
+				}
+				m.bus.Publish(&CombatInitiated{
+					Squads: squads,
+					// TODO: info about terrain
+				})
+			},
+		})
+	case int(SquadToken + GateToken):
+		fmt.Println("exit gate!")
+	default:
+		fmt.Println("unknown TokenCollision with sum:", sum)
+	}
 }
 
 func (m *Manager) handleWindowSizeChanged(e event.Typer) {
@@ -295,8 +309,9 @@ func (m *Manager) boot(d Map) {
 		Layer: position.Layer + 1,
 	})
 	m.mgr.AddComponent(e, &Token{
-		Key:   d.Start,
-		Squad: m.playerSquad(),
+		Key:      d.Start,
+		Presence: m.playerSquad(),
+		Category: SquadToken,
 	})
 	// Publish a focus event for the camera.
 	m.bus.Publish(&game.SomethingInteresting{
@@ -304,8 +319,32 @@ func (m *Manager) boot(d Map) {
 		Y: position.Center.Y,
 	})
 
-	// TODO: Add a token for the exit gate!
-	// ...
+	// Add a token for the exit gate!
+	e = m.mgr.NewEntity()
+	m.mgr.Tag(e, "overworld")
+	m.mgr.Tag(e, "gate")
+	m.mgr.AddComponent(e, &game.Sprite{
+		Texture: "overworld-tokens.png",
+
+		X: 0, Y: 0,
+		W: 64, H: 64,
+		OffsetY: -8,
+	})
+	position = m.mgr.Component(d.Nodes[d.Gate].e, "Position").(*game.Position)
+	m.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: position.Center.X, Y: position.Center.Y,
+		},
+		Layer: position.Layer + 1,
+	})
+	m.mgr.AddComponent(e, &Token{
+		Key:      d.Gate,
+		Presence: e, // oh, it refs itself !?
+		Category: GateToken,
+	})
+	npcs := game.NewTeam()
+	npcs.Control = game.NoControl
+	m.mgr.AddComponent(e, npcs)
 
 	// Add a Token for every enemy Squad.
 	enemyTeam := game.NewTeam()
@@ -324,8 +363,9 @@ func (m *Manager) boot(d Map) {
 			Layer: position.Layer + 1,
 		})
 		m.mgr.AddComponent(e, &Token{
-			Key:   key,
-			Squad: e,
+			Key:      key,
+			Presence: e,
+			Category: SquadToken,
 		})
 
 		m.mgr.AddComponent(e, &game.Sprite{
