@@ -26,6 +26,8 @@ type Manager struct {
 	state   State
 
 	fogged map[geom.Key]ecs.Entity
+
+	rng *rand.Rand
 }
 
 // NewManager creates a new overworld Manager.
@@ -547,7 +549,13 @@ func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, d Map) f
 }
 
 // Begin a Manager session.
-func (m *Manager) Begin(d Map) {
+func (m *Manager) Begin(seed int64) {
+	m.rng = rand.New(rand.NewSource(seed))
+	recipe := Recipe{
+		Terrain: available(),
+	}
+	d := data(m.rng, recipe)
+
 	m.setState(FadingIn)
 	m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
 		W: m.screenW, H: m.screenH,

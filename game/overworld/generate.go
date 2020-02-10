@@ -1,4 +1,4 @@
-package main
+package overworld
 
 import (
 	"fmt"
@@ -6,18 +6,12 @@ import (
 
 	"github.com/griffithsh/squads/baddy"
 	"github.com/griffithsh/squads/game"
-	"github.com/griffithsh/squads/game/overworld"
 	"github.com/griffithsh/squads/geom"
 	"github.com/griffithsh/squads/squad"
 )
 
-/*
- * The idea is for this to move into the overworld package when I have something
- * semi-solid as to an implementation.
- */
-
 // connect two Nodes by adding each to the other's Connected map.
-func connect(n1 *overworld.Node, n2 *overworld.Node) error {
+func connect(n1 *Node, n2 *Node) error {
 	n1Neighbors := n1.ID.Neighbors()
 	dirOfN2, ok := n1Neighbors[n2.ID]
 	if !ok {
@@ -42,13 +36,14 @@ func connect(n1 *overworld.Node, n2 *overworld.Node) error {
 	return nil
 }
 
-// available generates random terrain.
-func available() map[geom.Key]overworld.TileID {
-	result := make(map[geom.Key]overworld.TileID)
+// available generates random terrain for now while there are no pregenerated
+// terrain shapes available.
+func available() map[geom.Key]TileID {
+	result := make(map[geom.Key]TileID)
 
 	for m := 0; m < 4; m++ {
 		for n := 0; n < 16; n++ {
-			id := overworld.TileID((n * m) % 3)
+			id := TileID((n * m) % 3)
 			result[geom.Key{M: m, N: n}] = id
 		}
 	}
@@ -56,7 +51,7 @@ func available() map[geom.Key]overworld.TileID {
 }
 
 // recurse generates pathways between nodes by iterating through hexes adjacent to start.
-func recurse(rng *rand.Rand, start geom.Key, d *overworld.Map, potentials map[geom.Key]overworld.TileID) {
+func recurse(rng *rand.Rand, start geom.Key, d *Map, potentials map[geom.Key]TileID) {
 	dirs := []geom.DirectionType{geom.S, geom.SW, geom.NW, geom.N, geom.NE, geom.SE}
 	rng.Shuffle(len(dirs), func(i, j int) {
 		dirs[i], dirs[j] = dirs[j], dirs[i]
@@ -91,7 +86,7 @@ func recurse(rng *rand.Rand, start geom.Key, d *overworld.Map, potentials map[ge
 					continue
 				}
 			} else {
-				d.Nodes[neigh] = &overworld.Node{ID: neigh}
+				d.Nodes[neigh] = &Node{ID: neigh}
 			}
 			err := connect(d.Nodes[start], d.Nodes[neigh])
 			if err != nil {
@@ -104,15 +99,15 @@ func recurse(rng *rand.Rand, start geom.Key, d *overworld.Map, potentials map[ge
 }
 
 // data generates a Map from a Recipe by calling randomness from rng.
-func data(rng *rand.Rand, recipe overworld.Recipe) overworld.Map {
-	d := overworld.Map{
+func data(rng *rand.Rand, recipe Recipe) Map {
+	d := Map{
 		Terrain: recipe.Terrain,
-		Nodes:   map[geom.Key]*overworld.Node{},
+		Nodes:   map[geom.Key]*Node{},
 		Enemies: map[geom.Key][]*game.Character{},
 	}
 
 	origin := geom.Key{M: 0, N: 0}
-	d.Nodes[origin] = &overworld.Node{ID: origin}
+	d.Nodes[origin] = &Node{ID: origin}
 	recurse(rng, origin, &d, recipe.Terrain)
 
 	if len(d.Nodes) < 2 {
