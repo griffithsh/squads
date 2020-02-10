@@ -27,8 +27,13 @@ func (TokensCollided) Type() event.Type {
 	return "overworld.TokensCollided"
 }
 
-// Complete happens when the player escapes the current overworld through the portal.
-type Complete event.Type
+// Complete happens when the player escapes the current overworld through the gate.
+type Complete struct{}
+
+// Type of the Event.
+func (Complete) Type() event.Type {
+	return "overworld.Complete"
+}
 
 // CombatInitiated occurs when the player has met another squad for combat.
 type CombatInitiated struct {
@@ -36,7 +41,7 @@ type CombatInitiated struct {
 	// info about the terrain?
 }
 
-// Type of the Component.
+// Type of the Event.
 func (CombatInitiated) Type() event.Type {
 	return "overworld.CombatInitiated"
 }

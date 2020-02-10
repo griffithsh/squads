@@ -46,6 +46,38 @@ func NewManager(mgr *ecs.World, bus *event.Bus) *Manager {
 	return &m
 }
 
+func (m *Manager) handleSquadTokensCollided(e1, e2 ecs.Entity) {
+	m.setState(FadingOut)
+	m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
+		W: m.screenW, H: m.screenH,
+		Obscuring: true,
+		OnComplete: func() {
+			squads := []ecs.Entity{}
+			for _, e := range []ecs.Entity{e1, e2} {
+				token := m.mgr.Component(e, "Token").(*Token)
+				if m.mgr.Component(token.Presence, "Squad") != nil {
+					squads = append(squads, token.Presence)
+				}
+			}
+			m.bus.Publish(&CombatInitiated{
+				Squads: squads,
+				// TODO: info about terrain
+			})
+		},
+	})
+}
+
+func (m *Manager) handleExitGateCollided() {
+	m.setState(FadingOut)
+	m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
+		W: m.screenW, H: m.screenH,
+		Obscuring: true,
+		OnComplete: func() {
+			m.bus.Publish(&Complete{})
+		},
+	})
+}
+
 func (m *Manager) handleTokensCollided(t event.Typer) {
 	ev := t.(*TokensCollided)
 
@@ -62,26 +94,9 @@ func (m *Manager) handleTokensCollided(t event.Typer) {
 
 	switch sum {
 	case int(SquadToken + SquadToken):
-		m.setState(FadingOut)
-		m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
-			W: m.screenW, H: m.screenH,
-			Obscuring: true,
-			OnComplete: func() {
-				squads := []ecs.Entity{}
-				for _, e := range []ecs.Entity{ev.E1, ev.E2} {
-					token := m.mgr.Component(e, "Token").(*Token)
-					if m.mgr.Component(token.Presence, "Squad") != nil {
-						squads = append(squads, token.Presence)
-					}
-				}
-				m.bus.Publish(&CombatInitiated{
-					Squads: squads,
-					// TODO: info about terrain
-				})
-			},
-		})
+		m.handleSquadTokensCollided(ev.E1, ev.E2)
 	case int(SquadToken + GateToken):
-		fmt.Println("exit gate!")
+		m.handleExitGateCollided()
 	default:
 		fmt.Println("unknown TokenCollision with sum:", sum)
 	}
@@ -523,6 +538,7 @@ func (m *Manager) End() {
 	for _, e := range m.mgr.Tagged("overworld") {
 		m.mgr.DestroyEntity(e)
 	}
+	m.fogged = make(map[geom.Key]ecs.Entity)
 }
 
 // MousePosition handles a change in the mouse position from the player.
