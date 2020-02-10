@@ -98,8 +98,10 @@ func recurse(rng *rand.Rand, start geom.Key, d *Map, potentials map[geom.Key]Til
 	}
 }
 
-// data generates a Map from a Recipe by calling randomness from rng.
-func data(rng *rand.Rand, recipe Recipe) Map {
+// data generates a Map from a Recipe and a base level for opponents by calling
+// randomness from rng.
+func data(rng *rand.Rand, recipe Recipe, lvl int) Map {
+	// TODO: use lvl to make the baddies stronger
 	d := Map{
 		Terrain: recipe.Terrain,
 		Nodes:   map[geom.Key]*Node{},

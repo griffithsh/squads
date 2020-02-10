@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"math"
 	"math/rand"
+	"strconv"
 	"time"
 
 	"github.com/griffithsh/squads/ecs"
@@ -492,7 +493,7 @@ func (m *Manager) boot(d Map) {
 	}
 }
 
-func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, d Map) func(x, y float64) {
+func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, recipe Recipe, lvl int) func(x, y float64) {
 	return func(float64, float64) {
 		// Change this card to the selected card sprite.
 		m.mgr.AddComponent(e, &game.Sprite{
@@ -523,6 +524,7 @@ func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, d Map) f
 		}
 
 		// start a screen wipe with an OnComplete that will ...
+		m.setState(FadingOut)
 		m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
 			W: m.screenW, H: m.screenH,
 			Obscuring: true,
@@ -532,14 +534,16 @@ func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, d Map) f
 					m.mgr.DestroyEntity(e)
 				}
 
-				// unwipe screen,
+				// unwipe the screen,
+				m.setState(FadingIn)
 				m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
 					W: m.screenW, H: m.screenH,
 					OnComplete: func() {
 						m.setState(AwaitingInputState)
 					},
 					OnInitialised: func() {
-						// and boot.
+						// and boot from the recipe.
+						d := data(m.rng, recipe, lvl)
 						m.boot(d)
 					},
 				})
@@ -551,17 +555,25 @@ func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, d Map) f
 // Begin a Manager session.
 func (m *Manager) Begin(seed int64) {
 	m.rng = rand.New(rand.NewSource(seed))
-	recipe := Recipe{
-		Terrain: available(),
-	}
-	d := data(m.rng, recipe)
 
 	m.setState(FadingIn)
 	m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
 		W: m.screenW, H: m.screenH,
 		OnInitialised: func() {
+			// TODO: with the new prng, we should roll for three path options that are
+			// presented as cards to the player. I *think* this means three recipes?
+			// Sometimes this might be a special recipe that takes the player home and
+			// ends their run though. We should also roll for a lvl for the
+			// opponents to be, so that the player can elect to take a more
+			// difficult path.
 			cards := []ecs.Entity{m.mgr.NewEntity(), m.mgr.NewEntity(), m.mgr.NewEntity()}
 			for i, e := range cards {
+				lvl := m.rng.Intn(5) + 1
+				recipe := Recipe{
+					Label:   "Peaceful Meadows " + strconv.Itoa(i+1),
+					Terrain: available(),
+				}
+
 				others := []ecs.Entity{}
 
 				switch i {
@@ -598,7 +610,7 @@ func (m *Manager) Begin(seed int64) {
 				})
 				m.mgr.AddComponent(e, &ui.Interactive{
 					W: 128, H: 192,
-					Trigger: m.handleCardSelected(e, others, d),
+					Trigger: m.handleCardSelected(e, others, recipe, lvl),
 				})
 
 				// Some text on the cards.
@@ -607,11 +619,11 @@ func (m *Manager) Begin(seed int64) {
 				m.mgr.Tag(e, "overworld-pick-path")
 
 				m.mgr.AddComponent(e, &game.Font{
-					Text: "Verdant Fields",
+					Text: recipe.Label,
 				})
 				m.mgr.AddComponent(e, &game.Position{
 					Center: game.Center{
-						X: float64(m.screenW/2) - float64(diff) + diff*float64(i) - 98,
+						X: float64(m.screenW/2) - float64(diff) + diff*float64(i) - 96,
 						Y: float64(m.screenH/2) - 176,
 					},
 
@@ -648,6 +660,28 @@ func (m *Manager) Begin(seed int64) {
 					Y: 2,
 				})
 
+				// How hard is this path?
+				e = m.mgr.NewEntity()
+				m.mgr.Tag(e, "overworld")
+				m.mgr.Tag(e, "overworld-pick-path")
+
+				m.mgr.AddComponent(e, &game.Font{
+					Text: "LVL: " + strconv.Itoa(lvl),
+					Size: "small",
+				})
+				m.mgr.AddComponent(e, &game.Position{
+					Center: game.Center{
+						X: float64(m.screenW/2) - float64(diff) + diff*float64(i) - 96,
+						Y: float64(m.screenH/2) + 12,
+					},
+
+					Layer:    101,
+					Absolute: true,
+				})
+				m.mgr.AddComponent(e, &game.Scale{
+					X: 2,
+					Y: 2,
+				})
 			}
 		},
 	})

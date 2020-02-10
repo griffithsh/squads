@@ -4,6 +4,8 @@ import "github.com/griffithsh/squads/geom"
 
 // Recipe stores configuration of how to roll a map.
 type Recipe struct {
+	Label string
+
 	// Terrain stores the visible tiles of an overworld.
 	Terrain map[geom.Key]TileID
 
