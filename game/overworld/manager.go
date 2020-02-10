@@ -490,16 +490,157 @@ func (m *Manager) boot(d Map) {
 	}
 }
 
+func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, d Map) func(x, y float64) {
+	return func(float64, float64) {
+		// Change this card to the selected card sprite.
+		m.mgr.AddComponent(e, &game.Sprite{
+			Texture: "overworld-cards.png",
+
+			X: 128, Y: 0,
+			W: 128, H: 192,
+		})
+
+		for _, e := range others {
+			// remove interactive component from others
+			m.mgr.RemoveComponent(e, &ui.Interactive{})
+
+			// obscure others with fadeout animation
+			anim := game.NewFrameAnimation(res.Animations["overworld-hide-card"])
+			anim.EndBehavior = game.HoldLastFrame
+
+			obscure := m.mgr.NewEntity()
+			m.mgr.Tag(obscure, "overworld")
+			m.mgr.Tag(obscure, "overworld-pick-path")
+			pos := m.mgr.Component(e, "Position").(*game.Position)
+			posCopy := *pos
+			posCopy.Layer += 10
+			m.mgr.AddComponent(obscure, &posCopy)
+			m.mgr.AddComponent(obscure, m.mgr.Component(e, "Scale"))
+			m.mgr.AddComponent(obscure, &anim)
+
+		}
+
+		// start a screen wipe with an OnComplete that will ...
+		m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
+			W: m.screenW, H: m.screenH,
+			Obscuring: true,
+			OnComplete: func() {
+				// ... destroy all components tagged "overworld-pick-path",
+				for _, e := range m.mgr.Tagged("overworld-pick-path") {
+					m.mgr.DestroyEntity(e)
+				}
+
+				// unwipe screen,
+				m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
+					W: m.screenW, H: m.screenH,
+					OnComplete: func() {
+						m.setState(AwaitingInputState)
+					},
+					OnInitialised: func() {
+						// and boot.
+						m.boot(d)
+					},
+				})
+			},
+		})
+	}
+}
+
 // Begin a Manager session.
 func (m *Manager) Begin(d Map) {
 	m.setState(FadingIn)
 	m.mgr.AddComponent(m.mgr.NewEntity(), &game.DiagonalMatrixWipe{
 		W: m.screenW, H: m.screenH,
-		OnComplete: func() {
-			m.setState(AwaitingInputState)
-		},
 		OnInitialised: func() {
-			m.boot(d)
+			cards := []ecs.Entity{m.mgr.NewEntity(), m.mgr.NewEntity(), m.mgr.NewEntity()}
+			for i, e := range cards {
+				others := []ecs.Entity{}
+
+				switch i {
+				case 0:
+					others = append(others, cards[1], cards[2])
+				case 1:
+					others = append(others, cards[0], cards[2])
+				case 2:
+					others = append(others, cards[0], cards[1])
+				}
+
+				m.mgr.Tag(e, "overworld")
+				m.mgr.Tag(e, "overworld-pick-path")
+
+				diff := float64(128+12) * 2
+				m.mgr.AddComponent(e, &game.Position{
+					Center: game.Center{
+						X: float64(m.screenW/2) - float64(diff) + diff*float64(i),
+						Y: float64(m.screenH / 2),
+					},
+
+					Layer:    100,
+					Absolute: true,
+				})
+				m.mgr.AddComponent(e, &game.Scale{
+					X: 2,
+					Y: 2,
+				})
+				m.mgr.AddComponent(e, &game.Sprite{
+					Texture: "overworld-cards.png",
+
+					X: 0, Y: 0,
+					W: 128, H: 192,
+				})
+				m.mgr.AddComponent(e, &ui.Interactive{
+					W: 128, H: 192,
+					Trigger: m.handleCardSelected(e, others, d),
+				})
+
+				// Some text on the cards.
+				e = m.mgr.NewEntity()
+				m.mgr.Tag(e, "overworld")
+				m.mgr.Tag(e, "overworld-pick-path")
+
+				m.mgr.AddComponent(e, &game.Font{
+					Text: "Verdant Fields",
+				})
+				m.mgr.AddComponent(e, &game.Position{
+					Center: game.Center{
+						X: float64(m.screenW/2) - float64(diff) + diff*float64(i) - 98,
+						Y: float64(m.screenH/2) - 176,
+					},
+
+					Layer:    101,
+					Absolute: true,
+				})
+				m.mgr.AddComponent(e, &game.Scale{
+					X: 2,
+					Y: 2,
+				})
+
+				// A preview image of the destination.
+				e = m.mgr.NewEntity()
+				m.mgr.Tag(e, "overworld")
+				m.mgr.Tag(e, "overworld-pick-path")
+
+				m.mgr.AddComponent(e, &game.Sprite{
+					Texture: "overworld-cards.png",
+
+					X: 0, Y: 384,
+					W: 96, H: 72,
+				})
+				m.mgr.AddComponent(e, &game.Position{
+					Center: game.Center{
+						X: float64(m.screenW/2) - float64(diff) + diff*float64(i),
+						Y: float64(m.screenH/2) - 72,
+					},
+
+					Layer:    101,
+					Absolute: true,
+				})
+				m.mgr.AddComponent(e, &game.Scale{
+					X: 2,
+					Y: 2,
+				})
+
+			}
 		},
 	})
 }
