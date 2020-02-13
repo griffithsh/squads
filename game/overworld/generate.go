@@ -100,7 +100,7 @@ func recurse(rng *rand.Rand, start geom.Key, d *Map, potentials map[geom.Key]Til
 
 // data generates a Map from a Recipe and a base level for opponents by calling
 // randomness from rng.
-func data(rng *rand.Rand, recipe Recipe, lvl int) Map {
+func data(rng *rand.Rand, recipe *Recipe, lvl int) Map {
 	// TODO: use lvl to make the baddies stronger
 	d := Map{
 		Terrain: recipe.Terrain,
@@ -131,6 +131,9 @@ func data(rng *rand.Rand, recipe Recipe, lvl int) Map {
 			d.Gate = key
 			continue
 		}
+
+		// DEBUG: dont add baddies so overworld is faster to search.
+		continue
 
 		// FIXME: The selection of squads should be controlled by the
 		// overworld Recipe.

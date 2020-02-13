@@ -10,6 +10,7 @@ import (
 	"runtime/pprof"
 	"time"
 
+	"github.com/griffithsh/squads/data"
 	"github.com/griffithsh/squads/ui"
 
 	"github.com/griffithsh/squads/ecs"
@@ -56,7 +57,11 @@ func main() {
 
 	rand.Seed(time.Now().Unix())
 	w, h := 1024, 768
-	s, _ := setup(w, h)
+	s, err := setup(w, h)
+	if err != nil {
+		fmt.Printf("setup system: %v\n", err)
+		os.Exit(1)
+	}
 	if err := ebiten.Run(s.run, w, h, 1, "Squads"); err == errExitGame {
 		fmt.Println("See you next time.")
 	} else if err != nil {
@@ -119,6 +124,20 @@ func setup(w, h int) (*system, error) {
 	bus := &event.Bus{}
 	mgr := ecs.NewWorld()
 	camera := game.NewCamera(w, h, bus)
+	archive, err := data.NewArchive()
+	if err != nil {
+		return nil, fmt.Errorf("construct data archive: %v", err)
+	}
+
+	f, err := os.Open("./squads.data")
+	if err != nil {
+		return nil, fmt.Errorf("open: %v", err)
+	}
+	err = archive.Load(f)
+	if err != nil {
+		return nil, fmt.Errorf("load: %v", err)
+	}
+	recipes := archive.GetRecipes()
 	s := system{
 		bus:        bus,
 		render:     game.NewRenderer(),
@@ -126,7 +145,7 @@ func setup(w, h int) (*system, error) {
 		traversals: &overworld.TraversalSystem{},
 		collisions: overworld.NewCollisionSystem(mgr, bus),
 		embark:     embark.NewManager(mgr, bus),
-		overworld:  overworld.NewManager(mgr, bus),
+		overworld:  overworld.NewManager(mgr, bus, recipes),
 		combat:     combat.NewManager(mgr, camera, bus),
 
 		mgr:    mgr,

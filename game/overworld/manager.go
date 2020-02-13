@@ -18,8 +18,9 @@ import (
 // Manager is a game state that allows the player to pick which path to take,
 // and which combat to enter etc.
 type Manager struct {
-	mgr *ecs.World
-	bus *event.Bus
+	mgr     *ecs.World
+	bus     *event.Bus
+	recipes []*Recipe
 
 	screenW, screenH int
 
@@ -32,10 +33,11 @@ type Manager struct {
 }
 
 // NewManager creates a new overworld Manager.
-func NewManager(mgr *ecs.World, bus *event.Bus) *Manager {
+func NewManager(mgr *ecs.World, bus *event.Bus, recipes []*Recipe) *Manager {
 	m := Manager{
-		mgr: mgr,
-		bus: bus,
+		mgr:     mgr,
+		bus:     bus,
+		recipes: recipes,
 
 		dormant: false,
 		state:   Uninitialised,
@@ -493,7 +495,7 @@ func (m *Manager) boot(d Map) {
 	}
 }
 
-func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, recipe Recipe, lvl int) func(x, y float64) {
+func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, recipe *Recipe, lvl int) func(x, y float64) {
 	return func(float64, float64) {
 		// Change this card to the selected card sprite.
 		m.mgr.AddComponent(e, &game.Sprite{
@@ -552,6 +554,18 @@ func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, recipe R
 	}
 }
 
+// randomRecipes returns three randomly selected recipes.
+func (m *Manager) randomRecipes() []*Recipe {
+	max := len(m.recipes)
+
+	result := make([]*Recipe, 3)
+	for i := 0; i < 3; i++ {
+		ri := m.rng.Intn(max)
+		result[i] = m.recipes[ri]
+	}
+	return result
+}
+
 // Begin a Manager session.
 func (m *Manager) Begin(seed int64) {
 	m.rng = rand.New(rand.NewSource(seed))
@@ -567,15 +581,14 @@ func (m *Manager) Begin(seed int64) {
 			// opponents to be, so that the player can elect to take a more
 			// difficult path.
 			cards := []ecs.Entity{m.mgr.NewEntity(), m.mgr.NewEntity(), m.mgr.NewEntity()}
+			recipes := m.randomRecipes()
 			for i, e := range cards {
-				lvl := m.rng.Intn(5) + 1
-				recipe := Recipe{
-					Label:   "Peaceful Meadows " + strconv.Itoa(i+1),
-					Terrain: available(),
-				}
+				// lvl captures the difficulty of selecting this option.
+				// TODO: it should be based on the level of the player's squad.
+				lvl := m.rng.Intn(6) + 1
+				recipe := recipes[i]
 
 				others := []ecs.Entity{}
-
 				switch i {
 				case 0:
 					others = append(others, cards[1], cards[2])
