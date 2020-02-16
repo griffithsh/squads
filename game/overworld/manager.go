@@ -545,7 +545,7 @@ func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, recipe *
 					},
 					OnInitialised: func() {
 						// and boot from the recipe.
-						d := data(m.rng, recipe, lvl)
+						d := generate(m.rng, recipe, lvl)
 						m.boot(d)
 					},
 				})

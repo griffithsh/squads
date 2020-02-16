@@ -135,7 +135,7 @@ func setup(w, h int) (*system, error) {
 	}
 	err = archive.Load(f)
 	if err != nil {
-		return nil, fmt.Errorf("load: %v", err)
+		return nil, fmt.Errorf("load archive: %v", err)
 	}
 	recipes := archive.GetRecipes()
 	s := system{
