@@ -105,15 +105,14 @@ func Navigate(start, goal Key, existsFunc func(Key) bool, costFunc func(Key) flo
 			return reconstruct(m, costs, goal)
 		}
 
-		if !existsFunc(current) {
-			break
-		}
-
 		delete(open, current)
 		closed[Key{M: current.M, N: current.N}] = struct{}{}
 
 		for _, n := range neighbors(current.M, current.N) {
-			if _, ok := closed[Key{M: n.M, N: n.N}]; ok {
+			if !existsFunc(n) {
+				continue
+			}
+			if _, ok := closed[n]; ok {
 				continue
 			}
 
