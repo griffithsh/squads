@@ -2,6 +2,9 @@ package overworld
 
 import (
 	"bytes"
+	"fmt"
+	"strconv"
+	"strings"
 	"testing"
 
 	"github.com/griffithsh/squads/geom"
@@ -12,10 +15,14 @@ func TestParseRecipe(t *testing.T) {
 
 terrain: // m,n tileid
 1 4 1, 1 2 1,
-1 3 0
+1 3 0,
 
 paths: // link hexes
 1 4 1 2, 1 4 1 3, 1 3 1 2
+
+interesting: // pick 2 of (0,0 1,1 and 2,2) to be part of the map.
+1 (-1 -1, 0 0),
+2 (2 2, 3 3,4 4)
 
 	`)
 
@@ -68,4 +75,32 @@ paths: // link hexes
 	if got.Paths[2] != want {
 		t.Errorf("want 1 4 1 3, got %v", got.Paths[2])
 	}
+
+	// Test interesting loads.
+	t.Run("Interesting", func(t *testing.T) {
+		if len(got.Interesting) != 2 {
+			t.Fatalf("want 2 Interesting, got %d (%v)", len(got.Interesting), got.Interesting)
+		}
+
+		interesting := []struct {
+			want string
+			got  InterestRoll
+		}{
+			{"1 (-1 -1, 0 0)", got.Interesting[0]},
+			{"2 (2 2, 3 3, 4 4)", got.Interesting[1]},
+		}
+
+		for i, tc := range interesting {
+			t.Run(strconv.Itoa(i), func(t *testing.T) {
+				var members []string
+				for _, opt := range tc.got.Options {
+					members = append(members, fmt.Sprintf("%d %d", opt.M, opt.N))
+				}
+				got := fmt.Sprintf("%d (%s)", tc.got.Pick, strings.Join(members, ", "))
+				if got != tc.want {
+					t.Fatalf("want %s, got %s", tc.want, got)
+				}
+			})
+		}
+	})
 }
