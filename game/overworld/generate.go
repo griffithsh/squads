@@ -12,6 +12,12 @@ import (
 
 // connect two Nodes by adding each to the other's Connected map.
 func connect(n1 *Node, n2 *Node) error {
+	if n1 == nil {
+		return fmt.Errorf("cannot connect n1(nil) to n2(%v)", n2)
+	}
+	if n2 == nil {
+		return fmt.Errorf("cannot connect n1(%v) to n2(nil)", n1)
+	}
 	n1Neighbors := n1.ID.Neighbors()
 	dirOfN2, ok := n1Neighbors[n2.ID]
 	if !ok {
@@ -36,32 +42,18 @@ func connect(n1 *Node, n2 *Node) error {
 	return nil
 }
 
-// available generates random terrain for now while there are no pregenerated
-// terrain shapes available.
-func available() map[geom.Key]TileID {
-	result := make(map[geom.Key]TileID)
-
-	for m := 0; m < 4; m++ {
-		for n := 0; n < 16; n++ {
-			id := TileID((n * m) % 3)
-			result[geom.Key{M: m, N: n}] = id
-		}
-	}
-	return result
-}
-
 // recurse generates pathways between nodes by iterating through hexes adjacent to start.
-func recurse(rng *rand.Rand, start geom.Key, d *Map, potentials map[geom.Key]TileID) {
+func recurse(rng *rand.Rand, origin geom.Key, d *Map, paths map[KeyPair]struct{}) {
 	dirs := []geom.DirectionType{geom.S, geom.SW, geom.NW, geom.N, geom.NE, geom.SE}
 	rng.Shuffle(len(dirs), func(i, j int) {
 		dirs[i], dirs[j] = dirs[j], dirs[i]
 	})
-	neighbors := start.Adjacent()
+	neighbors := origin.Adjacent()
 	for _, dir := range dirs {
 		// threshold is how likely this neighbor is to not continue in this
 		// direction
 		threshold := 0.0
-		switch len(d.Nodes[start].Connected) {
+		switch len(d.Nodes[origin].Connected) {
 		case 0: // 100% chance of this node connecting to anything
 		case 1: // 65% chance of this node connecting to 2 things
 			threshold = 0.45
@@ -75,7 +67,8 @@ func recurse(rng *rand.Rand, start geom.Key, d *Map, potentials map[geom.Key]Til
 		if rng.Float64() > threshold {
 			neigh := neighbors[dir]
 			// if this direction is not in potentials, then pull out.
-			if _, ok := potentials[neigh]; !ok {
+
+			if _, ok := paths[KeyPair{origin, neigh}]; !ok {
 				continue
 			}
 
@@ -88,17 +81,17 @@ func recurse(rng *rand.Rand, start geom.Key, d *Map, potentials map[geom.Key]Til
 			} else {
 				d.Nodes[neigh] = &Node{ID: neigh}
 			}
-			err := connect(d.Nodes[start], d.Nodes[neigh])
+			err := connect(d.Nodes[origin], d.Nodes[neigh])
 			if err != nil {
-				fmt.Printf("connect %v to %v failed: %v\n", start, neigh, err)
+				fmt.Printf("connect %v to %v failed: %v\n", origin, neigh, err)
 				continue
 			}
-			recurse(rng, neigh, d, potentials)
+			recurse(rng, neigh, d, paths)
 		}
 	}
 }
 
-// generate a Map from a Recipe and a base level for opponents by calling
+// generate a Map from a Recipe and a base enemy level for opponents by calling
 // randomness from rng.
 func generate(rng *rand.Rand, recipe *Recipe, lvl int) Map {
 	// TODO: use lvl to make the baddies stronger
@@ -108,12 +101,94 @@ func generate(rng *rand.Rand, recipe *Recipe, lvl int) Map {
 		Enemies: map[geom.Key][]*game.Character{},
 	}
 
-	origin := geom.Key{M: 0, N: 0}
+	// Pick the first key of a random pair in the recipe's permissable paths.
+	origin := recipe.Paths[rng.Intn(len(recipe.Paths)-1)].First
 	d.Nodes[origin] = &Node{ID: origin}
-	recurse(rng, origin, &d, recipe.Terrain)
+
+	// unpack paths into a two-way set available paths.
+	pathSet := map[KeyPair]struct{}{}
+	keySet := map[geom.Key]struct{}{}
+	for _, path := range recipe.Paths {
+		pathSet[KeyPair{path.First, path.Second}] = struct{}{}
+		pathSet[KeyPair{path.Second, path.First}] = struct{}{}
+
+		keySet[path.First] = struct{}{}
+		keySet[path.Second] = struct{}{}
+	}
+
+	// recurse through, generating a random path.
+	recurse(rng, origin, &d, pathSet)
+
+	// Roll for Points of interest that must be included in the Map's Nodes
+	must := []geom.Key{}
+	for _, poi := range recipe.Interesting {
+		// Randomly select poi.Pick number of Options from each InterestRoll, by
+		// constructing a shuffled sice of indices, then truncating the excess.
+		indices := []int{}
+		for i := range poi.Options {
+			indices = append(indices, i)
+		}
+		rng.Shuffle(len(indices), func(i, j int) {
+			indices[i], indices[j] = indices[j], indices[i]
+		})
+		indices = indices[:poi.Pick]
+
+		for _, i := range indices {
+			must = append(must, poi.Options[i])
+		}
+	}
+
+	// Link every rolled point of interest by connecting it to the origin that
+	// we started generating with.
+	for _, poi := range must {
+		if _, ok := d.Nodes[poi]; ok {
+			// This poi is already in the existing nodes.
+			continue
+		}
+
+		steps, err := geom.Navigate(origin, poi, func(k geom.Key) bool {
+			_, ok := keySet[k]
+			return ok
+		}, func(k geom.Key) float64 {
+			if _, ok := d.Nodes[k]; ok {
+				return 0.0
+			}
+			return 1.0
+		})
+		if err != nil {
+			// Points of interest should never be located in areas of the map
+			// that are inaccessible? This can only panic on recipes with
+			// non-contiguous Paths, right?
+			panic(fmt.Sprintf("uh-oh! %v", err))
+		}
+
+		var prev geom.Key
+		prev = geom.Key{M: steps[0].M, N: steps[0].N}
+		for i, step := range steps[1:] {
+			k := geom.Key{M: step.M, N: step.N}
+
+			// If this step is not already in nodes, add it.
+			if _, ok := d.Nodes[k]; !ok {
+				// Add a new node.
+				current := Node{ID: k}
+				d.Nodes[k] = &current
+
+				// connect the new node to the previous step's node.
+				err := connect(d.Nodes[prev], &current)
+				if err != nil {
+					fmt.Printf("connect step %d: %v\n", i, err)
+				}
+			}
+
+			// Prepare for next loop.
+			prev = k
+		}
+	}
 
 	if len(d.Nodes) < 2 {
-		panic("impossible Map generated: not enough room for both start and exit")
+		fmt.Println("impossible Map generated: not enough room for both start and exit")
+		// try again?
+		return generate(rng, recipe, lvl)
 	}
 	// Sort then shuffle keys, so that the results of this function are
 	// deterministic based on the provided PRNG.
@@ -135,10 +210,9 @@ func generate(rng *rand.Rand, recipe *Recipe, lvl int) Map {
 		// DEBUG: dont add baddies so overworld is faster to search.
 		continue
 
-		// FIXME: The selection of squads should be controlled by the
-		// overworld Recipe.
-		// 1 in 3 chance of adding an enemy squad here.
-		if rng.Intn(3) == 0 {
+		// TODO: The selection of squads should be controlled by the overworld
+		// Recipe.
+		if rng.Intn(3) == 0 { // 1 in 3 chance of adding an enemy squad here.
 			rollCharacters := func(rng *rand.Rand, id squad.RecipeID) []*game.Character {
 				result := []*game.Character{}
 				for _, recipeID := range squad.Recipes[id].Construct(rng) {

@@ -406,19 +406,9 @@ func (m *Manager) boot(d Map) {
 		}
 	}
 
-	// Construct the list of "fogged" nodes by expanding the terrain tiles by
-	// their immediate neighbors.
+	// Add fog over all the Terrain in the map.
 	for k := range d.Terrain {
 		if _, ok := m.fogged[k]; !ok {
-			e := m.mgr.NewEntity()
-			m.mgr.Tag(e, "overworld")
-			m.fogged[k] = e
-		}
-		// Expand fog nodes by one neighbor.
-		for _, k := range k.Adjacent() {
-			if _, ok := m.fogged[k]; ok {
-				continue
-			}
 			e := m.mgr.NewEntity()
 			m.mgr.Tag(e, "overworld")
 			m.fogged[k] = e
