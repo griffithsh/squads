@@ -495,6 +495,9 @@ func (hud *HUD) repaintSkills() {
 	}
 
 	if hud.lastCombatState == AwaitingInputState {
+		participant := hud.mgr.Component(hud.turnToken, "Participant").(*Participant)
+		fmt.Printf("skills for %d are composed from: %v %s\n", hud.turnToken, participant.EquippedWeaponClass, participant.Profession)
+
 		skills = map[int]skill{
 			// Move
 			0: skill{
@@ -514,7 +517,18 @@ func (hud *HUD) repaintSkills() {
 					},
 				},
 			},
+			// Consumables
+			7: skill{
+				sprite: game.Sprite{
+					Texture: "hud.png",
+					X:       232,
+					Y:       0,
+					W:       24,
+					H:       24,
+				},
+			},
 
+			// TODO: weapon skills should be provided by equipped weapon
 			// weapon 1
 			1: skill{
 				sprite: game.Sprite{
@@ -554,16 +568,8 @@ func (hud *HUD) repaintSkills() {
 			// 8 - weapon 3
 			// 9 - weapon 4
 
-			// Consumables
-			7: skill{
-				sprite: game.Sprite{
-					Texture: "hud.png",
-					X:       232,
-					Y:       0,
-					W:       24,
-					H:       24,
-				},
-			},
+			// TODO:
+			// 3,4,5,10,11,12 are slots 1-6 for profession-provided skills
 
 			// Flee
 			6: skill{

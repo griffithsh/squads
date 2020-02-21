@@ -31,8 +31,8 @@ func (recipe Recipe) Construct(rng *rand.Rand) *game.Character {
 		Name:                 recipe.Name,
 		Sex:                  recipe.Sex,
 		Profession:           recipe.Profession,
-		PreparationThreshold: recipe.Preparation,
-		ActionPoints:         recipe.ActionPoints,
+		InherantPreparation:  recipe.Preparation,
+		InherantActionPoints: recipe.ActionPoints,
 		SmallIcon:            recipe.SmallIcon,
 		BigIcon:              recipe.BigIcon,
 	}
@@ -42,7 +42,7 @@ func (recipe Recipe) Construct(rng *rand.Rand) *game.Character {
 var Recipes map[RecipeID]Recipe = map[RecipeID]Recipe{
 	Skellington: Recipe{
 		ActionPoints: 60,
-		Preparation:  1650,
+		Preparation:  50,
 		Name:         "Dumble",
 		Sex:          game.Male,
 		Profession:   game.Skeleton,
@@ -63,7 +63,7 @@ var Recipes map[RecipeID]Recipe = map[RecipeID]Recipe{
 	},
 	Wolf: Recipe{
 		ActionPoints: 60,
-		Preparation:  1500,
+		Preparation:  50,
 		Name:         "Hustle",
 		Sex:          game.Male,
 		Profession:   game.Wolf,
@@ -84,7 +84,7 @@ var Recipes map[RecipeID]Recipe = map[RecipeID]Recipe{
 	},
 	Giant: Recipe{
 		ActionPoints: 60,
-		Preparation:  1050,
+		Preparation:  50,
 		Name:         "Icarion",
 		Sex:          game.Male,
 		Profession:   game.Giant,

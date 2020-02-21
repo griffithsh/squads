@@ -57,6 +57,9 @@ type Participant struct {
 	Status EngagementStatus // Alive, Knocked down, or Escaped
 
 	Disambiguator float64
+
+	EquippedWeaponClass game.ItemClass
+	ItemStats           map[game.Modifier]float64
 }
 
 // Type of this Component.

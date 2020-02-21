@@ -72,6 +72,7 @@ func (em *Manager) repaint() {
 	const sheetW float64 = 148 // sheetW is the width of each character sheet
 	for i, villager := range em.villagers {
 		char := em.mgr.Component(villager, "Character").(*game.Character)
+		equip, _ := em.mgr.Component(villager, "Equipment").(*game.Equipment)
 
 		handlePrepare := func(i int, villager ecs.Entity) func(x, y float64) {
 			return func(x, y float64) {
@@ -80,12 +81,13 @@ func (em *Manager) repaint() {
 				em.repaint()
 			}
 		}
-		em.paintChar(char, float64(i)*sheetW+lMargin, tMargin, handlePrepare(i, villager))
+		em.paintChar(char, equip, float64(i)*sheetW+lMargin, tMargin, handlePrepare(i, villager))
 	}
 
 	for i, villager := range em.prepared {
 		char := em.mgr.Component(villager, "Character").(*game.Character)
-		em.paintChar(char, float64(i)*sheetW+lMargin, tMargin+200, nil)
+		equip, _ := em.mgr.Component(villager, "Equipment").(*game.Equipment)
+		em.paintChar(char, equip, float64(i)*sheetW+lMargin, tMargin+200, nil)
 	}
 
 	if len(em.prepared) > 0 {
@@ -158,11 +160,23 @@ func (em *Manager) rollVillagers() {
 		e := em.mgr.NewEntity()
 		em.mgr.Tag(e, "embark")
 		em.mgr.AddComponent(e, g.generateChar())
+		em.mgr.AddComponent(e, &game.Equipment{
+			// Weapon: &game.ItemInstance{
+			// 	Class: game.SwordClass,
+			// 	Name:  "Skirmish Sword",
+			// 	Modifiers: map[game.Modifier]float64{
+			// 		game.BaseMinDamageModifier: 11,
+			// 		game.BaseMaxDamageModifier: 22,
+			// 		game.PreparationModifier:   599,
+			// 		game.ActionPointModifier:   21,
+			// 	},
+			// },
+		})
 		em.villagers = append(em.villagers, e)
 	}
 }
 
-func (em *Manager) paintChar(char *game.Character, left float64, top float64, handlePrepare func(x, y float64)) {
+func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left float64, top float64, handlePrepare func(x, y float64)) {
 	container := em.mgr.NewEntity()
 	em.mgr.Tag(container, "embark")
 	em.mgr.Tag(container, "embark-characters")
@@ -218,7 +232,7 @@ func (em *Manager) paintChar(char *game.Character, left float64, top float64, ha
 	e = em.mgr.NewEntity()
 	em.mgr.Dependency(container, e)
 	em.mgr.AddComponent(e, &game.Font{
-		Text: fmt.Sprintf("Level: %d", char.Level),
+		Text: fmt.Sprintf("Lvl: %d", char.Level),
 		Size: "small",
 	})
 	em.mgr.AddComponent(e, &game.Position{
@@ -248,13 +262,28 @@ func (em *Manager) paintChar(char *game.Character, left float64, top float64, ha
 	e = em.mgr.NewEntity()
 	em.mgr.Dependency(container, e)
 	em.mgr.AddComponent(e, &game.Font{
-		Text: fmt.Sprintf("Preparation: %d", char.PreparationThreshold),
+		Text: fmt.Sprintf("Prep: %d", char.InherantPreparation+char.Profession.Preparation()+equip.WeaponPreparation()),
 		Size: "small",
 	})
 	em.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
 			X: left,
 			Y: top + 12 + 24,
+		},
+		Layer: 100,
+	})
+
+	// Action Points
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &game.Font{
+		Text: fmt.Sprintf("AP: %d", char.InherantActionPoints+char.Profession.ActionPoints()+equip.WeaponActionPoints()),
+		Size: "small",
+	})
+	em.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: left,
+			Y: top + 12 + 32,
 		},
 		Layer: 100,
 	})
@@ -269,7 +298,7 @@ func (em *Manager) paintChar(char *game.Character, left float64, top float64, ha
 	em.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
 			X: left,
-			Y: top + 12 + 32,
+			Y: top + 12 + 40,
 		},
 		Layer: 100,
 	})
@@ -284,7 +313,7 @@ func (em *Manager) paintChar(char *game.Character, left float64, top float64, ha
 	em.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
 			X: left,
-			Y: top + 12 + 40,
+			Y: top + 12 + 48,
 		},
 		Layer: 100,
 	})
@@ -299,7 +328,7 @@ func (em *Manager) paintChar(char *game.Character, left float64, top float64, ha
 	em.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
 			X: left,
-			Y: top + 12 + 48,
+			Y: top + 12 + 56,
 		},
 		Layer: 100,
 	})
@@ -314,7 +343,7 @@ func (em *Manager) paintChar(char *game.Character, left float64, top float64, ha
 	em.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
 			X: left,
-			Y: top + 12 + 56,
+			Y: top + 12 + 64,
 		},
 		Layer: 100,
 	})
@@ -337,7 +366,7 @@ func (em *Manager) paintChar(char *game.Character, left float64, top float64, ha
 		em.mgr.AddComponent(e, &game.Position{
 			Center: game.Center{
 				X: left,
-				Y: top + 80 + float64(used)*8,
+				Y: top + 88 + float64(used)*8,
 			},
 			Layer: 100,
 		})

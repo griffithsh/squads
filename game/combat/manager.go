@@ -338,9 +338,15 @@ func (cm *Manager) getStart(nearbys []*geom.Hex) *geom.Hex {
 	return nil
 }
 
-// CToP converts a Character to a Participant.
-func CToP(char *game.Character) *Participant {
-	return &Participant{
+// createParticipation adds a new Entity to participate in combat based on a Character.
+func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, h *geom.Hex) {
+	e := cm.mgr.NewEntity()
+	cm.mgr.Tag(e, "combat")
+
+	// Add Participant Component.
+	equipment, _ := cm.mgr.Component(charEntity, "Equipment").(*game.Equipment)
+	char := cm.mgr.Component(charEntity, "Character").(*game.Character)
+	participant := &Participant{
 		Name:       char.Name,
 		Level:      char.Level,
 		SmallIcon:  char.SmallIcon,
@@ -348,10 +354,10 @@ func CToP(char *game.Character) *Participant {
 		Profession: char.Profession,
 		Sex:        char.Sex,
 		PreparationThreshold: CurMax{
-			Max: char.PreparationThreshold,
+			Max: char.InherantPreparation + char.Profession.Preparation() + equipment.WeaponPreparation(),
 		},
 		ActionPoints: CurMax{
-			Max: char.ActionPoints,
+			Max: char.InherantActionPoints + char.Profession.ActionPoints() + equipment.WeaponActionPoints(),
 		},
 		// Health: CurMax{
 		// 	Cur: char.CurrentHealth,
@@ -362,16 +368,10 @@ func CToP(char *game.Character) *Participant {
 		// Intelligence: 0,
 		// Vitality:     0,
 		Disambiguator: char.Disambiguator,
+
+		EquippedWeaponClass: equipment.WeaponClass(),
+		ItemStats:           equipment.SumModifiers(),
 	}
-}
-
-// createParticipation adds a new Entity to participate in combat based on a Character.
-func (cm *Manager) createParticipation(charEntity ecs.Entity, char *game.Character, team *game.Team, h *geom.Hex) {
-	e := cm.mgr.NewEntity()
-	cm.mgr.Tag(e, "combat")
-
-	// Add Participant Component.
-	participant := CToP(char)
 	participant.Character = charEntity
 	participant.ActionPoints.Cur = participant.ActionPoints.Max
 	participant.Status = Alive
@@ -427,9 +427,7 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 			// There is some entity which stores info about a "level", and produces
 			// artifacts that can be used by the combat Manager. It should produce the
 			// shape of the level, and the terrain of each hex (grass, water, blocked by
-			// tree etc). It should also produce starting positions for teams... Some
-			// other entity should produce an opponent team for the player's squad to
-			// fight _on_ this level.
+			// tree etc). It should also produce starting positions for teams...
 
 			// FIXME: Hard-coded list of start locations.
 			sp := newStartProvider([]geom.Key{
@@ -447,11 +445,10 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 			// Create a Participating Entity for every Character we have.
 			for _, e := range entities {
 				team := cm.mgr.Component(e, "Team").(*game.Team)
-				char := cm.mgr.Component(e, "Character").(*game.Character)
 				near := sp.getNearby(team, cm.field)
 				h := cm.getStart(near)
 
-				cm.createParticipation(e, char, team, h)
+				cm.createParticipation(e, team, h)
 			}
 
 			// Announce that the Combat has begun.
