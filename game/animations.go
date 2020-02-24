@@ -24,8 +24,8 @@ const (
 	DestroyEntity
 )
 
-// FrameAnimation sets the Sprite of the Entity based what how far through the
-// total Animation Pointer indicates.
+// FrameAnimation sets the Sprite of the Entity based on how far through the
+// whole Animation is indicated by Pointer.
 type FrameAnimation struct {
 	Frames  []Sprite
 	Timings []time.Duration

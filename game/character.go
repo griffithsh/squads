@@ -43,8 +43,10 @@ func (p CharacterProfession) ActionPoints() int {
 	}
 }
 
+// CharacterSex is not CharacterGender, NB.
 type CharacterSex int
 
+// CharacterSexes only have two values. They represent XY and XX chromosomes.
 const (
 	Male CharacterSex = iota
 	Female
