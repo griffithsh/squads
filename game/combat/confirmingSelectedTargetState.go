@@ -1,12 +1,12 @@
 package combat
 
 import (
-	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
+	"github.com/griffithsh/squads/skill"
 )
 
 type confirmingSelectedTargetState struct {
-	Skill  game.SkillCode
+	Skill  skill.ID
 	Target geom.Key
 }
 

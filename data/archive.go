@@ -7,19 +7,83 @@ import (
 	"io"
 	"path/filepath"
 
+	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/game/overworld"
+	"github.com/griffithsh/squads/skill"
 )
 
 // Archive is a store of game data.
 type Archive struct {
 	overworldRecipes []*overworld.Recipe
+	skills           skill.Map
+}
+
+// internalSkills are skills that are compiled into the binary instead of loaded
+// in at run-time from a data file.
+var internalSkills = []skill.Description{
+	{
+		ID:          skill.BasicMovement,
+		Name:        "Move",
+		Explanation: "Move to another tile",
+		Tags:        []skill.Classification{skill.Skill},
+		Icon: *game.Sprite{
+			Texture: "hud.png",
+			X:       232,
+			Y:       24,
+			W:       24,
+			H:       24,
+		}.AsAnimation(),
+
+		Targeting:      skill.TargetAnywhere,
+		TargetingBrush: skill.Pathfinding,
+	},
+	// consumables is a skill?
+	// flee is a skill?
+	// end turn is a skill?
+
+	// Configure some test skills to develop and debug with.
+	{
+		ID:          "debug-basic-attack",
+		Name:        "Attack",
+		Explanation: "Attack an adjacent tile",
+		Tags:        []skill.Classification{skill.Attack},
+		Icon: *game.Sprite{
+			Texture: "hud.png",
+			X:       160,
+			Y:       0,
+			W:       24,
+			H:       24,
+		}.AsAnimation(),
+		Targeting:      skill.TargetAdjacent,
+		TargetingBrush: skill.SingleHex,
+	},
+	{
+		ID:          "debug-lightning",
+		Name:        "Mage Lightning",
+		Explanation: "A lightning bolt strikes the target dealing 1-10 damage",
+		Tags:        []skill.Classification{skill.Spell},
+		Icon: *game.Sprite{
+			Texture: "hud.png",
+			X:       160,
+			Y:       24,
+			W:       24,
+			H:       24,
+		}.AsAnimation(),
+		Targeting:      skill.TargetAnywhere,
+		TargetingBrush: skill.SingleHex,
+	},
 }
 
 // NewArchive constructs a new Archive.
 func NewArchive() (*Archive, error) {
-	return &Archive{
+	archive := Archive{
 		overworldRecipes: []*overworld.Recipe{},
-	}, nil
+		skills:           skill.Map{},
+	}
+	for _, sd := range internalSkills {
+		archive.skills[sd.ID] = sd
+	}
+	return &archive, nil
 }
 
 // Load data into the Archive from a tar.gz archive, replacing data already in
@@ -58,4 +122,35 @@ func (a *Archive) Load(r io.Reader) error {
 // GetRecipes returns overworld recipes.
 func (a *Archive) GetRecipes() []*overworld.Recipe {
 	return a.overworldRecipes
+}
+
+func (a *Archive) SkillsByProfession(prof game.CharacterProfession) []*skill.Description {
+	// FIXME: implementation
+	return []*skill.Description{
+		a.Skill("debug-basic-attack"),
+		a.Skill("debug-lightning"),
+	}
+}
+
+func (a *Archive) SkillsByWeaponClass(weap game.ItemClass) []*skill.Description {
+	// FIXME: implementation
+	switch weap {
+	case game.SwordClass:
+		return []*skill.Description{
+			a.Skill("debug-basic-attack"),
+		}
+	case game.UnarmedClass:
+		fallthrough
+	default:
+		// Because other ItemClasses are armor, they provide no skills.
+		return []*skill.Description{}
+	}
+}
+
+// Skill retrieves a skill by its ID.
+func (a *Archive) Skill(id skill.ID) *skill.Description {
+	if val, ok := a.skills[id]; ok {
+		return &val
+	}
+	panic(fmt.Sprintf("unconfigured skill %s", id))
 }

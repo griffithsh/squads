@@ -146,7 +146,7 @@ func setup(w, h int) (*system, error) {
 		collisions: overworld.NewCollisionSystem(mgr, bus),
 		embark:     embark.NewManager(mgr, bus),
 		overworld:  overworld.NewManager(mgr, bus, recipes),
-		combat:     combat.NewManager(mgr, camera, bus),
+		combat:     combat.NewManager(mgr, camera, bus, archive),
 
 		mgr:    mgr,
 		camera: camera,

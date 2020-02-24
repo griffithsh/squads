@@ -207,9 +207,6 @@ func generate(rng *rand.Rand, recipe *Recipe, lvl int) Map {
 			continue
 		}
 
-		// DEBUG: dont add baddies so overworld is faster to search.
-		continue
-
 		// TODO: The selection of squads should be controlled by the overworld
 		// Recipe.
 		if rng.Intn(3) == 0 { // 1 in 3 chance of adding an enemy squad here.

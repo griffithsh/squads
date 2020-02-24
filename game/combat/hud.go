@@ -5,6 +5,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/griffithsh/squads/skill"
+
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
@@ -56,6 +58,7 @@ var (
 type HUD struct {
 	mgr              *ecs.World
 	bus              *event.Bus
+	archive          SkillArchive
 	scale            float64
 	layer            int
 	centerX, centerY float64 // center of the game's window, or half the width and height.
@@ -68,10 +71,11 @@ type HUD struct {
 }
 
 // NewHUD construct a HUD.
-func NewHUD(mgr *ecs.World, bus *event.Bus, screenX int, screenY int) *HUD {
+func NewHUD(mgr *ecs.World, bus *event.Bus, screenX int, screenY int, archive SkillArchive) *HUD {
 	hud := HUD{
 		mgr:             mgr,
 		bus:             bus,
+		archive:         archive,
 		scale:           2,
 		layer:           100,
 		centerX:         float64(screenX) / 2,
@@ -470,21 +474,43 @@ func (hud *HUD) repaintSkills() {
 	parent := hud.mgr.AnyTagged(skillsTag)
 	children := hud.mgr.Component(parent, "Children").(*ecs.Children)
 
-	type skill struct {
-		sprite      game.Sprite
+	type v struct {
+		icon        game.FrameAnimation
 		interactive *ui.Interactive
 	}
+	convert := func(sd *skill.Description) v {
+		var button *ui.Interactive
+		icon := game.FrameAnimation{
+			Timings: []time.Duration{1000000},
+		}
+		switch sd.ID {
+		default:
+			icon = sd.Icon
+			button = &ui.Interactive{
+				W: 24, H: 24,
+				Trigger: func(x, y float64) {
+					hud.bus.Publish(&SkillRequested{
+						Code: sd.ID,
+					})
+				},
+			}
+		}
+		return v{
+			icon:        icon,
+			interactive: button,
+		}
+	}
 
-	skills := map[int]skill{
+	skills := map[int]v{
 		// Cancel button
-		0: skill{
-			sprite: game.Sprite{
+		0: v{
+			icon: *game.Sprite{
 				Texture: "hud.png",
 				X:       208,
 				Y:       0,
 				W:       24,
 				H:       24,
-			},
+			}.AsAnimation(),
 			interactive: &ui.Interactive{
 				W: 24, H: 24,
 				Trigger: func(x, y float64) {
@@ -496,75 +522,28 @@ func (hud *HUD) repaintSkills() {
 
 	if hud.lastCombatState == AwaitingInputState {
 		participant := hud.mgr.Component(hud.turnToken, "Participant").(*Participant)
-		fmt.Printf("skills for %d are composed from: %v %s\n", hud.turnToken, participant.EquippedWeaponClass, participant.Profession)
+		sbw := hud.archive.SkillsByWeaponClass(participant.EquippedWeaponClass)
+		sbp := hud.archive.SkillsByProfession(participant.Profession)
+		fmt.Printf("skills for %d are %v %v\n", hud.turnToken, sbw, sbp)
 
-		skills = map[int]skill{
-			// Move
-			0: skill{
-				sprite: game.Sprite{
-					Texture: "hud.png",
-					X:       232,
-					Y:       24,
-					W:       24,
-					H:       24,
-				},
-				interactive: &ui.Interactive{
-					W: 24, H: 24,
-					Trigger: func(x, y float64) {
-						hud.bus.Publish(&SkillRequested{
-							Code: game.BasicMovement,
-						})
-					},
-				},
-			},
+		skills = map[int]v{
+			// Zero is always Move.
+			0: convert(hud.archive.Skill(skill.BasicMovement)),
+
 			// Consumables
-			7: skill{
-				sprite: game.Sprite{
+			7: v{
+				icon: *game.Sprite{
 					Texture: "hud.png",
 					X:       232,
 					Y:       0,
 					W:       24,
 					H:       24,
-				},
+				}.AsAnimation(),
 			},
 
 			// TODO: weapon skills should be provided by equipped weapon
-			// weapon 1
-			1: skill{
-				sprite: game.Sprite{
-					Texture: "hud.png",
-					X:       160,
-					Y:       0,
-					W:       24,
-					H:       24,
-				},
-				interactive: &ui.Interactive{
-					W: 24, H: 24,
-					Trigger: func(x, y float64) {
-						hud.bus.Publish(&SkillRequested{
-							Code: game.BasicAttack,
-						})
-					},
-				},
-			},
-			// weapon 2
-			2: skill{
-				sprite: game.Sprite{
-					Texture: "hud.png",
-					X:       160,
-					Y:       24,
-					W:       24,
-					H:       24,
-				},
-				interactive: &ui.Interactive{
-					W: 24, H: 24,
-					Trigger: func(x, y float64) {
-						hud.bus.Publish(&SkillRequested{
-							Code: game.MageLightning,
-						})
-					},
-				},
-			},
+			// 1 - weapon 1
+			// 2 - weapon 2
 			// 8 - weapon 3
 			// 9 - weapon 4
 
@@ -572,14 +551,14 @@ func (hud *HUD) repaintSkills() {
 			// 3,4,5,10,11,12 are slots 1-6 for profession-provided skills
 
 			// Flee
-			6: skill{
-				sprite: game.Sprite{
+			6: v{
+				icon: *game.Sprite{
 					Texture: "hud.png",
 					X:       184,
 					Y:       24,
 					W:       24,
 					H:       24,
-				},
+				}.AsAnimation(),
 				interactive: &ui.Interactive{
 					W: 24, H: 24,
 					Trigger: func(x, y float64) {
@@ -589,14 +568,14 @@ func (hud *HUD) repaintSkills() {
 			},
 
 			// End turn
-			13: skill{
-				sprite: game.Sprite{
+			13: v{
+				icon: *game.Sprite{
 					Texture: "hud.png",
 					X:       208,
 					Y:       24,
 					W:       24,
 					H:       24,
-				},
+				}.AsAnimation(),
 				interactive: &ui.Interactive{
 					W: 24, H: 24,
 					Trigger: func(x, y float64) {
@@ -635,7 +614,7 @@ func (hud *HUD) repaintSkills() {
 			})
 			continue
 		}
-		hud.mgr.AddComponent(child, &s.sprite)
+		hud.mgr.AddComponent(child, &s.icon)
 		if s.interactive != nil {
 			hud.mgr.AddComponent(child, s.interactive)
 		}

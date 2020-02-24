@@ -11,8 +11,16 @@ import (
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
+	"github.com/griffithsh/squads/skill"
 	"github.com/griffithsh/squads/ui"
 )
+
+// SkillArchive is what is required by combat of any skill definition provider.
+type SkillArchive interface {
+	Skill(skill.ID) *skill.Description
+	SkillsByProfession(game.CharacterProfession) []*skill.Description
+	SkillsByWeaponClass(game.ItemClass) []*skill.Description
+}
 
 // Manager is a game-mode. It processes turns-based Combat until one or the other
 // team is knocked out.
@@ -20,6 +28,7 @@ type Manager struct {
 	// Manager should own systems that are only relevant to Combat. A Turns coordinator, a preparation timer
 	mgr     *ecs.World
 	bus     *event.Bus
+	archive SkillArchive
 	field   *geom.Field
 	nav     *Navigator
 	camera  *game.Camera
@@ -50,18 +59,19 @@ type Manager struct {
 }
 
 // NewManager creates a new combat Manager.
-func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus) *Manager {
+func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus, archive SkillArchive) *Manager {
 	f := geom.NewField()
 
 	cm := Manager{
 		mgr:                  mgr,
 		bus:                  bus,
+		archive:              archive,
 		field:                f,
 		nav:                  NewNavigator(bus),
 		camera:               camera,
 		state:                Uninitialised,
-		hud:                  NewHUD(mgr, bus, camera.GetW(), camera.GetH()),
-		cursors:              NewCursorManager(mgr, bus, f),
+		hud:                  NewHUD(mgr, bus, camera.GetW(), camera.GetH(), archive),
+		cursors:              NewCursorManager(mgr, bus, archive, f),
 		selectingInteractive: mgr.NewEntity(),
 		intents:              NewIntentSystem(mgr, bus, f),
 		performances:         NewPerformanceSystem(mgr, bus),
@@ -84,10 +94,11 @@ func (cm *Manager) handleTargetSelected(x, y float64) {
 
 	h := cm.field.At(int(x), int(y))
 
-	switch game.TargetingForSkill[ctx.Skill] {
-	case game.TargetAnywhere:
+	s := cm.archive.Skill(ctx.Skill)
+	switch s.Targeting {
+	case skill.TargetAnywhere:
 		// No filtering is applicable.
-	case game.TargetAdjacent:
+	case skill.TargetAdjacent:
 		if h == nil {
 			return
 		}
@@ -145,17 +156,18 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 	}
 
 	// Special handling for movement.
-	if ctx.Skill == game.BasicMovement {
+	if ctx.Skill == skill.BasicMovement {
 		cm.mgr.AddComponent(cm.turnToken, &game.MoveIntent{X: x, Y: y})
 		cm.setState(ExecutingState)
 		return
 	}
 
-	switch game.TargetingForSkill[ctx.Skill] {
-	case game.TargetAnywhere:
+	s := cm.archive.Skill(ctx.Skill)
+	switch s.Targeting {
+	case skill.TargetAnywhere:
 		// Because we can target anywhere, there are no reasons to return out of
 		// this function for this case.
-	case game.TargetAdjacent:
+	case skill.TargetAdjacent:
 		adjacent := false
 
 		for key := range origin.Key().Neighbors() {
@@ -169,8 +181,9 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 		}
 
 	}
+
 	// TODO: publish "$entity used $skill on $hex" event
-	fmt.Println("$entity used $skill on $hex")
+	fmt.Printf("%d used %s on %v\n", cm.turnToken, s.Name, selected)
 
 	cm.setState(AwaitingInputState)
 }
@@ -681,7 +694,7 @@ func (cm *Manager) Run(elapsed time.Duration) {
 func (cm *Manager) MousePosition(x, y int) {
 	wx, wy := cm.camera.ScreenToWorld(x, y)
 
-	var skill game.SkillCode
+	var skill skill.ID
 	var selecting bool
 
 	switch cm.state.Value() {

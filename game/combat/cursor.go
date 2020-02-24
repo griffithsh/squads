@@ -8,6 +8,7 @@ import (
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
+	"github.com/griffithsh/squads/skill"
 )
 
 var (
@@ -25,20 +26,22 @@ var (
 type CursorManager struct {
 	mgr         *ecs.World
 	bus         *event.Bus
+	archive     SkillArchive
 	field       *geom.Field
 	selectedKey *geom.Key
 
 	// Whose turn is it?
 	turnToken        ecs.Entity
-	highlightedHexes game.TargetingBrush
+	highlightedHexes skill.TargetingBrush
 }
 
 // NewCursorManager creates a new CursorManager.
-func NewCursorManager(mgr *ecs.World, bus *event.Bus, f *geom.Field) *CursorManager {
+func NewCursorManager(mgr *ecs.World, bus *event.Bus, archive SkillArchive, f *geom.Field) *CursorManager {
 	cm := CursorManager{
-		mgr:   mgr,
-		bus:   bus,
-		field: f,
+		mgr:     mgr,
+		bus:     bus,
+		archive: archive,
+		field:   f,
 	}
 
 	// Subscribes
@@ -63,12 +66,14 @@ func (cm *CursorManager) handleDifferentHexSelected(ev event.Typer) {
 	case SelectingTargetState:
 		cm.selectedKey = value.K
 		ctx := value.Context.(*selectingTargetState)
-		cm.highlightedHexes = game.BrushForSkill[ctx.Skill]
+		s := cm.archive.Skill(ctx.Skill)
+		cm.highlightedHexes = s.TargetingBrush
 		cm.showHighlightedHexes()
 	case ConfirmingSelectedTargetState:
 		cm.selectedKey = value.K
 		ctx := value.Context.(*confirmingSelectedTargetState)
-		cm.highlightedHexes = game.BrushForSkill[ctx.Skill]
+		s := cm.archive.Skill(ctx.Skill)
+		cm.highlightedHexes = s.TargetingBrush
 		cm.showHighlightedHexes()
 	}
 }
@@ -167,9 +172,9 @@ func (cm *CursorManager) hideHighlightedHexes() {
 
 func (cm *CursorManager) repaintHighlightedHexes() {
 	switch cm.highlightedHexes {
-	case game.SingleHex:
+	case skill.SingleHex:
 		cm.paintSingleHex()
-	case game.Pathfinding:
+	case skill.Pathfinding:
 		cm.paintNavigationHighlights()
 	}
 }

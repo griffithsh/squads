@@ -8,6 +8,7 @@ import (
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
+	"github.com/griffithsh/squads/skill"
 )
 
 // StateTransition occurs when the combat's state changes
@@ -76,7 +77,7 @@ func (CancelSkillRequested) Type() event.Type {
 // SkillRequested occurs when the player indicates they would like to use a
 // skill.
 type SkillRequested struct {
-	Code game.SkillCode
+	Code skill.ID
 }
 
 // Type of the Event.

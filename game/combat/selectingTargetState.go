@@ -1,11 +1,11 @@
 package combat
 
-import "github.com/griffithsh/squads/game"
+import "github.com/griffithsh/squads/skill"
 
 // selectingTargetState implements the StateContext interface because it
 // contains context around "what" is being selected.
 type selectingTargetState struct {
-	Skill game.SkillCode
+	Skill skill.ID
 }
 
 // Value satisfies the StateContext interface, and can always return
