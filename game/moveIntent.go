@@ -1,10 +1,11 @@
 package game
 
+// MoveIntent is a Component that indicates that this Entity should move.
 type MoveIntent struct {
 	X, Y float64
 }
 
 // Type of this Component.
-func (a *MoveIntent) Type() string {
+func (MoveIntent) Type() string {
 	return "MoveIntent"
 }

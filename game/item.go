@@ -31,6 +31,10 @@ const (
 // should include some fast swords and some slow swords. The prep and AP values
 // should be configured at this intermediate level between class and instance.
 // This *might* be the Recipe level?
+//
+// No that's wrong isnt it? The Recipe should contain a range of values and the
+// ItemInstance should be created with a specific value in that range for AP and
+// Prep.
 
 // ItemInstance is a rolled item that can be equipped.
 type ItemInstance struct {

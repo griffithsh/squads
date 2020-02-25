@@ -1,10 +1,15 @@
 package game
 
 //go:generate stringer -type=Modifier
+
+// Modifier enumerates the stat modifiers that appear on items and effects in
+// the game.
 type Modifier int
 
 const (
+	// BaseMinDamageModifier should typically appear only on weapons.
 	BaseMinDamageModifier Modifier = iota
+	// BaseMaxDamageModifier should typically appear only on weapons.
 	BaseMaxDamageModifier
 
 	// BaseDamageModifier multiplies the base damage before it is multiplied by
