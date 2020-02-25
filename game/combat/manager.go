@@ -160,7 +160,7 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 
 	// Special handling for movement.
 	if ctx.Skill == skill.BasicMovement {
-		cm.mgr.AddComponent(cm.turnToken, &game.MoveIntent{X: x, Y: y})
+		cm.mgr.AddComponent(cm.turnToken, &MoveIntent{X: x, Y: y})
 		cm.setState(ExecutingState)
 		return
 	}

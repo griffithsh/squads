@@ -10,6 +10,16 @@ import (
 	"github.com/griffithsh/squads/geom"
 )
 
+// MoveIntent is a Component that indicates that this Entity should move.
+type MoveIntent struct {
+	X, Y float64
+}
+
+// Type of this Component.
+func (MoveIntent) Type() string {
+	return "MoveIntent"
+}
+
 // IntentSystem processes intents of Participants in a combat.
 type IntentSystem struct {
 	mgr *ecs.World
@@ -45,7 +55,7 @@ func (s *IntentSystem) Update() {
 	for _, e := range entities {
 		participant := s.mgr.Component(e, "Participant").(*Participant)
 		pos := s.mgr.Component(e, "Position").(*game.Position)
-		intent := s.mgr.Component(e, "MoveIntent").(*game.MoveIntent)
+		intent := s.mgr.Component(e, "MoveIntent").(*MoveIntent)
 
 		s.mgr.RemoveComponent(e, intent)
 
