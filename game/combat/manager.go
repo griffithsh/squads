@@ -34,6 +34,7 @@ type Manager struct {
 	camera  *game.Camera
 	hud     *HUD
 	cursors *CursorManager
+	se      *skillExecutor
 
 	turnToken            ecs.Entity // Whose turn is it? References an existing Entity.
 	selectingInteractive ecs.Entity // catches clicks on the field.
@@ -72,6 +73,7 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus, archive Ski
 		state:                Uninitialised,
 		hud:                  NewHUD(mgr, bus, camera.GetW(), camera.GetH(), archive),
 		cursors:              NewCursorManager(mgr, bus, archive, f),
+		se:                   newSkillExecutor(mgr, bus, f, archive),
 		selectingInteractive: mgr.NewEntity(),
 		intents:              NewIntentSystem(mgr, bus, f),
 		performances:         NewPerformanceSystem(mgr, bus),
@@ -85,6 +87,7 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus, archive Ski
 	cm.bus.Subscribe(AttemptingEscape{}.Type(), cm.handleAttemptingEscape)
 	cm.bus.Subscribe(game.WindowSizeChanged{}.Type(), cm.handleWindowSizeChanged)
 	cm.bus.Subscribe(SkillRequested{}.Type(), cm.handleSkillRequested)
+	cm.bus.Subscribe(SkillUseConcluded{}.Type(), cm.handleSkillUseConcluded)
 
 	return &cm
 }
@@ -179,13 +182,15 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 		if !adjacent {
 			return
 		}
-
 	}
 
-	// TODO: publish "$entity used $skill on $hex" event
-	fmt.Printf("%d used %s on %v\n", cm.turnToken, s.Name, selected)
+	cm.setState(ExecutingState)
 
-	cm.setState(AwaitingInputState)
+	cm.bus.Publish(&UsingSkill{
+		User:     cm.turnToken,
+		Skill:    s.ID,
+		Selected: selected,
+	})
 }
 
 // setState is the canonical way to change the CombatState.
@@ -796,6 +801,10 @@ func (cm *Manager) handleSkillRequested(e event.Typer) {
 	cm.setState(&selectingTargetState{
 		Skill: evt.Code,
 	})
+}
+func (cm *Manager) handleSkillUseConcluded(e event.Typer) {
+	// evt := e.(*SkillUseConcluded)
+	cm.setState(AwaitingInputState)
 }
 
 func (cm *Manager) addGrass() {

@@ -126,3 +126,27 @@ type CharacterCelebrating struct {
 func (CharacterCelebrating) Type() event.Type {
 	return "combat.CharacterCelebrating"
 }
+
+// UsingSkill occurs when a character has triggered a skill.
+type UsingSkill struct {
+	User     ecs.Entity
+	Skill    skill.ID
+	Selected *geom.Hex
+}
+
+// Type of the Event.
+func (UsingSkill) Type() event.Type {
+	return "combat.UsingSkill"
+}
+
+// SkillUseConcluded occurs when a character has finished using their skill.
+type SkillUseConcluded struct {
+	User     ecs.Entity
+	Skill    skill.ID
+	Selected *geom.Hex
+}
+
+// Type of the Event.
+func (SkillUseConcluded) Type() event.Type {
+	return "combat.SkillUseConcluded"
+}

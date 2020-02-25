@@ -521,11 +521,6 @@ func (hud *HUD) repaintSkills() {
 	}
 
 	if hud.lastCombatState == AwaitingInputState {
-		participant := hud.mgr.Component(hud.turnToken, "Participant").(*Participant)
-		sbw := hud.archive.SkillsByWeaponClass(participant.EquippedWeaponClass)
-		sbp := hud.archive.SkillsByProfession(participant.Profession)
-		fmt.Printf("skills for %d are %v %v\n", hud.turnToken, sbw, sbp)
-
 		skills = map[int]v{
 			// Zero is always Move.
 			0: convert(hud.archive.Skill(skill.BasicMovement)),
@@ -583,6 +578,29 @@ func (hud *HUD) repaintSkills() {
 					},
 				},
 			},
+		}
+
+		participant := hud.mgr.Component(hud.turnToken, "Participant").(*Participant)
+
+		// Skill slots 1, 2, 8, and 9 are reserved for skills provided by the
+		// Character's equipped weapon.
+		weaponSlots := []int{1, 2, 8, 9}
+		for i, sd := range hud.archive.SkillsByWeaponClass(participant.EquippedWeaponClass) {
+			if i >= len(weaponSlots) {
+				break
+			}
+			key := weaponSlots[i]
+			skills[key] = convert(sd)
+		}
+		// Skill slots 3, 4, 5, 10, 11, and 12 are reserved for skills provided
+		// by the Character's profession.
+		profSlots := []int{3, 4, 5, 10, 11, 12}
+		for i, sd := range hud.archive.SkillsByProfession(participant.Profession) {
+			if i >= len(profSlots) {
+				break
+			}
+			key := profSlots[i]
+			skills[key] = convert(sd)
 		}
 	}
 
