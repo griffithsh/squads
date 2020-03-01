@@ -639,6 +639,7 @@ func (cm *Manager) Run(elapsed time.Duration) {
 
 	case ExecutingState:
 		cm.nav.Update(cm.mgr, elapsed)
+		cm.se.Update(elapsed)
 	case Celebration:
 		// Celebrate for a time ...
 		cm.celebrations += elapsed

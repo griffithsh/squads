@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"path/filepath"
+	"time"
 
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/game/overworld"
@@ -56,6 +57,18 @@ var internalSkills = []skill.Description{
 		}.AsAnimation(),
 		Targeting:      skill.TargetAdjacent,
 		TargetingBrush: skill.SingleHex,
+		Effects: []skill.Effect{
+			skill.DamageEffect{
+				Min: []skill.Operation{
+					{Operator: skill.AddOp, Variable: "$DMG-MIN"},
+				},
+				Max: []skill.Operation{
+					{Operator: skill.AddOp, Variable: "$DMG-MAX"},
+				},
+				Classification: skill.Attack,
+				ScheduleTime:   200 * time.Millisecond,
+			},
+		},
 	},
 	{
 		ID:          "debug-lightning",
@@ -71,6 +84,22 @@ var internalSkills = []skill.Description{
 		}.AsAnimation(),
 		Targeting:      skill.TargetAnywhere,
 		TargetingBrush: skill.SingleHex,
+		Effects: []skill.Effect{
+			skill.DamageEffect{
+				Min: []skill.Operation{
+					{Operator: skill.AddOp, Variable: "1"},
+					{Operator: skill.MultOp, Variable: "$LIGHTNING"},
+					{Operator: skill.AddOp, Variable: "1"},
+				},
+				Max: []skill.Operation{
+					{Operator: skill.AddOp, Variable: "7"},
+					{Operator: skill.MultOp, Variable: "$LIGHTNING"},
+					{Operator: skill.AddOp, Variable: "10"},
+				},
+				Classification: skill.Spell,
+				ScheduleTime:   1200 * time.Millisecond,
+			},
+		},
 	},
 }
 
