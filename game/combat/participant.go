@@ -58,6 +58,8 @@ type Participant struct {
 
 	Disambiguator float64
 
+	Masteries map[game.Mastery]int
+
 	// EquippedWeaponClass should not change while in combat.
 	EquippedWeaponClass game.ItemClass
 	ItemStats           map[game.Modifier]float64

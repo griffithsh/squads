@@ -386,6 +386,7 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, h
 		// Intelligence: 0,
 		// Vitality:     0,
 		Disambiguator: char.Disambiguator,
+		Masteries:     char.Masteries,
 
 		EquippedWeaponClass: equipment.WeaponClass(),
 		ItemStats:           equipment.SumModifiers(),
