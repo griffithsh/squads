@@ -1,6 +1,8 @@
 package combat
 
 import (
+	"fmt"
+
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/game"
 )
@@ -68,4 +70,59 @@ type Participant struct {
 // Type of this Component.
 func (*Participant) Type() string {
 	return "Participant"
+}
+
+// baseDamage of a combat participant.
+func (p *Participant) baseDamage() (baseMin, baseMax float64) {
+	mult, ok := p.ItemStats[game.BaseDamageModifier]
+	if !ok {
+		mult = 1.0
+	}
+	// If these values are not present, then default zero is appropriate.
+	min, _ := p.ItemStats[game.BaseMinDamageModifier]
+	max, _ := p.ItemStats[game.BaseMaxDamageModifier]
+	min *= mult
+	max *= mult
+
+	var strBonus, agiBonus float64
+	switch p.EquippedWeaponClass {
+	case game.UnarmedClass:
+		strBonus = 0.75
+	case game.SwordClass:
+		strBonus = 0.65
+		agiBonus = 0.35
+	case game.AxeClass:
+		strBonus = 0.85
+		agiBonus = 0.15
+	case game.ClubClass:
+		strBonus = 1
+	case game.DaggerClass:
+		agiBonus = 1
+	case game.SlingClass:
+		strBonus = 0.1
+		agiBonus = 0.9
+	case game.BowClass:
+		strBonus = 0.2
+		agiBonus = 0.8
+	case game.SpearClass:
+		strBonus = 0.75
+		agiBonus = 0.75
+	case game.PolearmClass:
+		strBonus = 1.0
+		agiBonus = 0.5
+	case game.StaffClass:
+		strBonus = .6
+		agiBonus = .6
+	case game.WandClass:
+		strBonus = 0.1
+		agiBonus = 0.1
+	default:
+		panic(fmt.Sprintf("unknown equipped weapon %v", p.EquippedWeaponClass))
+	}
+
+	weapBonus := float64(p.Strength)*strBonus + float64(p.Agility)*agiBonus
+
+	min = min + min*weapBonus*0.15
+	max = max + max*weapBonus*0.15
+	return min, max
 }
