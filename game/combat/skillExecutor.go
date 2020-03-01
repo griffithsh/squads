@@ -69,10 +69,57 @@ func newSkillExecutor(mgr *ecs.World, bus *event.Bus, field *geom.Field, archive
 }
 
 type skillExecutionContext struct {
-	ev      *UsingSkill
-	age     time.Duration
-	desc    *skill.Description
-	effects []skill.Effect
+	ev       *UsingSkill
+	age      time.Duration
+	desc     *skill.Description
+	effects  []skill.Effect
+	affected []ecs.Entity
+}
+
+// determineAffected collects the Entities that the usage of this skill affects,
+// primarily based on TargetingBrush. It's perfectly normal for this to return
+// no entites, as skills (AoEs, summons) can be cast on empty hexes.
+func (se *skillExecutor) determineAffected(ev *UsingSkill, s *skill.Description) []ecs.Entity {
+	switch s.TargetingBrush {
+	case skill.SingleHex:
+		// SingleHex is easy - is there an entity on the exact hex specified by
+		// ev.Selected?
+		for _, e := range se.mgr.Get([]string{"Participant"}) {
+			o := se.mgr.Component(e, "Obstacle").(*game.Obstacle)
+			if ev.Selected.M == o.M && ev.Selected.N == o.N {
+				return []ecs.Entity{e}
+			}
+		}
+
+	default:
+		panic(fmt.Sprintf("skillExecutor.determineAffected does not implement %T", s.TargetingBrush))
+	}
+
+	return []ecs.Entity{}
+}
+
+func (se *skillExecutor) handleUsingSkill(t event.Typer) {
+	ev := t.(*UsingSkill)
+	s := se.archive.Skill(ev.Skill)
+
+	// TODO: Complete implementation ...
+	fmt.Printf("skillExecutor: Entity %d used %s on %v\n", ev.User, s.Name, ev.Selected)
+
+	// Take a copy of effects so that we can remove them without mutating the
+	// "reference" copy.
+	effects := make([]skill.Effect, len(s.Effects))
+	for i := 0; i < len(s.Effects); i++ {
+		effects[i] = s.Effects[i]
+	}
+
+	affected := se.determineAffected(ev, s)
+
+	se.inPlay = append(se.inPlay, &skillExecutionContext{
+		ev:       ev,
+		desc:     s,
+		effects:  effects,
+		affected: affected,
+	})
 }
 
 func (se *skillExecutor) dereferencer(e ecs.Entity) func(s string) float64 {
@@ -128,26 +175,6 @@ func (se *skillExecutor) dereferencer(e ecs.Entity) func(s string) float64 {
 	}
 }
 
-func (se *skillExecutor) handleUsingSkill(t event.Typer) {
-	ev := t.(*UsingSkill)
-	s := se.archive.Skill(ev.Skill)
-
-	// TODO: Complete implementation ...
-	fmt.Printf("skillExecutor: Entity %d used %s on %v\n", ev.User, s.Name, ev.Selected)
-
-	// Take a copy of effects so that we can remove them without mutating the
-	// "reference" copy.
-	effects := make([]skill.Effect, len(s.Effects))
-	for i := 0; i < len(s.Effects); i++ {
-		effects[i] = s.Effects[i]
-	}
-
-	se.inPlay = append(se.inPlay, &skillExecutionContext{
-		ev:      ev,
-		desc:    s,
-		effects: effects,
-	})
-
 func (se *skillExecutor) executeEffect(effect skill.Effect, inPlay *skillExecutionContext) error {
 	switch e := effect.(type) {
 	case skill.DamageEffect:
@@ -161,7 +188,9 @@ func (se *skillExecutor) executeEffect(effect skill.Effect, inPlay *skillExecuti
 			dmg += rand.Intn((max - min) + 1)
 		}
 
-		fmt.Printf("TODO: skillExecutor: DamageEffect: apply %d damage\n", dmg)
+		for _, affected := range inPlay.affected {
+			fmt.Printf("TODO: skillExecutor: DamageEffect: apply %d damage to %d\n", dmg, affected)
+		}
 	default:
 		return fmt.Errorf("unhandled skill effect type %T", e)
 	}
