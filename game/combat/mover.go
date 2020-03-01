@@ -23,6 +23,6 @@ type Mover struct {
 }
 
 // Type of this Component.
-func (a *Mover) Type() string {
+func (*Mover) Type() string {
 	return "Mover"
 }

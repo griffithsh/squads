@@ -7,9 +7,11 @@ package game
 type Modifier int
 
 const (
-	// BaseMinDamageModifier should typically appear only on weapons.
+	// BaseMinDamageModifier should typically appear only on weapons. It is a
+	// value, not a multiplier
 	BaseMinDamageModifier Modifier = iota
-	// BaseMaxDamageModifier should typically appear only on weapons.
+	// BaseMaxDamageModifier should typically appear only on weapons. It is a
+	// value, not a multiplier
 	BaseMaxDamageModifier
 
 	// BaseDamageModifier multiplies the base damage before it is multiplied by

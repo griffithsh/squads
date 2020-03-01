@@ -52,7 +52,6 @@ func (equip *Equipment) SumModifiers() map[Modifier]float64 {
 		}
 	}
 	return result
-
 }
 
 // WeaponClass returns the inferred ItemClass of the Weapon that is equipped (if
