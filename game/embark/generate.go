@@ -43,6 +43,36 @@ func (g *generator) generateChar() *game.Character {
 	}
 }
 
+func (g *generator) generateWeapon() *game.ItemInstance {
+	// unarmed or sword or bow
+
+	switch g.r.Intn(3) {
+	case 1:
+		return &game.ItemInstance{
+			Class: game.SwordClass,
+			Name:  "Skirmish Sword of Quickness",
+			Modifiers: map[game.Modifier]float64{
+				game.BaseMinDamageModifier: 11,
+				game.BaseMaxDamageModifier: 22,
+				game.PreparationModifier:   599,
+				game.ActionPointModifier:   21,
+			},
+		}
+	case 2:
+		return &game.ItemInstance{
+			Class: game.BowClass,
+			Name:  "Ferocious Longbow",
+			Modifiers: map[game.Modifier]float64{
+				game.BaseMinDamageModifier: 6,
+				game.BaseMaxDamageModifier: 17,
+				game.PreparationModifier:   461,
+				game.ActionPointModifier:   25,
+			},
+		}
+	}
+	return nil
+}
+
 func (g *generator) generateSex() game.CharacterSex {
 	// N.B. 33% female.
 	switch g.r.Int() % 3 {

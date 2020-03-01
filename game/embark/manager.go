@@ -161,16 +161,7 @@ func (em *Manager) rollVillagers() {
 		em.mgr.Tag(e, "embark")
 		em.mgr.AddComponent(e, g.generateChar())
 		em.mgr.AddComponent(e, &game.Equipment{
-			// Weapon: &game.ItemInstance{
-			// 	Class: game.SwordClass,
-			// 	Name:  "Skirmish Sword",
-			// 	Modifiers: map[game.Modifier]float64{
-			// 		game.BaseMinDamageModifier: 11,
-			// 		game.BaseMaxDamageModifier: 22,
-			// 		game.PreparationModifier:   599,
-			// 		game.ActionPointModifier:   21,
-			// 	},
-			// },
+			Weapon: g.generateWeapon(),
 		})
 		em.villagers = append(em.villagers, e)
 	}
