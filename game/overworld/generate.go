@@ -213,7 +213,12 @@ func generate(rng *rand.Rand, recipe *Recipe, lvl int) Map {
 			rollCharacters := func(rng *rand.Rand, id squad.RecipeID) []*game.Character {
 				result := []*game.Character{}
 				for _, recipeID := range squad.Recipes[id].Construct(rng) {
-					result = append(result, baddy.Recipes[recipeID].Construct(rng))
+					char := baddy.Recipes[recipeID].Construct(rng)
+					char.Level = lvl
+					vit := int(char.VitalityPerLevel * float64(char.Level))
+					hp := char.BaseHealth
+					char.CurrentHealth = game.MaxHealth(hp, vit)
+					result = append(result, char)
 				}
 				return result
 			}

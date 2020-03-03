@@ -403,7 +403,7 @@ func (hud *HUD) repaintCurrentParticipantStats() {
 	participant := hud.mgr.Component(e, "Participant").(*Participant)
 	labels := []string{
 		"Health:",
-		"?/N", // TODO
+		fmt.Sprintf("%d/%d", participant.CurrentHealth, participant.maxHealth()),
 		"Energy:",
 		"?/N", // TODO
 		"Action:",

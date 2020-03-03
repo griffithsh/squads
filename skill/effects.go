@@ -1,6 +1,10 @@
 package skill
 
-import "time"
+import (
+	"time"
+
+	"github.com/griffithsh/squads/game"
+)
 
 type Operator int
 
@@ -35,6 +39,7 @@ type DamageEffect struct {
 	Min            Operations     // "0.5 * attunement * 0.22 * INT"
 	Max            Operations     // "10 + 5 * attunement * 0.17 * INT"
 	Classification Classification // Spell or Attack: can it be negated or dodged?
+	DamageType     game.DamageType
 }
 
 func (de DamageEffect) Schedule() time.Duration {

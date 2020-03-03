@@ -35,6 +35,7 @@ type Manager struct {
 	hud     *HUD
 	cursors *CursorManager
 	se      *skillExecutor
+	ds      *damageSystem
 
 	turnToken            ecs.Entity // Whose turn is it? References an existing Entity.
 	selectingInteractive ecs.Entity // catches clicks on the field.
@@ -74,6 +75,7 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus, archive Ski
 		hud:                  NewHUD(mgr, bus, camera.GetW(), camera.GetH(), archive),
 		cursors:              NewCursorManager(mgr, bus, archive, f),
 		se:                   newSkillExecutor(mgr, bus, f, archive),
+		ds:                   newDamageSystem(mgr, bus),
 		selectingInteractive: mgr.NewEntity(),
 		intents:              NewIntentSystem(mgr, bus, f),
 		performances:         NewPerformanceSystem(mgr, bus),
@@ -377,10 +379,8 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, h
 		ActionPoints: CurMax{
 			Max: char.InherantActionPoints + char.Profession.ActionPoints() + equipment.WeaponActionPoints(),
 		},
-		// Health: CurMax{
-		// 	Cur: char.CurrentHealth,
-		// 	Max: char.MaxHealth,
-		// },
+		BaseHealth:    char.BaseHealth,
+		CurrentHealth: char.CurrentHealth,
 		// Strength:     int(char.StrengthPerLevel * float64(char.Level)),
 		// Agility:    0,
 		// Intelligence: 0,

@@ -150,3 +150,43 @@ type SkillUseConcluded struct {
 func (SkillUseConcluded) Type() event.Type {
 	return "combat.SkillUseConcluded"
 }
+
+// DamageApplied is an Event that occurs when something has sent raw, un-reduced
+// damage to be applied to a Partcipant.
+type DamageApplied struct {
+	Amount     int
+	Target     ecs.Entity
+	DamageType game.DamageType
+	SkillType  skill.Classification
+}
+
+// Type of the Event.
+func (DamageApplied) Type() event.Type {
+	return "combat.DamageApplied"
+}
+
+// DamageAccepted is an event that occurs when a Participant has lost health
+// points.
+type DamageAccepted struct {
+	Target     ecs.Entity
+	Amount     int
+	Reduced    int
+	DamageType game.DamageType
+}
+
+// Type of the Event.
+func (DamageAccepted) Type() event.Type {
+	return "combat.DamageAccepted"
+}
+
+// DamageFailed occurs when the application of damage fails to result in
+// accepting any of it.
+type DamageFailed struct {
+	Target ecs.Entity
+	Reason string // Negated|Dodged|Miss even maybe?
+}
+
+// Type of the Event.
+func (DamageFailed) Type() event.Type {
+	return "combat.DamageFailed"
+}

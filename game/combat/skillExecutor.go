@@ -189,7 +189,12 @@ func (se *skillExecutor) executeEffect(effect skill.Effect, inPlay *skillExecuti
 		}
 
 		for _, affected := range inPlay.affected {
-			fmt.Printf("TODO: skillExecutor: DamageEffect: apply %d damage to %d\n", dmg, affected)
+			se.bus.Publish(&DamageApplied{
+				Amount:     dmg,
+				Target:     affected,
+				DamageType: game.PhysicalDamage,
+				SkillType:  e.Classification,
+			})
 		}
 	default:
 		return fmt.Errorf("unhandled skill effect type %T", e)

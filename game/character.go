@@ -87,9 +87,9 @@ type Character struct {
 	InherantActionPoints int
 
 	CurrentHealth int
-	MaxHealth     int
+	BaseHealth    int
 
-	Level                uint
+	Level                int
 	StrengthPerLevel     float64
 	AgilityPerLevel      float64
 	IntelligencePerLevel float64

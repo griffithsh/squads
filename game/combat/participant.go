@@ -40,7 +40,7 @@ type Participant struct {
 	// Hexes occupied? Do we merge with Obstacle?
 
 	Name      string
-	Level     uint
+	Level     int
 	SmallIcon game.Sprite // (26x26)
 	BigIcon   game.Sprite // (52x52)
 
@@ -49,7 +49,8 @@ type Participant struct {
 
 	PreparationThreshold CurMax
 	ActionPoints         CurMax
-	Health               CurMax
+	BaseHealth           int
+	CurrentHealth        int
 
 	Strength     int
 	Agility      int
@@ -125,4 +126,9 @@ func (p *Participant) baseDamage() (baseMin, baseMax float64) {
 	min = min + min*weapBonus*0.15
 	max = max + max*weapBonus*0.15
 	return min, max
+}
+
+func (p *Participant) maxHealth() int {
+	// TODO: Also include vitality and raw health from equipped items.
+	return game.MaxHealth(p.BaseHealth, p.Vitality)
 }
