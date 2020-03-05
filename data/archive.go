@@ -57,6 +57,9 @@ var internalSkills = []skill.Description{
 		}.AsAnimation(),
 		Targeting:      skill.TargetAdjacent,
 		TargetingBrush: skill.SingleHex,
+		Costs: map[skill.CostType]int{
+			skill.CostsActionPoints: 20,
+		},
 		Effects: []skill.Effect{
 			skill.DamageEffect{
 				Min: []skill.Operation{
@@ -84,6 +87,9 @@ var internalSkills = []skill.Description{
 		}.AsAnimation(),
 		Targeting:      skill.TargetAnywhere,
 		TargetingBrush: skill.SingleHex,
+		Costs: map[skill.CostType]int{
+			skill.CostsActionPoints: 45,
+		},
 		Effects: []skill.Effect{
 			skill.DamageEffect{
 				Min: []skill.Operation{

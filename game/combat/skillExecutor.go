@@ -120,6 +120,19 @@ func (se *skillExecutor) handleUsingSkill(t event.Typer) {
 		effects:  effects,
 		affected: affected,
 	})
+
+	// Apply costs of skill to user.
+	participant := se.mgr.Component(ev.User, "Participant").(*Participant)
+	for ty, amount := range s.Costs {
+		switch ty {
+		case skill.CostsActionPoints:
+			participant.ActionPoints.Cur -= amount
+		case skill.CostsMana:
+			// TODO
+		default:
+			panic(fmt.Sprintf("skillExector.handleUsingSkill: Cost Type %T not implemented", ty))
+		}
+	}
 }
 
 func (se *skillExecutor) dereferencer(e ecs.Entity) func(s string) float64 {

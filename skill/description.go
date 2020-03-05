@@ -21,6 +21,8 @@ type Description struct {
 
 	// Effects of triggering this skill.
 	Effects []Effect
+
+	Costs map[CostType]int
 }
 
 // Effect is anything that executing a skill could trigger.

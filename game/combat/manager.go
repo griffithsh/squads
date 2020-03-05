@@ -800,6 +800,22 @@ func (cm *Manager) handleWindowSizeChanged(e event.Typer) {
 
 func (cm *Manager) handleSkillRequested(e event.Typer) {
 	evt := e.(*SkillRequested)
+
+	// Can we afford this skill?
+	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
+	s := cm.archive.Skill(evt.Code)
+	for ty, amount := range s.Costs {
+		switch ty {
+		case skill.CostsActionPoints:
+			if participant.ActionPoints.Cur < amount {
+				// TODO: Let the UI know the player can't afford it.
+				return
+			}
+		default:
+			panic(fmt.Sprintf("combat.Manager.handleSkillRequested: Costs type not implemented %T", ty))
+		}
+	}
+
 	cm.setState(&selectingTargetState{
 		Skill: evt.Code,
 	})
