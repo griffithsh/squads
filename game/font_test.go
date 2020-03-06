@@ -1,6 +1,7 @@
 package game
 
 import (
+	"bytes"
 	"testing"
 
 	"github.com/griffithsh/squads/ecs"
@@ -50,5 +51,34 @@ func TestFont(t *testing.T) {
 	sprites = mgr.Get([]string{"Sprite"})
 	if len(sprites) != 0 {
 		t.Errorf("concluded: want no sprites, got %d", len(sprites))
+	}
+}
+
+func TestHash(t *testing.T) {
+	tests := []struct {
+		name                 string
+		aFont, bFont         *Font
+		aPosition, bPosition *Position
+		wantEqual            bool
+	}{
+		{
+			name:  "simple_inequality",
+			aFont: &Font{"A", ""}, bFont: &Font{"B", ""},
+			aPosition: &Position{}, bPosition: &Position{},
+			wantEqual: false,
+		},
+	}
+
+	for _, tc := range tests {
+		t.Run(tc.name, func(t *testing.T) {
+			a := FontSystem{}.hash(tc.aFont, tc.aPosition)
+			b := FontSystem{}.hash(tc.bFont, tc.bPosition)
+
+			got := bytes.Equal(a, b)
+
+			if tc.wantEqual != got {
+				t.Errorf("want %t, got %t", tc.wantEqual, got)
+			}
+		})
 	}
 }

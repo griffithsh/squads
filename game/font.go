@@ -43,31 +43,15 @@ type FontSystem struct {
 	hashes map[ecs.Entity][]byte
 }
 
-func (*FontSystem) hash(f *Font, p *Position) []byte {
-	h := fnv.New128()
-
-	h.Write([]byte(f.Text))
-	h.Write([]byte(f.Size))
-	// TODO: Align
-	// TODO: Width
-
-	fby := func(float float64) []byte {
-		bits := math.Float64bits(float)
+func (FontSystem) hash(f *Font, p *Position) []byte {
+	// fby is a helper that gets the bytes of a float64
+	fby := func(f float64) []byte {
+		bits := math.Float64bits(f)
 		bytes := make([]byte, 8)
 		binary.LittleEndian.PutUint64(bytes, bits)
 		return bytes
 	}
-	h.Write(fby(p.Center.X))
-	h.Write(fby(p.Center.Y))
-
-	iby := func(i int) []byte {
-		b := make([]byte, 8)
-		binary.LittleEndian.PutUint64(b, uint64(p.Layer))
-
-		return b
-	}
-	h.Write(iby(p.Layer))
-
+	// bby is a helper that gets the bytes of a bool.
 	bby := func(x bool) []byte {
 		b := []byte{0}
 		if x {
@@ -76,6 +60,26 @@ func (*FontSystem) hash(f *Font, p *Position) []byte {
 
 		return b
 	}
+	// iby is a helper that gets the bytes of an int.
+	iby := func(i int) []byte {
+		b := make([]byte, 8)
+		binary.LittleEndian.PutUint64(b, uint64(i))
+
+		return b
+	}
+
+	h := fnv.New128()
+
+	// Add values from the Font to the hash.
+	h.Write([]byte(f.Text))
+	h.Write([]byte(f.Size))
+	// TODO: add Align
+	// TODO: add Width
+
+	// Add values from Position to the hash.
+	h.Write(fby(p.Center.X))
+	h.Write(fby(p.Center.Y))
+	h.Write(iby(p.Layer))
 	h.Write(bby(p.Absolute))
 
 	// TODO: Include values from a Color Component when implemented
