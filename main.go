@@ -25,6 +25,7 @@ import (
 type system struct {
 	bus          *event.Bus
 	render       *game.Renderer
+	expiry       *ecs.ExpirySystem
 	anim         *game.AnimationSystem
 	traversals   *overworld.TraversalSystem
 	collisions   *overworld.CollisionSystem
@@ -142,6 +143,7 @@ func setup(w, h int) (*system, error) {
 		bus:        bus,
 		render:     game.NewRenderer(),
 		anim:       &game.AnimationSystem{},
+		expiry:     ecs.NewExpirySystem(mgr),
 		traversals: &overworld.TraversalSystem{},
 		collisions: overworld.NewCollisionSystem(mgr, bus),
 		embark:     embark.NewManager(mgr, bus),
@@ -303,6 +305,7 @@ func (s *system) run(screen *ebiten.Image) error {
 	s.combat.Run(elapsed)
 	s.overworld.Run(elapsed)
 
+	s.expiry.Update(elapsed)
 	s.fonts.Update()
 	s.leash.Update(s.mgr, elapsed)
 	s.anim.Update(s.mgr, elapsed)
