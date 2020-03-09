@@ -114,6 +114,17 @@ func (*HoverAnimation) Type() string {
 	return "HoverAnimation"
 }
 
+type FloatAwayAnimation struct {
+	// Rate of floating away per second
+	Rate float64
+	age  time.Duration
+}
+
+// Type of this Component.
+func (*FloatAwayAnimation) Type() string {
+	return "FloatAwayAnimation"
+}
+
 // AnimationSpeed changes the rate at which Animtions are animated. A value of
 // 1.0 is normal speed, and a value of 0.0 would mean that the animation never
 // progresses from the first frame. 0.5 would animate at half speed.
@@ -191,6 +202,17 @@ func (as *AnimationSystem) Update(mgr *ecs.World, elapsed time.Duration) {
 		// Save offset.
 		mgr.AddComponent(e, &RenderOffset{
 			Y: int(anim.YTranslate),
+		})
+	}
+
+	for _, e := range mgr.Get([]string{"FloatAwayAnimation"}) {
+		faa := mgr.Component(e, "FloatAwayAnimation").(*FloatAwayAnimation)
+		elapsed := getAnimationElapsed(mgr, e, elapsed)
+
+		faa.age += elapsed
+
+		mgr.AddComponent(e, &RenderOffset{
+			Y: -int(faa.age.Seconds() * faa.Rate),
 		})
 	}
 }
