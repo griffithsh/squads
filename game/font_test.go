@@ -59,6 +59,7 @@ func TestHash(t *testing.T) {
 		name                 string
 		aFont, bFont         *Font
 		aPosition, bPosition *Position
+		aOffset, bOffset     *RenderOffset
 		wantEqual            bool
 	}{
 		{
@@ -67,12 +68,23 @@ func TestHash(t *testing.T) {
 			aPosition: &Position{}, bPosition: &Position{},
 			wantEqual: false,
 		},
+		{
+			name:  "offsets_work",
+			aFont: &Font{Text: "X"}, bFont: &Font{Text: "X"},
+			aPosition: &Position{}, bPosition: &Position{},
+			aOffset: &RenderOffset{
+				X: 12, Y: 12,
+			}, bOffset: &RenderOffset{
+				X: 12, Y: 1300238457549823,
+			},
+			wantEqual: false,
+		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			a := FontSystem{}.hash(tc.aFont, tc.aPosition)
-			b := FontSystem{}.hash(tc.bFont, tc.bPosition)
+			a := FontSystem{}.hash(tc.aFont, tc.aPosition, tc.aOffset)
+			b := FontSystem{}.hash(tc.bFont, tc.bPosition, tc.bOffset)
 
 			got := bytes.Equal(a, b)
 

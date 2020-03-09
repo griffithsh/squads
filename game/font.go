@@ -43,7 +43,7 @@ type FontSystem struct {
 	hashes map[ecs.Entity][]byte
 }
 
-func (FontSystem) hash(f *Font, p *Position) []byte {
+func (FontSystem) hash(f *Font, p *Position, offset *RenderOffset) []byte {
 	// fby is a helper that gets the bytes of a float64
 	fby := func(f float64) []byte {
 		bits := math.Float64bits(f)
@@ -81,6 +81,12 @@ func (FontSystem) hash(f *Font, p *Position) []byte {
 	h.Write(fby(p.Center.Y))
 	h.Write(iby(p.Layer))
 	h.Write(bby(p.Absolute))
+
+	// If present, add values from RenderOffset to the hash.
+	if offset != nil {
+		h.Write(iby(offset.X))
+		h.Write(iby(offset.Y))
+	}
 
 	// TODO: Include values from a Color Component when implemented
 
@@ -365,6 +371,8 @@ func (s *FontSystem) construct(parent ecs.Entity) {
 	font := s.mgr.Component(parent, "Font").(*Font)
 	position := s.mgr.Component(parent, "Position").(*Position)
 	scale, ok := s.mgr.Component(parent, "Scale").(*Scale)
+	offset, _ := s.mgr.Component(parent, "RenderOffset").(*RenderOffset)
+
 	if !ok {
 		scale = &Scale{
 			X: 1,
@@ -419,6 +427,13 @@ func (s *FontSystem) construct(parent ecs.Entity) {
 			Absolute: position.Absolute,
 		})
 		px += float64(w) + letterSpace
+
+		if offset != nil {
+			s.mgr.AddComponent(e, &RenderOffset{
+				X: offset.X,
+				Y: offset.Y,
+			})
+		}
 	}
 	for _, rn := range font.Text {
 		if rn == '\n' {
@@ -438,8 +453,9 @@ func (s *FontSystem) Update() {
 	for _, e := range entities {
 		font := s.mgr.Component(e, "Font").(*Font)
 		pos := s.mgr.Component(e, "Position").(*Position)
+		offset, _ := s.mgr.Component(e, "RenderOffset").(*RenderOffset)
 
-		computed := s.hash(font, pos)
+		computed := s.hash(font, pos, offset)
 		current, ok := s.hashes[e]
 		if !ok {
 			s.hashes[e] = computed
