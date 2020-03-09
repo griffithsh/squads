@@ -1,8 +1,6 @@
 package combat
 
 import (
-	"fmt"
-
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
@@ -47,10 +45,6 @@ func (ds *damageSystem) handleDamageApplied(event event.Typer) {
 		Reduced:    reduced,
 		DamageType: ty,
 	})
-
-	// DEBUG:
-	msgf := "damageSystem: handleDamageApplied: %d accepted %d damage\n"
-	fmt.Printf(msgf, ev.Target, ev.Amount)
 }
 
 // failure calculates whether the applied damage has failed to be applied or

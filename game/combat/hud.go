@@ -3,6 +3,7 @@ package combat
 import (
 	"fmt"
 	"sort"
+	"strconv"
 	"time"
 
 	"github.com/griffithsh/squads/skill"
@@ -88,6 +89,7 @@ func NewHUD(mgr *ecs.World, bus *event.Bus, screenX int, screenY int, archive Sk
 	bus.Subscribe(StatModified{}.Type(), hud.handleCombatStatModified)
 	bus.Subscribe(StateTransition{}.Type(), hud.handleCombatStateTransition)
 	bus.Subscribe(ParticipantTurnChanged{}.Type(), hud.handleParticipantTurnChanged)
+	bus.Subscribe(DamageAccepted{}.Type(), hud.handleDamageAccepted)
 
 	return &hud
 }
@@ -191,6 +193,34 @@ func (hud *HUD) handleCombatStateTransition(ev event.Typer) {
 func (hud *HUD) handleParticipantTurnChanged(t event.Typer) {
 	ev := t.(*ParticipantTurnChanged)
 	hud.turnToken = ev.Entity
+}
+
+func (hud *HUD) handleDamageAccepted(t event.Typer) {
+	ev := t.(*DamageAccepted)
+
+	targetPosition := hud.mgr.Component(ev.Target, "Position").(*game.Position)
+
+	e := hud.mgr.NewEntity()
+	text := strconv.Itoa(ev.Amount)
+	hud.mgr.AddComponent(e, &game.Font{
+		Text: text,
+	})
+
+	hud.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: targetPosition.Center.X - float64(len(text)*5)/2,
+			Y: targetPosition.Center.Y - 32,
+		},
+		Layer: 100,
+	})
+
+	hud.mgr.AddComponent(e, &game.FloatAwayAnimation{
+		Rate: 6.5,
+	})
+
+	hud.mgr.AddComponent(e, &ecs.Expiry{
+		Remaining: time.Millisecond * 1500,
+	})
 }
 
 // Update the HUD. Synchronise the current game state to the Entities that compose it.
