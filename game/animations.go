@@ -1,6 +1,7 @@
 package game
 
 import (
+	"math"
 	"math/rand"
 	"time"
 
@@ -125,6 +126,17 @@ func (*FloatAwayAnimation) Type() string {
 	return "FloatAwayAnimation"
 }
 
+// TakeDamageAnimation adds an offset that makes the Entity pendulum back and
+// forth on the X axis as if they have been struck.
+type TakeDamageAnimation struct {
+	age time.Duration
+}
+
+// Type of this Component.
+func (*TakeDamageAnimation) Type() string {
+	return "TakeDamageAnimation"
+}
+
 // AnimationSpeed changes the rate at which Animtions are animated. A value of
 // 1.0 is normal speed, and a value of 0.0 would mean that the animation never
 // progresses from the first frame. 0.5 would animate at half speed.
@@ -214,5 +226,35 @@ func (as *AnimationSystem) Update(mgr *ecs.World, elapsed time.Duration) {
 		mgr.AddComponent(e, &RenderOffset{
 			Y: -int(faa.age.Seconds() * faa.Rate),
 		})
+	}
+
+	for _, e := range mgr.Get([]string{"TakeDamageAnimation"}) {
+		tda := mgr.Component(e, "TakeDamageAnimation").(*TakeDamageAnimation)
+		elapsed := getAnimationElapsed(mgr, e, elapsed)
+
+		offset, ok := mgr.Component(e, "RenderOffset").(*RenderOffset)
+		if !ok {
+			offset = &RenderOffset{}
+			mgr.AddComponent(e, offset)
+		}
+
+		// maxAge in seconds of this animation.
+		maxAge := 0.65
+		tda.age += elapsed
+		if tda.age.Seconds() >= maxAge {
+			mgr.RemoveComponent(e, tda)
+			offset.X = 0
+			continue
+		}
+
+		// spd is how fast the wobble happens.
+		spd := 22.5
+		sec := tda.age.Seconds()
+		raw := math.Sin(sec * spd)
+		through := raw * (1 - sec/maxAge)
+
+		// amp amplifies the wobble.
+		amp := 7.5
+		offset.X = int(through * amp)
 	}
 }

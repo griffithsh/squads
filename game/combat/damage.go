@@ -45,6 +45,8 @@ func (ds *damageSystem) handleDamageApplied(event event.Typer) {
 		Reduced:    reduced,
 		DamageType: ty,
 	})
+
+	ds.mgr.AddComponent(ev.Target, &game.TakeDamageAnimation{})
 }
 
 // failure calculates whether the applied damage has failed to be applied or
