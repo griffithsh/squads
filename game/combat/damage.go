@@ -46,7 +46,19 @@ func (ds *damageSystem) handleDamageApplied(event event.Typer) {
 		DamageType: ty,
 	})
 
-	ds.mgr.AddComponent(ev.Target, &game.TakeDamageAnimation{})
+	if target.CurrentHealth < 0 {
+		target.CurrentHealth = 0
+		target.Status = KnockedDown
+		// Set knocked-down animation.
+		ds.mgr.RemoveComponent(ev.Target, &game.FrameAnimation{})
+		ds.mgr.AddComponent(ev.Target, &game.Sprite{
+			Texture: "grave.png",
+			W:       32,
+			H:       32,
+		})
+	} else {
+		ds.mgr.AddComponent(ev.Target, &game.TakeDamageAnimation{})
+	}
 }
 
 // failure calculates whether the applied damage has failed to be applied or
