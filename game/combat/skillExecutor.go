@@ -189,11 +189,11 @@ func (se *skillExecutor) dereferencer(e ecs.Entity) func(s string) float64 {
 }
 
 func (se *skillExecutor) executeEffect(effect skill.Effect, inPlay *skillExecutionContext) error {
-	switch e := effect.(type) {
+	switch ef := effect.(type) {
 	case skill.DamageEffect:
 		dereference := se.dereferencer(inPlay.ev.User)
-		min := e.Min.Calculate(dereference)
-		max := e.Max.Calculate(dereference)
+		min := ef.Min.Calculate(dereference)
+		max := ef.Max.Calculate(dereference)
 
 		// Roll for damage between min and max.
 		dmg := min
@@ -206,11 +206,35 @@ func (se *skillExecutor) executeEffect(effect skill.Effect, inPlay *skillExecuti
 				Amount:     dmg,
 				Target:     affected,
 				DamageType: game.PhysicalDamage,
-				SkillType:  e.Classification,
+				SkillType:  ef.Classification,
 			})
 		}
+	case skill.ReviveEffect:
+		for _, e := range inPlay.affected {
+			participant := se.mgr.Component(e, "Participant").(*Participant)
+
+			if participant.Status != KnockedDown {
+				continue
+			}
+
+			participant.Status = Alive
+			participant.CurrentHealth = 1
+			se.mgr.RemoveComponent(e, &game.Sprite{})
+		}
+	case skill.HealEffect:
+		for _, e := range inPlay.affected {
+			participant := se.mgr.Component(e, "Participant").(*Participant)
+
+			var heal int
+			if ef.IsPercentage {
+				heal = int(float64(participant.maxHealth()) * ef.Amount)
+			} else {
+				heal = int(ef.Amount)
+			}
+			participant.CurrentHealth = heal
+		}
 	default:
-		return fmt.Errorf("unhandled skill effect type %T", e)
+		return fmt.Errorf("unhandled skill effect type %T", ef)
 	}
 	return nil
 }

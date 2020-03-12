@@ -107,6 +107,34 @@ var internalSkills = []skill.Description{
 			},
 		},
 	},
+	{
+		ID:          "debug-revive",
+		Name:        "Pheonix form",
+		Explanation: "A pheonix feather lands on the target, reviving it.",
+		Tags:        []skill.Classification{skill.Spell},
+		Icon: *game.Sprite{
+			Texture: "hud.png",
+			X:       160,
+			Y:       48,
+			W:       24,
+			H:       24,
+		}.AsAnimation(),
+		Targeting:      skill.TargetAnywhere,
+		TargetingBrush: skill.SingleHex,
+		Costs: map[skill.CostType]int{
+			skill.CostsActionPoints: 45,
+		},
+		Effects: []skill.Effect{
+			skill.ReviveEffect{
+				ScheduleTime: time.Millisecond * 500,
+			},
+			skill.HealEffect{
+				ScheduleTime: time.Millisecond * 500,
+				Amount:       0.15,
+				IsPercentage: true,
+			},
+		},
+	},
 }
 
 // NewArchive constructs a new Archive.
@@ -164,6 +192,7 @@ func (a *Archive) SkillsByProfession(prof game.CharacterProfession) []*skill.Des
 	return []*skill.Description{
 		a.Skill("debug-basic-attack"),
 		a.Skill("debug-lightning"),
+		a.Skill("debug-revive"),
 	}
 }
 

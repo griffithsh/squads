@@ -1,8 +1,6 @@
 package skill
 
 import (
-	"time"
-
 	"github.com/griffithsh/squads/game"
 )
 
@@ -23,11 +21,4 @@ type Description struct {
 	Effects []Effect
 
 	Costs map[CostType]int
-}
-
-// Effect is anything that executing a skill could trigger.
-type Effect interface {
-	// Schedule is the time that this effect should be triggered in the
-	// skill execution's lifetime.
-	Schedule() time.Duration
 }
