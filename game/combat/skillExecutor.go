@@ -17,33 +17,33 @@ import (
 /*
 Skill ideas:
 
-Attack that deals damage.
+[*] Attack that deals damage.
 
-Summon a skeleton from a dead character, preventing resurrection.
+[ ] Summon a skeleton from a dead character, preventing resurrection.
 
-Banish a character to a place without time, preventing them from preparing,
+[ ] Banish a character to a place without time, preventing them from preparing,
 being affected by DoTs, or taking their turn.
 
-Equalise HP of the user and target.
+[ ] Equalise HP of the user and target.
 
-Transform into Animal form on activation - changing prep and AP values.
+[ ] Transform into Animal form on activation - changing prep and AP values.
 
-Apply a status affect like bleeding, poison, weakness etc.
+[ ] Apply a status affect like bleeding, poison, weakness etc.
 
-Summon a wall of brambles to create a temporary obstacle on the field.
+[ ] Summon a wall of brambles to create a temporary obstacle on the field.
 
-Create a projectile that has varying flight-time to its target, and deals
+[ ] Create a projectile that has varying flight-time to its target, and deals
 damage when it lands.
 
-Dispell all effects on the target.
+[ ] Dispell all effects on the target.
 
 Passive skills:
 
-Summon an animal familiar at the start of combat. Cannot be activated.
+[ ] Summon an animal familiar at the start of combat. Cannot be activated.
 
-Summon a twin at the start of combat. Cannot be activated.
+[ ] Summon a twin at the start of combat. Cannot be activated.
 
-An aura that effects all allies and gives them effective +1 to all masteries.
+[ ] An aura that effects all allies and gives them effective +1 to all masteries.
 
 */
 
@@ -68,11 +68,16 @@ func newSkillExecutor(mgr *ecs.World, bus *event.Bus, field *geom.Field, archive
 	return &se
 }
 
+type effect struct {
+	when time.Duration
+	what interface{}
+}
+
 type skillExecutionContext struct {
 	ev       *UsingSkill
 	age      time.Duration
 	desc     *skill.Description
-	effects  []skill.Effect
+	effects  []effect
 	affected []ecs.Entity
 }
 
@@ -105,11 +110,28 @@ func (se *skillExecutor) handleUsingSkill(t event.Typer) {
 	// TODO: Complete implementation ...
 	fmt.Printf("skillExecutor: Entity %d used %s on %v\n", ev.User, s.Name, ev.Selected)
 
+	// TODO: get specific info from the attack or spell animation of the
+	// profession of the participant.
+	participant := se.mgr.Component(ev.User, "Participant").(*Participant)
+	m := map[skill.TimingPoint]time.Duration{
+		skill.AttackApexTimingPoint: time.Millisecond * 1200,
+	}
+	for _, t := range s.Tags {
+		if t == skill.Attack {
+			m[skill.AttackApexTimingPoint] = time.Millisecond * 150
+			break
+		}
+	}
+	realiser := skill.NewTimingRealiser(m)
+
 	// Take a copy of effects so that we can remove them without mutating the
 	// "reference" copy.
-	effects := make([]skill.Effect, len(s.Effects))
+	effects := make([]effect, len(s.Effects))
 	for i := 0; i < len(s.Effects); i++ {
-		effects[i] = s.Effects[i]
+		effects[i] = effect{
+			when: realiser(s.Effects[i].When),
+			what: s.Effects[i].What,
+		}
 	}
 
 	affected := se.determineAffected(ev, s)
@@ -122,7 +144,6 @@ func (se *skillExecutor) handleUsingSkill(t event.Typer) {
 	})
 
 	// Apply costs of skill to user.
-	participant := se.mgr.Component(ev.User, "Participant").(*Participant)
 	for ty, amount := range s.Costs {
 		switch ty {
 		case skill.CostsActionPoints:
@@ -188,8 +209,8 @@ func (se *skillExecutor) dereferencer(e ecs.Entity) func(s string) float64 {
 	}
 }
 
-func (se *skillExecutor) executeEffect(effect skill.Effect, inPlay *skillExecutionContext) error {
-	switch ef := effect.(type) {
+func (se *skillExecutor) executeEffect(effect effect, inPlay *skillExecutionContext) error {
+	switch ef := effect.what.(type) {
 	case skill.DamageEffect:
 		dereference := se.dereferencer(inPlay.ev.User)
 		min := ef.Min.Calculate(dereference)
@@ -262,11 +283,10 @@ func (se *skillExecutor) Update(elapsed time.Duration) {
 				}
 				break
 			}
-			target := inPlay.effects[0].Schedule()
 
 			// When the first effect is not ready to fire yet, break out of this
 			// skill, because none of the other effects should be ready either.
-			if inPlay.age < target {
+			if inPlay.age < inPlay.effects[0].when {
 				break
 			}
 

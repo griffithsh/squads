@@ -61,15 +61,17 @@ var internalSkills = []skill.Description{
 			skill.CostsActionPoints: 20,
 		},
 		Effects: []skill.Effect{
-			skill.DamageEffect{
-				Min: []skill.Operation{
-					{Operator: skill.AddOp, Variable: "$DMG-MIN"},
+			{
+				When: skill.NewTiming(time.Millisecond * 500),
+				What: skill.DamageEffect{
+					Min: []skill.Operation{
+						{Operator: skill.AddOp, Variable: "$DMG-MIN"},
+					},
+					Max: []skill.Operation{
+						{Operator: skill.AddOp, Variable: "$DMG-MAX"},
+					},
+					Classification: skill.Attack,
 				},
-				Max: []skill.Operation{
-					{Operator: skill.AddOp, Variable: "$DMG-MAX"},
-				},
-				Classification: skill.Attack,
-				ScheduleTime:   200 * time.Millisecond,
 			},
 		},
 	},
@@ -91,19 +93,21 @@ var internalSkills = []skill.Description{
 			skill.CostsActionPoints: 45,
 		},
 		Effects: []skill.Effect{
-			skill.DamageEffect{
-				Min: []skill.Operation{
-					{Operator: skill.AddOp, Variable: "1"},
-					{Operator: skill.MultOp, Variable: "$LIGHTNING"},
-					{Operator: skill.AddOp, Variable: "1"},
+			{
+				When: skill.NewTimingFromPoint(skill.AttackApexTimingPoint),
+				What: skill.DamageEffect{
+					Min: []skill.Operation{
+						{Operator: skill.AddOp, Variable: "1"},
+						{Operator: skill.MultOp, Variable: "$LIGHTNING"},
+						{Operator: skill.AddOp, Variable: "1"},
+					},
+					Max: []skill.Operation{
+						{Operator: skill.AddOp, Variable: "7"},
+						{Operator: skill.MultOp, Variable: "$LIGHTNING"},
+						{Operator: skill.AddOp, Variable: "10"},
+					},
+					Classification: skill.Spell,
 				},
-				Max: []skill.Operation{
-					{Operator: skill.AddOp, Variable: "7"},
-					{Operator: skill.MultOp, Variable: "$LIGHTNING"},
-					{Operator: skill.AddOp, Variable: "10"},
-				},
-				Classification: skill.Spell,
-				ScheduleTime:   1200 * time.Millisecond,
 			},
 		},
 	},
@@ -125,13 +129,16 @@ var internalSkills = []skill.Description{
 			skill.CostsActionPoints: 45,
 		},
 		Effects: []skill.Effect{
-			skill.ReviveEffect{
-				ScheduleTime: time.Millisecond * 500,
+			{
+				When: skill.NewTimingFromPoint(skill.AttackApexTimingPoint),
+				What: skill.ReviveEffect{},
 			},
-			skill.HealEffect{
-				ScheduleTime: time.Millisecond * 500,
-				Amount:       0.15,
-				IsPercentage: true,
+			{
+				When: skill.NewTimingFromPoint(skill.AttackApexTimingPoint),
+				What: skill.HealEffect{
+					Amount:       0.15,
+					IsPercentage: true,
+				},
 			},
 		},
 	},
