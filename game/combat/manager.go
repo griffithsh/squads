@@ -20,6 +20,8 @@ type SkillArchive interface {
 	Skill(skill.ID) *skill.Description
 	SkillsByProfession(game.CharacterProfession) []*skill.Description
 	SkillsByWeaponClass(game.ItemClass) []*skill.Description
+
+	Performances(profession string, sex game.CharacterSex) *game.PerformanceSet
 }
 
 // Manager is a game-mode. It processes turns-based Combat until one or the other

@@ -103,29 +103,40 @@ func (se *skillExecutor) determineAffected(ev *UsingSkill, s *skill.Description)
 	return []ecs.Entity{}
 }
 
+// createRealiser creates a new timing point realiser for figuring out when
+// effects with virtual timing points should be executed.
+func (se *skillExecutor) createRealiser(ev *UsingSkill, s *skill.Description) func(skill.Timing) time.Duration {
+	participant := se.mgr.Component(ev.User, "Participant").(*Participant)
+	prof, sex := participant.Profession.String(), participant.Sex
+	perf := se.archive.Performances(prof, sex)
+	var apex, end time.Duration
+	for _, t := range s.Tags {
+		if t == skill.Attack {
+			apex = time.Duration(perf.AttackApexMs) * time.Millisecond
+			end = time.Duration(len(perf.Attack.S)) * time.Millisecond
+			break
+		} else if t == skill.Spell {
+			apex = time.Duration(perf.SpellApexMs) * time.Millisecond
+			end = time.Duration(len(perf.Spell)) * time.Millisecond
+			break
+		}
+	}
+	m := map[skill.TimingPoint]time.Duration{
+		skill.AttackApexTimingPoint: apex,
+		skill.EndTimingPoint:        end,
+	}
+	return skill.NewTimingRealiser(m)
+}
+
 func (se *skillExecutor) handleUsingSkill(t event.Typer) {
 	ev := t.(*UsingSkill)
 	s := se.archive.Skill(ev.Skill)
 
-	// TODO: Complete implementation ...
-	fmt.Printf("skillExecutor: Entity %d used %s on %v\n", ev.User, s.Name, ev.Selected)
-
-	// TODO: get specific info from the attack or spell animation of the
-	// profession of the participant.
-	participant := se.mgr.Component(ev.User, "Participant").(*Participant)
-	m := map[skill.TimingPoint]time.Duration{
-		skill.AttackApexTimingPoint: time.Millisecond * 1200,
-	}
-	for _, t := range s.Tags {
-		if t == skill.Attack {
-			m[skill.AttackApexTimingPoint] = time.Millisecond * 150
-			break
-		}
-	}
-	realiser := skill.NewTimingRealiser(m)
+	realiser := se.createRealiser(ev, s)
 
 	// Take a copy of effects so that we can remove them without mutating the
-	// "reference" copy.
+	// "reference" copy. Also use the realiser to convert to concrete timing
+	// points.
 	effects := make([]effect, len(s.Effects))
 	for i := 0; i < len(s.Effects); i++ {
 		effects[i] = effect{
@@ -144,6 +155,7 @@ func (se *skillExecutor) handleUsingSkill(t event.Typer) {
 	})
 
 	// Apply costs of skill to user.
+	participant := se.mgr.Component(ev.User, "Participant").(*Participant)
 	for ty, amount := range s.Costs {
 		switch ty {
 		case skill.CostsActionPoints:
