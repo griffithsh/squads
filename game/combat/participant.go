@@ -14,9 +14,11 @@ const (
 	// Alive Characters can fight normally
 	Alive EngagementStatus = iota
 
-	// KnockedDown Characters cannot perform any actions, do not prepare, and
-	// are not affected by healing. Their body may be reanimated by a
-	// necromancer, or revived by a skill with the resurrection property.
+	// KnockedDown is the status of a Participant that lost all its Health
+	// Points. KnockedDown Participants cannot perform any actions, do not
+	// prepare, and are not affected by healing, but are still obstacles to
+	// movement. Their body may be reanimated by a necromancer, or revived by a
+	// skill with the resurrection property.
 	KnockedDown
 
 	// Escaped Characters have left combat, and cannot be affected by anything

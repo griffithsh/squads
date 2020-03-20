@@ -161,7 +161,7 @@ func (se *skillExecutor) handleUsingSkill(t event.Typer) {
 		case skill.CostsActionPoints:
 			participant.ActionPoints.Cur -= amount
 		case skill.CostsMana:
-			// TODO
+			// TODO:
 		default:
 			panic(fmt.Sprintf("skillExector.handleUsingSkill: Cost Type %T not implemented", ty))
 		}

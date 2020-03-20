@@ -115,6 +115,8 @@ func (*HoverAnimation) Type() string {
 	return "HoverAnimation"
 }
 
+// FloatAwayAnimation will offset the Entity upwards based on Rate as if it is a
+// helium balloon floating away.
 type FloatAwayAnimation struct {
 	// Rate of floating away per second
 	Rate float64

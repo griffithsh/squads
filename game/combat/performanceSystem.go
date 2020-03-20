@@ -41,6 +41,10 @@ func NewPerformanceSystem(mgr *ecs.World, bus *event.Bus) *PerformanceSystem {
 		mgr: mgr,
 	}
 
+	// TODO:
+	// each handler applies an animation. Some animations wear off, and leave
+	// only a sprite. Others continue indefinitely. In Update, Participants
+	// without an Animation receive the idle animation.
 	bus.Subscribe(ParticipantMoving{}.Type(), ps.handleParticipantMoving)
 	bus.Subscribe(CharacterCelebrating{}.Type(), ps.handleCharacterCelebrating)
 

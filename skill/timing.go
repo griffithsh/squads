@@ -17,6 +17,7 @@ type Timing struct {
 type TimingPoint int
 
 const (
+	// AttackApexTimingPoint applies to spells too!
 	AttackApexTimingPoint TimingPoint = iota
 	EndTimingPoint
 )

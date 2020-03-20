@@ -10,7 +10,10 @@ type Description struct {
 	ID          ID
 	Name        string
 	Explanation string
-	Tags        []Classification
+
+	// Tags critically includes Attack or Spell, and allows the game to select
+	// an appropriate animation to use when using the skill.
+	Tags []Classification
 
 	Icon game.FrameAnimation
 

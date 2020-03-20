@@ -60,7 +60,7 @@ func (a *Archive) Load(r io.Reader) error {
 			case ".overworld-recipe":
 				recipe, err := overworld.ParseRecipe(tr)
 				if err != nil {
-					return fmt.Errorf("parse overworld recipe from %s: %v", head.Name, err)
+					return fmt.Errorf("parse %s.overworld-recipe: %v", head.Name, err)
 				}
 				a.overworldRecipes = append(a.overworldRecipes, recipe)
 			case ".performance-set":
@@ -73,6 +73,8 @@ func (a *Archive) Load(r io.Reader) error {
 				for _, sex := range v.Sexes {
 					a.performances[PerformanceKey{sex, head.Name}] = &v
 				}
+			case ".skill-thingy?":
+				// TODO:
 			}
 		}
 	}
