@@ -21,6 +21,11 @@ const (
 	// skill with the resurrection property.
 	KnockedDown
 
+	// Defiled means that the Participant is permanently dead, and cannot be
+	// revived or resurrected; Their corpse is gone, and no longer poses an
+	// obstacle to movement.
+	Defiled
+
 	// Escaped Characters have left combat, and cannot be affected by anything
 	// that happens on the field.
 	Escaped

@@ -10,12 +10,13 @@ func _() {
 	var x [1]struct{}
 	_ = x[Alive-0]
 	_ = x[KnockedDown-1]
-	_ = x[Escaped-2]
+	_ = x[Defiled-2]
+	_ = x[Escaped-3]
 }
 
-const _EngagementStatus_name = "AliveKnockedDownEscaped"
+const _EngagementStatus_name = "AliveKnockedDownDefiledEscaped"
 
-var _EngagementStatus_index = [...]uint8{0, 5, 16, 23}
+var _EngagementStatus_index = [...]uint8{0, 5, 16, 23, 30}
 
 func (i EngagementStatus) String() string {
 	if i < 0 || i >= EngagementStatus(len(_EngagementStatus_index)-1) {
