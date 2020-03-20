@@ -3,6 +3,7 @@ package data
 import (
 	"archive/tar"
 	"compress/gzip"
+	"encoding/json"
 	"fmt"
 	"io"
 	"path/filepath"
@@ -16,6 +17,7 @@ import (
 type Archive struct {
 	overworldRecipes []*overworld.Recipe
 	skills           skill.Map
+	performances     map[PerformanceKey]*game.PerformanceSet
 }
 
 // NewArchive constructs a new Archive.
@@ -23,9 +25,14 @@ func NewArchive() (*Archive, error) {
 	archive := Archive{
 		overworldRecipes: []*overworld.Recipe{},
 		skills:           skill.Map{},
+		performances:     map[PerformanceKey]*game.PerformanceSet{},
 	}
 	for _, sd := range internalSkills {
 		archive.skills[sd.ID] = sd
+	}
+
+	for k, v := range internalPerformances {
+		archive.performances[k] = v
 	}
 	return &archive, nil
 }
@@ -56,6 +63,16 @@ func (a *Archive) Load(r io.Reader) error {
 					return fmt.Errorf("parse overworld recipe from %s: %v", head.Name, err)
 				}
 				a.overworldRecipes = append(a.overworldRecipes, recipe)
+			case ".performance-set":
+				dec := json.NewDecoder(tr)
+				var v game.PerformanceSet
+				err := dec.Decode(&v)
+				if err != nil {
+					return fmt.Errorf("parse %s.performance-set: %v", head.Name, err)
+				}
+				for _, sex := range v.Sexes {
+					a.performances[PerformanceKey{sex, head.Name}] = &v
+				}
 			}
 		}
 	}
