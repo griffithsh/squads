@@ -85,6 +85,10 @@ func (fa *FrameAnimation) Index() int {
 
 // Randomise the starting position of the Pointer.
 func (fa *FrameAnimation) Randomise() *FrameAnimation {
+	if len(fa.Frames) <= 1 {
+		fa.Pointer = 0
+		return fa
+	}
 	fa.Pointer = time.Duration(rand.Int63n(int64(fa.Duration())))
 	return fa
 }
@@ -189,8 +193,12 @@ func (as *AnimationSystem) Update(mgr *ecs.World, elapsed time.Duration) {
 		// EndBehavior to figure how to handle it.
 		switch anim.EndBehavior {
 		case AnimationLoops:
-			anim.Pointer = anim.Pointer % anim.Duration()
-			i = anim.Index()
+			if anim.Duration() == 0 {
+				i = 0
+			} else {
+				anim.Pointer = anim.Pointer % anim.Duration()
+				i = anim.Index()
+			}
 
 		case HoldLastFrame:
 			mgr.AddComponent(e, &anim.Frames[len(anim.Frames)-1])

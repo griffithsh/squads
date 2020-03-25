@@ -49,13 +49,7 @@ func (ds *damageSystem) handleDamageApplied(event event.Typer) {
 	if target.CurrentHealth < 0 {
 		target.CurrentHealth = 0
 		target.Status = KnockedDown
-		// Set knocked-down animation.
-		ds.mgr.RemoveComponent(ev.Target, &game.FrameAnimation{})
-		ds.mgr.AddComponent(ev.Target, &game.Sprite{
-			Texture: "grave.png",
-			W:       32,
-			H:       32,
-		})
+		ds.bus.Publish(&ParticipantDied{ev.Target})
 	} else {
 		ds.mgr.AddComponent(ev.Target, &game.TakeDamageAnimation{})
 	}

@@ -1,14 +1,12 @@
 package combat
 
 import (
-	"fmt"
 	"time"
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
-	"github.com/griffithsh/squads/res"
 )
 
 /*
@@ -32,13 +30,15 @@ animation "class" that best represents this skill.
 // PerformanceSystem sets appropriate Animations for Participants in a Combat based on
 // what's happening.
 type PerformanceSystem struct {
-	mgr *ecs.World
+	mgr     *ecs.World
+	archive SkillArchive
 }
 
 // NewPerformanceSystem creates a new PerformanceSystem.
-func NewPerformanceSystem(mgr *ecs.World, bus *event.Bus) *PerformanceSystem {
+func NewPerformanceSystem(mgr *ecs.World, bus *event.Bus, archive SkillArchive) *PerformanceSystem {
 	ps := PerformanceSystem{
-		mgr: mgr,
+		mgr:     mgr,
+		archive: archive,
 	}
 
 	// TODO:
@@ -47,6 +47,8 @@ func NewPerformanceSystem(mgr *ecs.World, bus *event.Bus) *PerformanceSystem {
 	// without an Animation receive the idle animation.
 	bus.Subscribe(ParticipantMoving{}.Type(), ps.handleParticipantMoving)
 	bus.Subscribe(CharacterCelebrating{}.Type(), ps.handleCharacterCelebrating)
+	bus.Subscribe(UsingSkill{}.Type(), ps.handleUsingSkill)
+	bus.Subscribe(ParticipantDied{}.Type(), ps.handleParticipantDied)
 
 	return &ps
 }
@@ -59,53 +61,35 @@ func (ps *PerformanceSystem) Update(elapse time.Duration) {
 			continue
 		}
 
-		participant := ps.mgr.Component(e, "Participant").(*Participant)
 		facer := ps.mgr.Component(e, "Facer").(*game.Facer)
 
-		fa := get(animationId{participant.Profession, participant.Sex, game.PerformIdle, facer.Face})
+		performances := ps.getPerformances(e)
+		frames := performances.Idle.ForDirection(facer.Face)
+		fa := game.NewFrameAnimationFromFrames(frames)
 
 		// Start at a random point of the Idle animation.
 		ps.mgr.AddComponent(e, fa.Randomise())
 	}
 }
 
-var missing = map[animationId]struct{}{}
-
-func reportMissing(id animationId) {
-	if _, ok := missing[id]; ok {
-		return
-	}
-	fmt.Println("missing animation:", id)
-	missing[id] = struct{}{}
-}
-
-func get(id animationId) game.FrameAnimation {
-	if fa, ok := all[id]; ok {
-		return fa
-	}
-	reportMissing(id)
-	return notFound()
-}
-
-func notFound() game.FrameAnimation {
-	return game.FrameAnimation{
-		Frames: []game.Sprite{
-			{Texture: "tranquility-plus-39-palette.png", W: 8, H: 8},
-		},
-		Timings: []time.Duration{time.Second},
-	}
+func (ps *PerformanceSystem) getPerformances(e ecs.Entity) *game.PerformanceSet {
+	participant := ps.mgr.Component(e, "Participant").(*Participant)
+	prof := participant.Profession.String()
+	sex := participant.Sex
+	return ps.archive.Performances(prof, sex)
 }
 
 func (ps *PerformanceSystem) handleParticipantMoving(t event.Typer) {
 	ev := t.(*ParticipantMoving)
 	e := ev.Entity
-	participant := ps.mgr.Component(e, "Participant").(*Participant)
 	facer := ps.mgr.Component(e, "Facer").(*game.Facer)
+	performances := ps.getPerformances(ev.Entity)
+	frames := performances.Move.ForDirection(facer.Face)
 
 	// If the facing has changed, then we need to edit the FrameAnimation.
 	if ev.OldFacing != ev.NewFacing {
-		fa := get(animationId{participant.Profession, participant.Sex, game.PerformMove, facer.Face})
-		ps.mgr.AddComponent(e, &fa)
+		fa := game.NewFrameAnimationFromFrames(frames)
+		ps.mgr.AddComponent(e, fa)
 	}
 
 	if ev.NewSpeed == 0 {
@@ -119,8 +103,8 @@ func (ps *PerformanceSystem) handleParticipantMoving(t event.Typer) {
 			Speed: ev.NewSpeed,
 		})
 		if ev.OldSpeed == 0 {
-			fa := get(animationId{participant.Profession, participant.Sex, game.PerformMove, facer.Face})
-			ps.mgr.AddComponent(e, &fa)
+			fa := game.NewFrameAnimationFromFrames(frames)
+			ps.mgr.AddComponent(e, fa)
 		}
 	}
 }
@@ -128,90 +112,49 @@ func (ps *PerformanceSystem) handleParticipantMoving(t event.Typer) {
 func (ps *PerformanceSystem) handleCharacterCelebrating(t event.Typer) {
 	ev := t.(*CharacterCelebrating)
 	e := ev.Entity
-	participant := ps.mgr.Component(e, "Participant").(*Participant)
-	fa := get(animationId{participant.Profession, participant.Sex, game.PerformVictory, geom.S})
-	ps.mgr.AddComponent(e, &fa)
+
+	performances := ps.getPerformances(e)
+	fa := game.NewFrameAnimationFromFrames(performances.Victory)
+	fa.EndBehavior = game.HoldLastFrame
+	ps.mgr.AddComponent(e, fa)
 }
 
-type animationId struct {
-	Profession  game.CharacterProfession
-	Sex         game.CharacterSex
-	Performance game.CharacterPerformance
-	Facing      geom.DirectionType
-}
+func (ps *PerformanceSystem) handleUsingSkill(t event.Typer) {
+	ev := t.(*UsingSkill)
+	e := ev.User
 
-// links is the declaration map between animationId and string keys present in
-// res.Performances.
-var links = map[animationId]string{
-	animationId{game.Villager, game.Male, game.PerformIdle, geom.N}:  "Villager-Male-Idle",
-	animationId{game.Villager, game.Male, game.PerformIdle, geom.S}:  "Villager-Male-Idle",
-	animationId{game.Villager, game.Male, game.PerformIdle, geom.SE}: "Villager-Male-Idle",
-	animationId{game.Villager, game.Male, game.PerformIdle, geom.SW}: "Villager-Male-Idle",
-	animationId{game.Villager, game.Male, game.PerformIdle, geom.NE}: "Villager-Male-Idle",
-	animationId{game.Villager, game.Male, game.PerformIdle, geom.NW}: "Villager-Male-Idle",
+	performances := ps.getPerformances(e)
+	skill := ps.archive.Skill(ev.Skill)
+	var frames []game.Frame
+	frames = performances.Spell
+	if skill.IsAttack() {
+		facer := ps.mgr.Component(e, "Facer").(*game.Facer)
 
-	animationId{game.Villager, game.Male, game.PerformMove, geom.N}:  "Villager-Male-Move",
-	animationId{game.Villager, game.Male, game.PerformMove, geom.S}:  "Villager-Male-Move",
-	animationId{game.Villager, game.Male, game.PerformMove, geom.SE}: "Villager-Male-Move",
-	animationId{game.Villager, game.Male, game.PerformMove, geom.SW}: "Villager-Male-Move",
-	animationId{game.Villager, game.Male, game.PerformMove, geom.NE}: "Villager-Male-Move",
-	animationId{game.Villager, game.Male, game.PerformMove, geom.NW}: "Villager-Male-Move",
-
-	animationId{game.Wolf, game.Male, game.PerformIdle, geom.N}:  "Wolf",
-	animationId{game.Wolf, game.Male, game.PerformIdle, geom.S}:  "Wolf",
-	animationId{game.Wolf, game.Male, game.PerformIdle, geom.SE}: "Wolf",
-	animationId{game.Wolf, game.Male, game.PerformIdle, geom.SW}: "Wolf",
-	animationId{game.Wolf, game.Male, game.PerformIdle, geom.NE}: "Wolf",
-	animationId{game.Wolf, game.Male, game.PerformIdle, geom.NW}: "Wolf",
-
-	animationId{game.Wolf, game.Male, game.PerformMove, geom.N}:  "Wolf",
-	animationId{game.Wolf, game.Male, game.PerformMove, geom.S}:  "Wolf",
-	animationId{game.Wolf, game.Male, game.PerformMove, geom.SE}: "Wolf",
-	animationId{game.Wolf, game.Male, game.PerformMove, geom.SW}: "Wolf",
-	animationId{game.Wolf, game.Male, game.PerformMove, geom.NE}: "Wolf",
-	animationId{game.Wolf, game.Male, game.PerformMove, geom.NW}: "Wolf",
-
-	animationId{game.Giant, game.Male, game.PerformIdle, geom.N}:  "Giant",
-	animationId{game.Giant, game.Male, game.PerformIdle, geom.S}:  "Giant",
-	animationId{game.Giant, game.Male, game.PerformIdle, geom.SE}: "Giant",
-	animationId{game.Giant, game.Male, game.PerformIdle, geom.SW}: "Giant",
-	animationId{game.Giant, game.Male, game.PerformIdle, geom.NE}: "Giant",
-	animationId{game.Giant, game.Male, game.PerformIdle, geom.NW}: "Giant",
-
-	animationId{game.Wolf, game.Male, game.PerformMove, geom.N}:  "Wolf",
-	animationId{game.Wolf, game.Male, game.PerformMove, geom.S}:  "Wolf",
-	animationId{game.Wolf, game.Male, game.PerformMove, geom.SE}: "Wolf",
-	animationId{game.Wolf, game.Male, game.PerformMove, geom.SW}: "Wolf",
-	animationId{game.Wolf, game.Male, game.PerformMove, geom.NE}: "Wolf",
-	animationId{game.Wolf, game.Male, game.PerformMove, geom.NW}: "Wolf",
-
-	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.N}:  "Skeleton-Idle-N",
-	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.S}:  "Skeleton-Idle-S",
-	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.SE}: "Skeleton-Idle-SE",
-	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.SW}: "Skeleton-Idle-SW",
-	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.NE}: "Skeleton-Idle-NE",
-	animationId{game.Skeleton, game.Male, game.PerformIdle, geom.NW}: "Skeleton-Idle-NW",
-
-	animationId{game.Skeleton, game.Male, game.PerformMove, geom.N}:  "Skeleton-Move-N",
-	animationId{game.Skeleton, game.Male, game.PerformMove, geom.S}:  "Skeleton-Move-S",
-	animationId{game.Skeleton, game.Male, game.PerformMove, geom.SE}: "Skeleton-Move-SE",
-	animationId{game.Skeleton, game.Male, game.PerformMove, geom.SW}: "Skeleton-Move-SW",
-	animationId{game.Skeleton, game.Male, game.PerformMove, geom.NE}: "Skeleton-Move-NE",
-	animationId{game.Skeleton, game.Male, game.PerformMove, geom.NW}: "Skeleton-Move-NW",
-}
-
-// final map between animationId and game.FrameAnimation.
-var all = map[animationId]game.FrameAnimation{}
-
-// init function that populates the "all" map with the keys from links and the
-// values from res.Performances.
-func init() {
-	for k, name := range links {
-		a, ok := res.Performances[name]
-		if !ok {
-			panic(fmt.Sprintf("links misconfigured: \"%s\" not found in res.Performances", name))
+		switch facer.Face {
+		case geom.N:
+			frames = performances.Attack.N
+		case geom.S:
+			frames = performances.Attack.S
+		case geom.SE:
+			frames = performances.Attack.SE
+		case geom.SW:
+			frames = performances.Attack.SW
+		case geom.NE:
+			frames = performances.Attack.NE
+		case geom.NW:
+			frames = performances.Attack.NW
 		}
-		fa := game.NewFrameAnimation(a)
-		all[k] = fa
 	}
+	fa := game.NewFrameAnimationFromFrames(frames)
+	fa.EndBehavior = game.HoldLastFrame
+	ps.mgr.AddComponent(e, fa)
+}
+
+func (ps *PerformanceSystem) handleParticipantDied(t event.Typer) {
+	pde := t.(*ParticipantDied)
+
+	performances := ps.getPerformances(pde.Entity)
+	fa := game.NewFrameAnimationFromFrames(performances.Death)
+	fa.EndBehavior = game.HoldLastFrame
+	ps.mgr.AddComponent(pde.Entity, fa)
 }

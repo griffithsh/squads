@@ -190,3 +190,13 @@ type DamageFailed struct {
 func (DamageFailed) Type() event.Type {
 	return "combat.DamageFailed"
 }
+
+// ParticipantDied occurs when a combat Participant is KnockedDown.
+type ParticipantDied struct {
+	Entity ecs.Entity
+}
+
+// Type of the Event.
+func (ParticipantDied) Type() event.Type {
+	return "combat.ParticipantDied"
+}

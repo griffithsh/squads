@@ -25,3 +25,13 @@ type Description struct {
 
 	Costs map[CostType]int
 }
+
+// IsAttack returns whether a skill is an attack or not.
+func (d Description) IsAttack() bool {
+	for _, tag := range d.Tags {
+		if tag == Attack {
+			return true
+		}
+	}
+	return false
+}

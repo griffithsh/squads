@@ -65,13 +65,13 @@ func (a *Archive) Load(r io.Reader) error {
 				a.overworldRecipes = append(a.overworldRecipes, recipe)
 			case ".performance-set":
 				dec := json.NewDecoder(tr)
-				var v game.PerformanceSet
-				err := dec.Decode(&v)
+				v := defaultPerformanceSet()
+				err := dec.Decode(v)
 				if err != nil {
 					return fmt.Errorf("parse %s.performance-set: %v", head.Name, err)
 				}
 				for _, sex := range v.Sexes {
-					a.performances[PerformanceKey{sex, head.Name}] = &v
+					a.performances[PerformanceKey{sex, v.Name}] = v
 				}
 			case ".skill-thingy?":
 				// TODO:

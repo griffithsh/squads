@@ -20,7 +20,6 @@ type SkillArchive interface {
 	Skill(skill.ID) *skill.Description
 	SkillsByProfession(game.CharacterProfession) []*skill.Description
 	SkillsByWeaponClass(game.ItemClass) []*skill.Description
-
 	Performances(profession string, sex game.CharacterSex) *game.PerformanceSet
 }
 
@@ -80,7 +79,7 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus, archive Ski
 		ds:                   newDamageSystem(mgr, bus),
 		selectingInteractive: mgr.NewEntity(),
 		intents:              NewIntentSystem(mgr, bus, f),
-		performances:         NewPerformanceSystem(mgr, bus),
+		performances:         NewPerformanceSystem(mgr, bus, archive),
 
 		paused: false,
 	}
