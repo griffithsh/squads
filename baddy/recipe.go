@@ -12,7 +12,6 @@ type RecipeID int
 const (
 	Skellington RecipeID = iota
 	Wolf
-	Giant
 )
 
 // Recipe describes a way to construct a baddy.
@@ -77,27 +76,6 @@ var Recipes map[RecipeID]Recipe = map[RecipeID]Recipe{
 		BigIcon: game.Sprite{
 			Texture: "hud.png",
 			X:       52,
-			Y:       24,
-			W:       52,
-			H:       52,
-		},
-	},
-	Giant: Recipe{
-		ActionPoints: 60,
-		Preparation:  50,
-		Name:         "Icarion",
-		Sex:          game.Male,
-		Profession:   game.Giant,
-		SmallIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       104,
-			Y:       76,
-			W:       26,
-			H:       26,
-		},
-		BigIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       104,
 			Y:       24,
 			W:       52,
 			H:       52,

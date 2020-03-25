@@ -10,13 +10,12 @@ func _() {
 	var x [1]struct{}
 	_ = x[Villager-0]
 	_ = x[Wolf-1]
-	_ = x[Giant-2]
-	_ = x[Skeleton-3]
+	_ = x[Skeleton-2]
 }
 
-const _CharacterProfession_name = "VillagerWolfGiantSkeleton"
+const _CharacterProfession_name = "VillagerWolfSkeleton"
 
-var _CharacterProfession_index = [...]uint8{0, 8, 12, 17, 25}
+var _CharacterProfession_index = [...]uint8{0, 8, 12, 20}
 
 func (i CharacterProfession) String() string {
 	if i < 0 || i >= CharacterProfession(len(_CharacterProfession_index)-1) {

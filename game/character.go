@@ -7,7 +7,6 @@ type CharacterProfession int
 const (
 	Villager CharacterProfession = iota
 	Wolf
-	Giant
 	Skeleton
 )
 
@@ -18,8 +17,6 @@ func (p CharacterProfession) Preparation() int {
 		return 200
 	case Wolf:
 		return 400
-	case Giant:
-		return 800
 	case Skeleton:
 		return 900
 	default:
@@ -33,8 +30,6 @@ func (p CharacterProfession) ActionPoints() int {
 	case Villager:
 		return 60
 	case Wolf:
-		return 40
-	case Giant:
 		return 40
 	case Skeleton:
 		return 40

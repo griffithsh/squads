@@ -12,7 +12,6 @@ type RecipeID int
 const (
 	SoloSkellington RecipeID = iota
 	WolfPack1
-	SoloGiant
 )
 
 type Candidate struct {
@@ -44,8 +43,5 @@ var Recipes = map[RecipeID]Recipe{
 		{1.0, baddy.Wolf},
 		{0.5, baddy.Wolf},
 		{0.5, baddy.Wolf},
-	},
-	SoloGiant: Recipe{
-		{1.0, baddy.Giant},
 	},
 }
