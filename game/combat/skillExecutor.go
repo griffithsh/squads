@@ -107,7 +107,7 @@ func (se *skillExecutor) determineAffected(ev *UsingSkill, s *skill.Description)
 // effects with virtual timing points should be executed.
 func (se *skillExecutor) createRealiser(ev *UsingSkill, s *skill.Description) func(skill.Timing) time.Duration {
 	participant := se.mgr.Component(ev.User, "Participant").(*Participant)
-	prof, sex := participant.Profession.String(), participant.Sex
+	prof, sex := participant.Profession, participant.Sex
 	perf := se.archive.Performances(prof, sex)
 	var apex, end time.Duration
 	for _, t := range s.Tags {

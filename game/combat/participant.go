@@ -51,7 +51,7 @@ type Participant struct {
 	SmallIcon game.Sprite // (26x26)
 	BigIcon   game.Sprite // (52x52)
 
-	Profession game.CharacterProfession
+	Profession string
 	Sex        game.CharacterSex
 
 	PreparationThreshold CurMax

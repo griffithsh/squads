@@ -11,7 +11,7 @@ import (
 // SkillsByProfession gets the skills for a profession.
 // FIXME: the game.CharacterProfession type must be removed for a
 // runtime-configurable one. This should accept a string parameter instead.
-func (a *Archive) SkillsByProfession(prof game.CharacterProfession) []*skill.Description {
+func (a *Archive) SkillsByProfession(prof string) []*skill.Description {
 	// FIXME: implementation
 	return []*skill.Description{
 		a.Skill("debug-basic-attack"),

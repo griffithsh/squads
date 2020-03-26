@@ -20,7 +20,7 @@ type Recipe struct {
 	Preparation        int
 	Name               string
 	Sex                game.CharacterSex
-	Profession         game.CharacterProfession
+	Profession         string
 	SmallIcon, BigIcon game.Sprite
 }
 
@@ -44,7 +44,7 @@ var Recipes map[RecipeID]Recipe = map[RecipeID]Recipe{
 		Preparation:  50,
 		Name:         "Dumble",
 		Sex:          game.Male,
-		Profession:   game.Skeleton,
+		Profession:   "Skeleton",
 		SmallIcon: game.Sprite{
 			Texture: "hud.png",
 			X:       0,
@@ -65,7 +65,7 @@ var Recipes map[RecipeID]Recipe = map[RecipeID]Recipe{
 		Preparation:  50,
 		Name:         "Hustle",
 		Sex:          game.Male,
-		Profession:   game.Wolf,
+		Profession:   "Wolf",
 		SmallIcon: game.Sprite{
 			Texture: "hud.png",
 			X:       52,

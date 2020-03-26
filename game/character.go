@@ -1,42 +1,6 @@
 package game
 
-//go:generate stringer -output=./character_string.go -type=CharacterProfession,CharacterSex,CharacterPerformance
-
-type CharacterProfession int
-
-const (
-	Villager CharacterProfession = iota
-	Wolf
-	Skeleton
-)
-
-// Preparation that this CharacterProfession provides.
-func (p CharacterProfession) Preparation() int {
-	switch p {
-	case Villager:
-		return 200
-	case Wolf:
-		return 400
-	case Skeleton:
-		return 900
-	default:
-		panic("unconfigured Preparation value for CharacterProfession " + p.String())
-	}
-}
-
-// ActionPoints that this CharacterProfession provides.
-func (p CharacterProfession) ActionPoints() int {
-	switch p {
-	case Villager:
-		return 60
-	case Wolf:
-		return 40
-	case Skeleton:
-		return 40
-	default:
-		panic("unconfigured ActionPoints value for CharacterProfession " + p.String())
-	}
-}
+//go:generate stringer -output=./character_string.go -type=CharacterSex,CharacterPerformance
 
 // CharacterSex is not CharacterGender, NB.
 type CharacterSex int
@@ -69,7 +33,7 @@ type Character struct {
 	BigIcon   Sprite // (52x52)
 
 	// Intrinsic to the Character
-	Profession CharacterProfession
+	Profession string
 	Sex        CharacterSex
 
 	// InherantPreparation is the preparation value that this Character has as a

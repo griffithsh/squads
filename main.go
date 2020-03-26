@@ -146,7 +146,7 @@ func setup(w, h int) (*system, error) {
 		expiry:     ecs.NewExpirySystem(mgr),
 		traversals: &overworld.TraversalSystem{},
 		collisions: overworld.NewCollisionSystem(mgr, bus),
-		embark:     embark.NewManager(mgr, bus),
+		embark:     embark.NewManager(mgr, bus, archive),
 		overworld:  overworld.NewManager(mgr, bus, recipes),
 		combat:     combat.NewManager(mgr, camera, bus, archive),
 

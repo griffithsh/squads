@@ -74,7 +74,7 @@ func (ps *PerformanceSystem) Update(elapse time.Duration) {
 
 func (ps *PerformanceSystem) getPerformances(e ecs.Entity) *game.PerformanceSet {
 	participant := ps.mgr.Component(e, "Participant").(*Participant)
-	prof := participant.Profession.String()
+	prof := participant.Profession
 	sex := participant.Sex
 	return ps.archive.Performances(prof, sex)
 }

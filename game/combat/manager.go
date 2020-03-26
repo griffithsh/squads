@@ -18,9 +18,10 @@ import (
 // SkillArchive is what is required by combat of any skill definition provider.
 type SkillArchive interface {
 	Skill(skill.ID) *skill.Description
-	SkillsByProfession(game.CharacterProfession) []*skill.Description
+	SkillsByProfession(string) []*skill.Description
 	SkillsByWeaponClass(game.ItemClass) []*skill.Description
 	Performances(profession string, sex game.CharacterSex) *game.PerformanceSet
+	Profession(profession string) *game.ProfessionDetails
 }
 
 // Manager is a game-mode. It processes turns-based Combat until one or the other
@@ -367,6 +368,8 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, h
 	// Add Participant Component.
 	equipment, _ := cm.mgr.Component(charEntity, "Equipment").(*game.Equipment)
 	char := cm.mgr.Component(charEntity, "Character").(*game.Character)
+	prof := cm.archive.Profession(char.Profession)
+
 	participant := &Participant{
 		Name:       char.Name,
 		Level:      char.Level,
@@ -375,10 +378,10 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, h
 		Profession: char.Profession,
 		Sex:        char.Sex,
 		PreparationThreshold: CurMax{
-			Max: char.InherantPreparation + char.Profession.Preparation() + equipment.WeaponPreparation(),
+			Max: char.InherantPreparation + prof.Preparation + equipment.WeaponPreparation(),
 		},
 		ActionPoints: CurMax{
-			Max: char.InherantActionPoints + char.Profession.ActionPoints() + equipment.WeaponActionPoints(),
+			Max: char.InherantActionPoints + prof.ActionPoints + equipment.WeaponActionPoints(),
 		},
 		BaseHealth:    char.BaseHealth,
 		CurrentHealth: char.CurrentHealth,

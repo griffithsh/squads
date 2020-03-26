@@ -21,9 +21,9 @@ func NewNavigator(bus *event.Bus) *Navigator {
 	}
 }
 
-var professionSpeeds = map[game.CharacterProfession]time.Duration{
-	game.Wolf:     150 * time.Millisecond,
-	game.Skeleton: 800 * time.Millisecond,
+var professionSpeeds = map[string]time.Duration{
+	"Wolf":     150 * time.Millisecond,
+	"Skeleton": 800 * time.Millisecond,
 }
 
 // Update Movers.

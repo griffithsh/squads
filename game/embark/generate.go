@@ -29,7 +29,7 @@ func (g *generator) generateChar() *game.Character {
 
 		Name:                 g.generateName(sex),
 		Sex:                  sex,
-		Profession:           game.Villager,
+		Profession:           "Villager",
 		InherantPreparation:  -50 + g.r.Intn(101),
 		InherantActionPoints: int(g.r.NormFloat64()*1.4 + 8),
 		SmallIcon:            small,

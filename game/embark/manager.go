@@ -9,12 +9,18 @@ import (
 	"github.com/griffithsh/squads/ui"
 )
 
+// Archive is what is required by embark of any archive data provider.
+type Archive interface {
+	Profession(profession string) *game.ProfessionDetails
+}
+
 // Manager holds state and provides methods to control that state for an embark
 // screen. This screen allows the player to configure the Characters they will
 // start their run with.
 type Manager struct {
-	mgr *ecs.World
-	bus *event.Bus
+	mgr     *ecs.World
+	bus     *event.Bus
+	archive Archive
 
 	screenW, screenH int
 
@@ -25,10 +31,11 @@ type Manager struct {
 }
 
 // NewManager creates a new Manager in a default state. You should call Begin to start the Manager.
-func NewManager(mgr *ecs.World, bus *event.Bus) *Manager {
+func NewManager(mgr *ecs.World, bus *event.Bus, archive Archive) *Manager {
 	em := Manager{
-		mgr: mgr,
-		bus: bus,
+		mgr:     mgr,
+		bus:     bus,
+		archive: archive,
 	}
 
 	bus.Subscribe(game.WindowSizeChanged{}.Type(), em.handleWindowSizeChanged)
@@ -172,6 +179,7 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 	em.mgr.Tag(container, "embark")
 	em.mgr.Tag(container, "embark-characters")
 
+	prof := em.archive.Profession(char.Profession)
 	var e ecs.Entity
 
 	// Panel
@@ -208,7 +216,7 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 	e = em.mgr.NewEntity()
 	em.mgr.Dependency(container, e)
 	em.mgr.AddComponent(e, &game.Font{
-		Text: char.Profession.String(),
+		Text: char.Profession,
 		Size: "small",
 	})
 	em.mgr.AddComponent(e, &game.Position{
@@ -253,7 +261,7 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 	e = em.mgr.NewEntity()
 	em.mgr.Dependency(container, e)
 	em.mgr.AddComponent(e, &game.Font{
-		Text: fmt.Sprintf("Prep: %d", char.InherantPreparation+char.Profession.Preparation()+equip.WeaponPreparation()),
+		Text: fmt.Sprintf("Prep: %d", char.InherantPreparation+prof.Preparation+equip.WeaponPreparation()),
 		Size: "small",
 	})
 	em.mgr.AddComponent(e, &game.Position{
@@ -268,7 +276,7 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 	e = em.mgr.NewEntity()
 	em.mgr.Dependency(container, e)
 	em.mgr.AddComponent(e, &game.Font{
-		Text: fmt.Sprintf("AP: %d", char.InherantActionPoints+char.Profession.ActionPoints()+equip.WeaponActionPoints()),
+		Text: fmt.Sprintf("AP: %d", char.InherantActionPoints+prof.ActionPoints+equip.WeaponActionPoints()),
 		Size: "small",
 	})
 	em.mgr.AddComponent(e, &game.Position{
