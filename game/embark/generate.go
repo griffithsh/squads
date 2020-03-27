@@ -3,19 +3,22 @@ package embark
 import (
 	"fmt"
 	"math/rand"
+	"sort"
 	"time"
 
 	"github.com/griffithsh/squads/game"
 )
 
 type generator struct {
-	r *rand.Rand
+	r       *rand.Rand
+	archive Archive
 }
 
-func newGenerator() generator {
+func newGenerator(archive Archive) generator {
 	seed := time.Now().UnixNano()
 	return generator{
-		r: rand.New(rand.NewSource(seed)),
+		r:       rand.New(rand.NewSource(seed)),
+		archive: archive,
 	}
 }
 
@@ -86,108 +89,46 @@ func (g *generator) generateSex() game.CharacterSex {
 }
 
 func (g *generator) generateName(sex game.CharacterSex) string {
+	names := g.archive.Names()
+	keys := make([]string, len(names))
+
+	for key := range names {
+		keys = append(keys, key)
+	}
+	sort.Strings(keys)
+	g.r.Shuffle(len(keys), func(i, j int) {
+		keys[i], keys[j] = keys[j], keys[i]
+	})
+	var satisfactory func(key string) bool
+
 	switch sex {
 	case game.Male:
-		i := g.r.Intn(len(maleNames))
-		return maleNames[i]
+		satisfactory = func(key string) bool {
+			tags := names[key]
+			for _, tag := range tags {
+				if tag == "M" {
+					return true
+				}
+			}
+			return false
+		}
 	case game.Female:
-		i := g.r.Intn(len(femaleNames))
-		return femaleNames[i]
+		satisfactory = func(key string) bool {
+			tags := names[key]
+			for _, tag := range tags {
+				if tag == "F" {
+					return true
+				}
+			}
+			return false
+		}
+	}
+	for _, name := range keys {
+		if satisfactory(name) {
+			return name
+		}
 	}
 	return fmt.Sprintf("Unhandled Sex %s", sex)
-}
-
-var maleNames = []string{
-	"Arneldo",
-	"Atlus",
-	"Axis",
-	"Bacon",
-	"Bentholemew",
-	"Bolus",
-	"Cristian",
-	"Callo",
-	"Devuan",
-	"Donkey",
-	"Dungaree",
-	"Edward",
-	"Frederick",
-	"Gerald",
-	"Humperdink",
-	"Ignatius",
-	"Ignold",
-	"Jamieson",
-	"Jahnsenn",
-	"Krastin",
-	"Lucas",
-	"Mattieson",
-	"Nelson",
-	"Nolan",
-	"Ormond",
-	"Oswalt",
-	"Panseur",
-	"Pantry",
-	"Perogue",
-	"Polter",
-	"Punt",
-	"Quincy",
-	"Ramathese",
-	"Rederick",
-	"Roon",
-	"Samithee",
-	"Satchel",
-	"Staunton",
-	"Timjamen",
-	"Thames",
-	"Unicerve",
-	"Variose",
-	"Volturbulent",
-	"Xactabol",
-	"Xerxes",
-	"Yalladin",
-	"Yossarian",
-	"Zod",
-	"Zomparion",
-}
-
-var femaleNames = []string{
-	"Alyssa",
-	"Balustrade",
-	"Callisto",
-	"Divernon",
-	"Eloa",
-	"Euphemia",
-	"Fankrastha",
-	"Gao",
-	"Gordania",
-	"Hana",
-	"Harmonia",
-	"Helloise",
-	"Ismalloray",
-	"Jannifern",
-	"Katherita",
-	"Kalisto",
-	"Kamio",
-	"Ketlin",
-	"Lanneth",
-	"Legothory",
-	"Maillorne",
-	"Nostory",
-	"Ollivene",
-	"Pursivonian",
-	"Qui",
-	"Rimcy",
-	"Sallivoce",
-	"Satchel",
-	"Sera",
-	"Shanto",
-	"Theodora",
-	"Undine",
-	"Victohia",
-	"Violet",
-	"Winchester",
-	"Xin",
-	"Yellow",
-	"Zenta",
 }
 
 var maleIcons = []int{

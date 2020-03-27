@@ -12,6 +12,7 @@ import (
 // Archive is what is required by embark of any archive data provider.
 type Archive interface {
 	Profession(profession string) *game.ProfessionDetails
+	Names() map[string][]string
 }
 
 // Manager holds state and provides methods to control that state for an embark
@@ -162,7 +163,7 @@ func (em *Manager) rollVillagers() {
 	// Empty villagers slice while preserving capacity.
 	em.villagers = em.villagers[:0]
 
-	g := newGenerator()
+	g := newGenerator(em.archive)
 	for i := 0; i < 5; i++ {
 		e := em.mgr.NewEntity()
 		em.mgr.Tag(e, "embark")
