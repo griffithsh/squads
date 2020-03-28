@@ -18,6 +18,7 @@ type Archive struct {
 	overworldRecipes []*overworld.Recipe
 	skills           skill.Map
 	performances     map[PerformanceKey]*game.PerformanceSet
+	names            map[string][]string
 }
 
 // NewArchive constructs a new Archive.
@@ -26,6 +27,7 @@ func NewArchive() (*Archive, error) {
 		overworldRecipes: []*overworld.Recipe{},
 		skills:           skill.Map{},
 		performances:     map[PerformanceKey]*game.PerformanceSet{},
+		names:            map[string][]string{},
 	}
 	for _, sd := range internalSkills {
 		archive.skills[sd.ID] = sd
@@ -33,6 +35,9 @@ func NewArchive() (*Archive, error) {
 
 	for k, v := range internalPerformances {
 		archive.performances[k] = v
+	}
+	for k, v := range internalNames {
+		archive.names[k] = v
 	}
 	return &archive, nil
 }
@@ -75,6 +80,16 @@ func (a *Archive) Load(r io.Reader) error {
 				}
 			case ".skill-thingy?":
 				// TODO:
+			case ".names":
+				// .names are a csv-like file that include names with tags for
+				// how they should be used, like M and F for sexes etc.
+				names, err := parseNames(tr)
+				if err != nil {
+					return fmt.Errorf("parse %s.names: %v", head.Name, err)
+				}
+				for k, v := range names {
+					a.names[k] = v
+				}
 			}
 		}
 	}
