@@ -132,7 +132,7 @@ func (g *generator) generateName(sex game.CharacterSex) string {
 }
 
 var maleIcons = []int{
-	0, 1, 3, 4, 5, 6,
+	0, 1, 3, 4, 5, 6, 9, 10, 11,
 }
 
 var femaleIcons = []int{
@@ -151,14 +151,14 @@ func (g *generator) generateIcons(sex game.CharacterSex) (small game.Sprite, big
 	}
 	return game.Sprite{
 			Texture: "portraits-26.png",
-			X:       i * 26,
-			Y:       0,
+			X:       (i % 9) * 26,
+			Y:       (i / 9) * 26,
 			W:       26,
 			H:       26,
 		}, game.Sprite{
 			Texture: "portraits-52.png",
-			X:       i * 52,
-			Y:       0,
+			X:       (i % 9) * 52,
+			Y:       (i / 9) * 52,
 			W:       52,
 			H:       52,
 		}
