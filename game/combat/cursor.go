@@ -125,8 +125,20 @@ func (cm *CursorManager) hideLiveParticipants() {
 
 func (cm *CursorManager) repaintLiveParticipants() {
 	entities := cm.mgr.Get([]string{"Participant"})
-	for i, slot := range cm.mgr.Tagged(liveParticipantsTag) {
+
+	// liveEntity determines if an there is an alive entity at index i of entities.
+	liveEntity := func(i int) bool {
 		if i < len(entities) {
+			participant := cm.mgr.Component(entities[i], "Participant").(*Participant)
+			if participant.Status == Alive {
+				return true
+			}
+		}
+		return false
+	}
+
+	for i, slot := range cm.mgr.Tagged(liveParticipantsTag) {
+		if liveEntity(i) {
 			spr := game.Sprite{
 				Texture: "cursors.png",
 

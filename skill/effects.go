@@ -58,3 +58,11 @@ type HealEffect struct {
 // target's current health to 1. Does nothing if the target is not KnockedDown.
 type ReviveEffect struct{}
 
+// DefileEffect changes the target's state from KnockedDown to Defiled.
+type DefileEffect struct{}
+
+// SpawnParticipantEffect spawns a new participant.
+type SpawnParticipantEffect struct {
+	Profession string
+	Level      Operations
+}

@@ -200,3 +200,27 @@ type ParticipantDied struct {
 func (ParticipantDied) Type() event.Type {
 	return "combat.ParticipantDied"
 }
+
+// ParticipantDefiled occurs when a combat Participant is Defiled and can no longer be resurrected.
+type ParticipantDefiled struct {
+	Entity ecs.Entity
+}
+
+// Type of the Event.
+func (ParticipantDefiled) Type() event.Type {
+	return "combat.ParticipantDefiled"
+}
+
+// CharacterEnteredCombat occurs when a combat new Participant (that was not
+// present at the start of the combat) has entered combat.
+type CharacterEnteredCombat struct {
+	Level      int
+	Profession string
+	Team       *game.Team
+	At         geom.Key
+}
+
+// Type of the Event.
+func (CharacterEnteredCombat) Type() event.Type {
+	return "combat.CharacterEnteredCombat"
+}

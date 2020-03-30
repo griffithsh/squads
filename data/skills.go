@@ -9,14 +9,13 @@ import (
 )
 
 // SkillsByProfession gets the skills for a profession.
-// FIXME: the game.CharacterProfession type must be removed for a
-// runtime-configurable one. This should accept a string parameter instead.
 func (a *Archive) SkillsByProfession(prof string) []*skill.Description {
 	// FIXME: implementation
 	return []*skill.Description{
 		a.Skill("debug-basic-attack"),
 		a.Skill("debug-lightning"),
 		a.Skill("debug-revive"),
+		a.Skill("raise-skeleton"),
 	}
 }
 
@@ -165,6 +164,40 @@ var internalSkills = []skill.Description{
 				What: skill.HealEffect{
 					Amount:       0.15,
 					IsPercentage: true,
+				},
+			},
+		},
+	},
+	{
+		ID:          "raise-skeleton",
+		Name:        "Raise Skeleton",
+		Explanation: "Raise the bones of the dead to fight alongside you.",
+		Tags:        []skill.Classification{skill.Spell},
+		Icon: *game.Sprite{
+			Texture: "hud.png",
+			X:       184,
+			Y:       48,
+			W:       24,
+			H:       24,
+		}.AsAnimation(),
+		Targeting:      skill.TargetAnywhere,
+		TargetingBrush: skill.SingleHex,
+		Costs: map[skill.CostType]int{
+			skill.CostsActionPoints: 65,
+		},
+		Effects: []skill.Effect{
+			{
+				When: skill.NewTimingFromPoint(skill.AttackApexTimingPoint),
+				What: skill.DefileEffect{},
+			},
+			{
+				When: skill.NewTimingFromPoint(skill.AttackApexTimingPoint),
+				What: skill.SpawnParticipantEffect{
+					Profession: "Skeleton",
+					Level: []skill.Operation{
+						{Operator: skill.AddOp, Variable: "1"},
+						{Operator: skill.MultOp, Variable: "$DARK"},
+					},
 				},
 			},
 		},

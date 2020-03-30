@@ -49,6 +49,7 @@ func NewPerformanceSystem(mgr *ecs.World, bus *event.Bus, archive SkillArchive) 
 	bus.Subscribe(CharacterCelebrating{}.Type(), ps.handleCharacterCelebrating)
 	bus.Subscribe(UsingSkill{}.Type(), ps.handleUsingSkill)
 	bus.Subscribe(ParticipantDied{}.Type(), ps.handleParticipantDied)
+	bus.Subscribe(ParticipantDefiled{}.Type(), ps.handleParticipantDefiled)
 
 	return &ps
 }
@@ -58,6 +59,11 @@ func (ps *PerformanceSystem) Update(elapse time.Duration) {
 	// For any Participants without a sprite, apply their idling animation
 	for _, e := range ps.mgr.Get([]string{"Participant", "Position"}) {
 		if _, ok := ps.mgr.Component(e, "Sprite").(*game.Sprite); ok {
+			continue
+		}
+
+		participant := ps.mgr.Component(e, "Participant").(*Participant)
+		if participant.Status == Defiled {
 			continue
 		}
 
@@ -157,4 +163,15 @@ func (ps *PerformanceSystem) handleParticipantDied(t event.Typer) {
 	fa := game.NewFrameAnimationFromFrames(performances.Death)
 	fa.EndBehavior = game.HoldLastFrame
 	ps.mgr.AddComponent(pde.Entity, fa)
+}
+
+func (ps *PerformanceSystem) handleParticipantDefiled(t event.Typer) {
+	pde := t.(*ParticipantDefiled)
+
+	participant := ps.mgr.Component(pde.Entity, "Participant").(*Participant)
+	participant.Status = Defiled
+
+	ps.mgr.RemoveComponent(pde.Entity, &game.Sprite{})
+	ps.mgr.RemoveComponent(pde.Entity, &game.FrameAnimation{})
+	ps.mgr.RemoveComponent(pde.Entity, &game.Obstacle{})
 }

@@ -7,6 +7,8 @@ import (
 	"sort"
 	"time"
 
+	"github.com/griffithsh/squads/baddy"
+
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
@@ -92,6 +94,7 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus, archive Ski
 	cm.bus.Subscribe(game.WindowSizeChanged{}.Type(), cm.handleWindowSizeChanged)
 	cm.bus.Subscribe(SkillRequested{}.Type(), cm.handleSkillRequested)
 	cm.bus.Subscribe(SkillUseConcluded{}.Type(), cm.handleSkillUseConcluded)
+	cm.bus.Subscribe(CharacterEnteredCombat{}.Type(), cm.handleCharacterEnteredCombat)
 
 	return &cm
 }
@@ -827,6 +830,19 @@ func (cm *Manager) handleSkillRequested(e event.Typer) {
 func (cm *Manager) handleSkillUseConcluded(e event.Typer) {
 	// evt := e.(*SkillUseConcluded)
 	cm.setState(AwaitingInputState)
+}
+
+func (cm *Manager) handleCharacterEnteredCombat(et event.Typer) {
+	evt := et.(*CharacterEnteredCombat)
+
+	// FIXME: evt.Profession should be used to retrieve a recipe
+	recipe := baddy.Recipes[baddy.Skellington]
+
+	// FIXME: evt.Level should be used to Construct the recipe.
+	char := recipe.Construct(nil)
+	e := cm.mgr.NewEntity()
+	cm.mgr.AddComponent(e, char)
+	cm.createParticipation(e, evt.Team, cm.field.Get(evt.At.M, evt.At.N))
 }
 
 func (cm *Manager) addGrass() {

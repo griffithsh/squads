@@ -79,28 +79,34 @@ type skillExecutionContext struct {
 	desc     *skill.Description
 	effects  []effect
 	affected []ecs.Entity
+	targeted []geom.Key
 }
 
 // determineAffected collects the Entities that the usage of this skill affects,
 // primarily based on TargetingBrush. It's perfectly normal for this to return
-// no entites, as skills (AoEs, summons) can be cast on empty hexes.
-func (se *skillExecutor) determineAffected(ev *UsingSkill, s *skill.Description) []ecs.Entity {
+// no entites, as skills (AoEs, summons) can be cast on empty hexes. It also
+// returns the hexes in the field that are targeted.
+func (se *skillExecutor) determineAffected(ev *UsingSkill, s *skill.Description) ([]ecs.Entity, []geom.Key) {
 	switch s.TargetingBrush {
 	case skill.SingleHex:
 		// SingleHex is easy - is there an entity on the exact hex specified by
 		// ev.Selected?
+		affected := make([]ecs.Entity, 1)
 		for _, e := range se.mgr.Get([]string{"Participant"}) {
 			o := se.mgr.Component(e, "Obstacle").(*game.Obstacle)
 			if ev.Selected.M == o.M && ev.Selected.N == o.N {
-				return []ecs.Entity{e}
+				affected[0] = e
+				break
 			}
 		}
+
+		return affected, []geom.Key{ev.Selected.Key()}
 
 	default:
 		panic(fmt.Sprintf("skillExecutor.determineAffected does not implement %T", s.TargetingBrush))
 	}
 
-	return []ecs.Entity{}
+	return []ecs.Entity{}, []geom.Key{}
 }
 
 // createRealiser creates a new timing point realiser for figuring out when
@@ -145,13 +151,14 @@ func (se *skillExecutor) handleUsingSkill(t event.Typer) {
 		}
 	}
 
-	affected := se.determineAffected(ev, s)
+	affected, targeted := se.determineAffected(ev, s)
 
 	se.inPlay = append(se.inPlay, &skillExecutionContext{
 		ev:       ev,
 		desc:     s,
 		effects:  effects,
 		affected: affected,
+		targeted: targeted,
 	})
 
 	// Apply costs of skill to user.
@@ -265,6 +272,28 @@ func (se *skillExecutor) executeEffect(effect effect, inPlay *skillExecutionCont
 				heal = int(ef.Amount)
 			}
 			participant.CurrentHealth = heal
+		}
+	case skill.DefileEffect:
+		for _, e := range inPlay.affected {
+			participant := se.mgr.Component(e, "Participant").(*Participant)
+			if participant.Status == KnockedDown {
+				se.bus.Publish(&ParticipantDefiled{Entity: e})
+			}
+		}
+	case skill.SpawnParticipantEffect:
+		dereference := se.dereferencer(inPlay.ev.User)
+		for _, key := range inPlay.targeted {
+			// FIXME: When executing a SpawnParticipantEffect, it is assumed
+			// that the new participant is on the same team as the User of the
+			// skill. This assumption might not always hold though.
+			team := se.mgr.Component(inPlay.ev.User, "Team").(*game.Team)
+
+			se.bus.Publish(&CharacterEnteredCombat{
+				Level:      ef.Level.Calculate(dereference),
+				Profession: ef.Profession,
+				Team:       team,
+				At:         key,
+			})
 		}
 	default:
 		return fmt.Errorf("unhandled skill effect type %T", ef)
