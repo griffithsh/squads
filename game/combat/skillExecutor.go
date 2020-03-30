@@ -93,7 +93,11 @@ func (se *skillExecutor) determineAffected(ev *UsingSkill, s *skill.Description)
 		// ev.Selected?
 		affected := make([]ecs.Entity, 1)
 		for _, e := range se.mgr.Get([]string{"Participant"}) {
-			o := se.mgr.Component(e, "Obstacle").(*game.Obstacle)
+			o, exists := se.mgr.Component(e, "Obstacle").(*game.Obstacle)
+			// Defiled Participants do not have an Obstacle.
+			if !exists {
+				continue
+			}
 			if ev.Selected.M == o.M && ev.Selected.N == o.N {
 				affected[0] = e
 				break

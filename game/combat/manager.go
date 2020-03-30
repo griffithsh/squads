@@ -95,6 +95,7 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus, archive Ski
 	cm.bus.Subscribe(SkillRequested{}.Type(), cm.handleSkillRequested)
 	cm.bus.Subscribe(SkillUseConcluded{}.Type(), cm.handleSkillUseConcluded)
 	cm.bus.Subscribe(CharacterEnteredCombat{}.Type(), cm.handleCharacterEnteredCombat)
+	cm.bus.Subscribe(ParticipantDefiled{}.Type(), cm.handleParticipantDefiled)
 
 	return &cm
 }
@@ -843,6 +844,14 @@ func (cm *Manager) handleCharacterEnteredCombat(et event.Typer) {
 	e := cm.mgr.NewEntity()
 	cm.mgr.AddComponent(e, char)
 	cm.createParticipation(e, evt.Team, cm.field.Get(evt.At.M, evt.At.N))
+}
+
+func (cm *Manager) handleParticipantDefiled(et event.Typer) {
+	pde := et.(*ParticipantDefiled)
+
+	cm.mgr.RemoveComponent(pde.Entity, &game.Sprite{})
+	cm.mgr.RemoveComponent(pde.Entity, &game.FrameAnimation{})
+	cm.mgr.RemoveComponent(pde.Entity, &game.Obstacle{})
 }
 
 func (cm *Manager) addGrass() {

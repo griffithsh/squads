@@ -170,8 +170,4 @@ func (ps *PerformanceSystem) handleParticipantDefiled(t event.Typer) {
 
 	participant := ps.mgr.Component(pde.Entity, "Participant").(*Participant)
 	participant.Status = Defiled
-
-	ps.mgr.RemoveComponent(pde.Entity, &game.Sprite{})
-	ps.mgr.RemoveComponent(pde.Entity, &game.FrameAnimation{})
-	ps.mgr.RemoveComponent(pde.Entity, &game.Obstacle{})
 }
