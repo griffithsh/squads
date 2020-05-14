@@ -49,6 +49,7 @@ type PerformanceSet struct {
 	Attack  PerformancesForDirection
 	Spell   []Frame
 	Death   []Frame
+	Rise    []Frame
 	Victory []Frame
 
 	AttackApexMs int

@@ -62,6 +62,7 @@ func defaultPerformanceSet() *game.PerformanceSet {
 		},
 		Spell:   []game.Frame{{DurationMs: 10, Sprite: s}},
 		Death:   []game.Frame{{DurationMs: 10, Sprite: s}},
+		Rise:    []game.Frame{{DurationMs: 10, Sprite: s}},
 		Victory: []game.Frame{{DurationMs: 10, Sprite: s}},
 	}
 }

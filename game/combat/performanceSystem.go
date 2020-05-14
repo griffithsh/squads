@@ -49,6 +49,7 @@ func NewPerformanceSystem(mgr *ecs.World, bus *event.Bus, archive SkillArchive) 
 	bus.Subscribe(CharacterCelebrating{}.Type(), ps.handleCharacterCelebrating)
 	bus.Subscribe(UsingSkill{}.Type(), ps.handleUsingSkill)
 	bus.Subscribe(ParticipantDied{}.Type(), ps.handleParticipantDied)
+	bus.Subscribe(ParticipantRevived{}.Type(), ps.handleParticipantRevived)
 	bus.Subscribe(ParticipantDefiled{}.Type(), ps.handleParticipantDefiled)
 
 	return &ps
@@ -163,6 +164,14 @@ func (ps *PerformanceSystem) handleParticipantDied(t event.Typer) {
 	fa := game.NewFrameAnimationFromFrames(performances.Death)
 	fa.EndBehavior = game.HoldLastFrame
 	ps.mgr.AddComponent(pde.Entity, fa)
+}
+
+func (ps *PerformanceSystem) handleParticipantRevived(t event.Typer) {
+	ev := t.(*ParticipantRevived)
+	performances := ps.getPerformances(ev.Entity)
+	fa := game.NewFrameAnimationFromFrames(performances.Rise)
+	fa.EndBehavior = game.HoldLastFrame // So that the FrameAnimation is removed
+	ps.mgr.AddComponent(ev.Entity, fa)
 }
 
 func (ps *PerformanceSystem) handleParticipantDefiled(t event.Typer) {

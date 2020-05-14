@@ -201,6 +201,16 @@ func (ParticipantDied) Type() event.Type {
 	return "combat.ParticipantDied"
 }
 
+// ParticipantRevived occurs when a combat Participant is KnockedDown.
+type ParticipantRevived struct {
+	Entity ecs.Entity
+}
+
+// Type of the Event.
+func (ParticipantRevived) Type() event.Type {
+	return "combat.ParticipantRevived"
+}
+
 // ParticipantDefiled occurs when a combat Participant is Defiled and can no longer be resurrected.
 type ParticipantDefiled struct {
 	Entity ecs.Entity

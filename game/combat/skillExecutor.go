@@ -263,7 +263,7 @@ func (se *skillExecutor) executeEffect(effect effect, inPlay *skillExecutionCont
 
 			participant.Status = Alive
 			participant.CurrentHealth = 1
-			se.mgr.RemoveComponent(e, &game.Sprite{})
+			se.bus.Publish(&ParticipantRevived{Entity: e})
 		}
 	case skill.HealEffect:
 		for _, e := range inPlay.affected {
