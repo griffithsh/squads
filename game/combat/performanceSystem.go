@@ -57,20 +57,29 @@ func NewPerformanceSystem(mgr *ecs.World, bus *event.Bus, archive SkillArchive) 
 
 // Update the System.
 func (ps *PerformanceSystem) Update(elapse time.Duration) {
-	// For any Participants without a sprite, apply their idling animation
-	for _, e := range ps.mgr.Get([]string{"Participant", "Position"}) {
-		if _, ok := ps.mgr.Component(e, "Sprite").(*game.Sprite); ok {
+	// For every Participant in the combat ...
+	for _, e := range ps.mgr.Get([]string{"Participant"}) {
+		// If the Entity has a FrameAnimation already, then they are animating
+		// some action (or they might be idling already?), so don't change
+		// anything.
+		if _, ok := ps.mgr.Component(e, "FrameAnimation").(*game.FrameAnimation); ok {
 			continue
 		}
 
 		participant := ps.mgr.Component(e, "Participant").(*Participant)
-		if participant.Status == Defiled {
+		if participant.Status != Alive {
+			// If they're not alive, then we want to just leave them on the last
+			// frame of their death animation. (The FrameAnimation should have
+			// been removed due to HoldLastFrame being set). They might also be
+			// Escaped or Defiled, and have no visual representation at all.
 			continue
 		}
 
+		// In all other cases, we should apply the Idle animation.
 		facer := ps.mgr.Component(e, "Facer").(*game.Facer)
 
 		performances := ps.getPerformances(e)
+
 		frames := performances.Idle.ForDirection(facer.Face)
 		fa := game.NewFrameAnimationFromFrames(frames)
 
@@ -122,7 +131,6 @@ func (ps *PerformanceSystem) handleCharacterCelebrating(t event.Typer) {
 
 	performances := ps.getPerformances(e)
 	fa := game.NewFrameAnimationFromFrames(performances.Victory)
-	fa.EndBehavior = game.HoldLastFrame
 	ps.mgr.AddComponent(e, fa)
 }
 

@@ -762,8 +762,11 @@ func (cm *Manager) syncParticipantObstacle(evt *ParticipantMovementConcluded) {
 }
 
 func (cm *Manager) handleMovementConcluded(t event.Typer) {
+	ev := t.(*ParticipantMovementConcluded)
 	// FIXME: Should Obstacle movement be handled by an "obstacle" system instead?
-	cm.syncParticipantObstacle(t.(*ParticipantMovementConcluded))
+	cm.syncParticipantObstacle(ev)
+
+	cm.mgr.RemoveComponent(ev.Entity, &game.FrameAnimation{})
 
 	cm.setState(AwaitingInputState)
 	cm.MousePosition(cm.x, cm.y)
