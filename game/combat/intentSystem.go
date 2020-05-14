@@ -66,7 +66,7 @@ func (s *IntentSystem) Update() {
 
 		startHex := s.field.At(int(pos.Center.X), int(pos.Center.Y))
 		goalHex := s.field.At(int(intent.X), int(intent.Y))
-		if startHex == nil || goalHex == nil {
+		if startHex == nil || goalHex == nil || startHex.Key() == goalHex.Key() {
 			// Don't navigate.
 			s.Publish(&ParticipantMovementConcluded{Entity: e})
 			continue
