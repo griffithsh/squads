@@ -852,8 +852,6 @@ func (cm *Manager) handleCharacterEnteredCombat(et event.Typer) {
 func (cm *Manager) handleParticipantDefiled(et event.Typer) {
 	pde := et.(*ParticipantDefiled)
 
-	cm.mgr.RemoveComponent(pde.Entity, &game.Sprite{})
-	cm.mgr.RemoveComponent(pde.Entity, &game.FrameAnimation{})
 	cm.mgr.RemoveComponent(pde.Entity, &game.Obstacle{})
 }
 

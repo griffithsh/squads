@@ -281,6 +281,7 @@ func (se *skillExecutor) executeEffect(effect effect, inPlay *skillExecutionCont
 		for _, e := range inPlay.affected {
 			participant := se.mgr.Component(e, "Participant").(*Participant)
 			if participant.Status == KnockedDown {
+				participant.Status = Defiled
 				se.bus.Publish(&ParticipantDefiled{Entity: e})
 			}
 		}
