@@ -91,7 +91,8 @@ func (se *skillExecutor) determineAffected(ev *UsingSkill, s *skill.Description)
 	case skill.SingleHex:
 		// SingleHex is easy - is there an entity on the exact hex specified by
 		// ev.Selected?
-		affected := make([]ecs.Entity, 1)
+		affected := []ecs.Entity{}
+
 		for _, e := range se.mgr.Get([]string{"Participant"}) {
 			o, exists := se.mgr.Component(e, "Obstacle").(*game.Obstacle)
 			// Defiled Participants do not have an Obstacle.
@@ -99,7 +100,7 @@ func (se *skillExecutor) determineAffected(ev *UsingSkill, s *skill.Description)
 				continue
 			}
 			if ev.Selected.M == o.M && ev.Selected.N == o.N {
-				affected[0] = e
+				affected = append(affected, e)
 				break
 			}
 		}
