@@ -123,11 +123,11 @@ func (se *skillExecutor) createRealiser(ev *UsingSkill, s *skill.Description) fu
 	var apex, end time.Duration
 	for _, t := range s.Tags {
 		if t == skill.Attack {
-			apex = time.Duration(perf.AttackApexMs) * time.Millisecond
+			apex = perf.AttackApex
 			end = time.Duration(len(perf.Attack.S)) * time.Millisecond
 			break
 		} else if t == skill.Spell {
-			apex = time.Duration(perf.SpellApexMs) * time.Millisecond
+			apex = perf.SpellApex
 			end = time.Duration(len(perf.Spell)) * time.Millisecond
 			break
 		}

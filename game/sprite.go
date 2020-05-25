@@ -4,14 +4,18 @@ import "time"
 
 // Sprite is a renderable slice of a texture.
 type Sprite struct {
-	Texture    string
-	X, Y, W, H int
+	Texture string `json:"texture"`
+	X       int    `json:"x"`
+	Y       int    `json:"y"`
+	W       int    `json:"w"`
+	H       int    `json:"h"`
 
 	// OffsetX and OffsetY exist as they can be applied to individual frames of
 	// an animation. They do not duplicate the functionality of RenderOffset, as
 	// that applies at the Entity level, and could effect the rendering position
 	// of things that are not Sprites. (i.e shape primitives)
-	OffsetX, OffsetY int
+	OffsetX int `json:"offsetX"`
+	OffsetY int `json:"offsetY"`
 
 	// This could include a color, but does not for now, as there are no uses for it.
 	// Color *color.RGBA
