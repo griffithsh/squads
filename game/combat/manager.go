@@ -194,6 +194,9 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 
 	cm.setState(ExecutingState)
 
+	if s.IsAttack() {
+		cm.mgr.AddComponent(cm.turnToken, &game.Facer{Face: geom.BestFacing(origin.Key(), selected.Key())})
+	}
 	cm.bus.Publish(&UsingSkill{
 		User:     cm.turnToken,
 		Skill:    s.ID,
