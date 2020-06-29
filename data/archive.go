@@ -19,6 +19,7 @@ type Archive struct {
 	skills           skill.Map
 	performances     map[PerformanceKey]*game.PerformanceSet
 	names            map[string][]string
+	combatMaps       []game.CombatMapRecipe // eventually these would be keyed by their terrain in some way?
 }
 
 // NewArchive constructs a new Archive.

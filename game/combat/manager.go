@@ -8,7 +8,7 @@ import (
 	"time"
 
 	"github.com/griffithsh/squads/baddy"
-
+	"github.com/griffithsh/squads/data"
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
@@ -32,7 +32,7 @@ type Manager struct {
 	// Manager should own systems that are only relevant to Combat. A Turns coordinator, a preparation timer
 	mgr     *ecs.World
 	bus     *event.Bus
-	archive SkillArchive
+	archive *data.Archive
 	field   *geom.Field
 	nav     *Navigator
 	camera  *game.Camera
@@ -65,7 +65,7 @@ type Manager struct {
 }
 
 // NewManager creates a new combat Manager.
-func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus, archive SkillArchive) *Manager {
+func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus, archive *data.Archive) *Manager {
 	f := geom.NewField()
 
 	cm := Manager{
@@ -437,8 +437,7 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, h
 // TODO: Begin should be provided with information about the squads and the
 // terrain to fight on.
 func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
-	var keys []geom.Key = geom.MByN(rand.Intn(3)+6, rand.Intn(7)+20)
-	cm.field.Load(keys)
+
 	cm.setState(FadingIn)
 	e := cm.mgr.NewEntity()
 	cm.mgr.Tag(e, "combat")
@@ -449,9 +448,69 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 			cm.setState(PreparingState)
 		},
 		OnInitialised: func() {
-			// Debug hacky code to add some terrain.
-			cm.addGrass()
-			cm.addTrees()
+			// TODO: we should provide the terrain we're entering combat to this
+			// method so that a map with an appropriate tileset can be selected.
+			combatMap := cm.archive.GetCombatMap()
+
+			keys := make([]geom.Key, len(combatMap.Hexes))
+			for i, hex := range combatMap.Hexes {
+				keys[i] = hex.Position
+			}
+			cm.field.Load(keys)
+			for _, hex := range combatMap.Hexes {
+				h := cm.field.Get(hex.Position.M, hex.Position.N)
+				if hex.Obstacle {
+					// add obstacle
+					e := cm.mgr.NewEntity()
+					cm.mgr.Tag(e, "combat")
+					cm.mgr.AddComponent(e, &game.Obstacle{
+						M:            h.M,
+						N:            h.N,
+						ObstacleType: game.TreeObstacle, // FIXME: what sort of obstacle is it?
+					})
+				}
+				for _, vis := range hex.Visuals {
+					if len(vis.Frames) == 0 {
+						continue
+					}
+					e := cm.mgr.NewEntity()
+					cm.mgr.Tag(e, "combat")
+
+					// add position
+					cm.mgr.AddComponent(e, &game.Position{
+						Center: game.Center{
+							X: h.X(),
+							Y: h.Y(),
+						},
+						Layer: vis.Layer,
+					})
+					if len(vis.Frames) == 1 {
+						cm.mgr.AddComponent(e, &game.Sprite{
+							Texture: vis.Frames[0].Texture,
+							X:       vis.Frames[0].X,
+							Y:       vis.Frames[0].Y,
+							W:       combatMap.TileW,
+							H:       combatMap.TileH,
+						})
+					} else { // not zero or one, and definitely not negative
+						// add frame animation
+						fa := game.FrameAnimation{}
+						for _, frame := range vis.Frames {
+							fa.Frames = append(fa.Frames, game.Sprite{
+								Texture: frame.Texture,
+								X:       frame.X,
+								Y:       frame.Y,
+								W:       combatMap.TileW,
+								H:       combatMap.TileH,
+							})
+							fa.Timings = append(fa.Timings, frame.Duration)
+						}
+						fa.Randomise()
+						cm.mgr.AddComponent(e, &fa)
+					}
+
+				}
+			}
 
 			// TODO:
 			// There is some entity which stores info about a "level", and produces
@@ -459,11 +518,7 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 			// shape of the level, and the terrain of each hex (grass, water, blocked by
 			// tree etc). It should also produce starting positions for teams...
 
-			// FIXME: Hard-coded list of start locations.
-			sp := newStartProvider([]geom.Key{
-				{M: 6, N: 18},
-				{M: 2, N: 8},
-			})
+			sp := newStartProvider(combatMap.Starts)
 
 			entities := []ecs.Entity{}
 			for _, e := range participatingSquads {
@@ -485,6 +540,8 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 			cm.bus.Publish(&game.CombatBegan{})
 		},
 	})
+	// TODO: center on the midpoint between selected start locations instead of
+	// the middle of the map. Or maybe the start location of the player's team?
 	cm.bus.Publish(&game.SomethingInteresting{
 		X: cm.field.Width() / 2,
 		Y: cm.field.Height() / 2,
