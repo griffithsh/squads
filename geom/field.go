@@ -2,142 +2,258 @@ package geom
 
 import (
 	"fmt"
+	"math"
 )
 
 /*
  A Hexagon that has N, S, NE, SE, NW, and SW faces could be comprised of a
- triangular section and a rectangular section, and then another triangular section
- going left to right.
-    _________
-   /|       |\
-  / |       | \
- /  |       |  \
- \  |       |  /
-  \ |       | /
-   \|_______|/
+ triangular section (or wing), a rectangular section (or body), and then
+ another triangular section going left to right.
+
+ wing|  body  |wing
+
+     __________
+    /|        |\
+   / |        | \
+  /  |        |  \
+  \  |        |  /
+   \ |        | /
+    \|________|/
 
 The width of this hexagon would be the 2*the width of the triangular section
 plus the width of the rectangular section.
 
-Stride here is used for dividing a hexagonal field into rectangular areas that
-are composed of the first triangular area of a hexagon, and the rectangular
-area.
-*/
-const (
-	hexTriWidth    = 7
-	hexSquareWidth = 10
-	hexWidth       = hexTriWidth + hexSquareWidth + hexTriWidth
-	hexHeight      = 16
-	xStride        = (hexTriWidth + hexSquareWidth) * 2
-	yStride        = hexHeight / 2
-)
 
-/*
 M,N coordinates are sequenced like this:
     _________               _________               _________
    /         \             /         \             /         \
   /           \           /           \           /           \
  /     M,N     \_________/     M,N     \_________/     M,N     \_________
- \     0,0     /         \     1,0     /         \     2,0     /         \
+ \    -2,-2    /         \     0,-2    /         \     2,-2    /         \
   \           /           \           /           \           /           \
-   \_________/     0,1     \_________/     1,1     \_________/     2,1     \
+   \_________/    -1,-2    \_________/     1,-2    \_________/     3,-2    \
    /         \     M,N     /         \     M,N     /         \     M,N     /
   /           \           /           \           /           \           /
  /     M,N     \_________/     M,N     \_________/     M,N     \_________/
- \     0,2     /         \     1,2     /         \     2,2     /         \
+ \    -2,-1    /         \     0,-1    /         \     2,-1    /         \
   \           /           \           /           \           /           \
-   \_________/     0,3     \_________/     1,3     \_________/     2,3     \
+   \_________/    -1,-1    \_________/     1,-1    \_________/     3,-1    \
    /         \     M,N     /         \     M,N     /         \     M,N     /
   /           \           /           \           /           \           /
  /     M,N     \_________/     M,N     \_________/     M,N     \_________/
- \     0,4     /         \     1,4     /         \     2,4     /         \
+ \    -2,0     /         \     0,0     /         \     2,0     /         \
   \           /           \           /           \           /           \
-   \_________/     0,5     \_________/     1,5     \_________/     2,5     \
+   \_________/    -1,0     \_________/     1,0     \_________/     3,0     \
    /         \     M,N     /         \     M,N     /         \     M,N     /
   /           \           /           \           /           \           /
  /     M,N     \_________/     M,N     \_________/     M,N     \_________/
- \     0,6     /         \     1,6     /         \     2,6     /         \
+ \    -2,1     /         \     0,1     /         \     2,1     /         \
   \           /           \           /           \           /           \
-   \_________/     0,7     \_________/     1,7     \_________/     2,7     \
-             \     M,N     /         \     M,N     /         \     M,N     /
-              \           /           \           /           \           /
-               \_________/             \_________/             \_________/
-
-This diagram shows a three by eight Field of Hexes.
+   \_________/    -1,1     \_________/     1,1     \_________/     3,1     \
+   /         \     M,N     /         \     M,N     /         \     M,N     /
+  /           \           /           \           /           \           /
+ /     M,N     \_________/     M,N     \_________/     M,N     \_________/
+ \    -2,2     /         \     0,2     /         \     2,2     /         \
+  \           /           \           /           \           /           \
+   \_________/    -1,2     \_________/     1,2     \_________/     3,2     \
+			 \     M,N     /         \     M,N     /         \     M,N     /
+			  \           /           \           /           \           /
+			   \_________/             \_________/             \_________/
+This diagram shows a six by five Field of Hexagons centered on the 0,0
+Hexagon. Hexagons have their flat sides oriented North-South, not East-West.
 */
 
-// Field to play out encounters on. A collection of Hexes.
+// Field of hexagons. Provides information about world coordinates.
 type Field struct {
-	hexes map[Key]*Hex
+	bodyWidth  int
+	wingWidth  int
+	totalWidth int
+	halfWidth  float64
+	halfHeight float64
+	height     int
+
+	hexes    map[Key]*Hex
+	clickMap []int
 }
 
-// NewField creates a new game field.
-func NewField() *Field {
+// Strides here are used for dividing a hexagonal field into rectangular areas
+// that are composed of the left wing of a hexagon, and the body.
+
+func (f Field) xStride() float64 {
+	return float64(f.wingWidth + f.bodyWidth)
+}
+func (f Field) yStride() float64 {
+	return float64(f.height)
+}
+
+// Get the Hexagon at Key. Returns nil if there is no Hexagon for that key.
+func (f *Field) Get(k Key) *Hex {
+	hex, ok := f.hexes[k]
+	if !ok {
+		return nil
+	}
+	return hex
+}
+
+// At looks for a Hexagon that is located at the world coordinates x,y. Returns
+// nil if there is no Hexagon for those coordinates.
+func (f *Field) At(x, y float64) *Hex {
+	k := f.wtok(x, y)
+	h, _ := f.hexes[k]
+	return h
+}
+
+// clickMap produces an int slice containing a pattern like this.
+// 11111111111111111111
+// 11111111111111110000
+// 11111111111100000000
+// 11111111000000000000
+// 11110000000000000000
+// 00000000000000000000
+// 00000000000000000000
+// 22220000000000000000
+// 22222222000000000000
+// 22222222222200000000
+// 22222222222222220000
+// 22222222222222222222
+// This box is the collision set for western-side wing of a hexagon. 1's
+// represent the Hexagon to the NW, 2's represent the Hxagon to the SW, and 0's
+// represent the current Hexagon.
+func clickMap(w, h int) []int {
+	rpt := func(ch int, count int) []int {
+		result := make([]int, count)
+		for i := 0; i < count; i++ {
+			result[i] = ch
+		}
+		return result
+	}
+	incr := float64(w) / float64(h/2-1)
+	numMids := h/2 - 2
+	clicks := make([]int, 0, w*h)
+	clicks = append(clicks, rpt(1, w)...)
+	for i := 1; i <= numMids; i++ {
+		through := int(math.Round(float64(i) * incr))
+		clicks = append(clicks, rpt(1, w-through)...)
+		clicks = append(clicks, rpt(0, through)...)
+	}
+
+	clicks = append(clicks, rpt(0, w)...)
+	clicks = append(clicks, rpt(0, w)...)
+
+	for i := 1; i <= numMids; i++ {
+		through := int(math.Round(float64(i) * incr))
+		clicks = append(clicks, rpt(2, through)...)
+		clicks = append(clicks, rpt(0, w-through)...)
+	}
+	clicks = append(clicks, rpt(2, w)...)
+
+	return clicks
+}
+
+// NewField creates an empty Field. The parameters configure the shape of the
+// Hexagons in the Field.
+func NewField(bodyWidth, wingWidth, height int) *Field {
 	return &Field{
-		hexes: map[Key]*Hex{},
+		bodyWidth:  bodyWidth,
+		wingWidth:  wingWidth,
+		totalWidth: wingWidth + bodyWidth + wingWidth,
+		halfWidth:  float64(wingWidth+bodyWidth+wingWidth) / 2,
+		halfHeight: float64(height) / 2,
+		height:     height,
+		clickMap:   clickMap(wingWidth, height),
 	}
 }
 
-// Load a slice of Keys into the Field, replacing whatever is currently in the field.
-func (f *Field) Load(keys []Key) {
-	hexes := map[Key]*Hex{}
+// Ktow calculates the world coordinates that are at the center of a Key.
+func (f *Field) Ktow(k Key) (float64, float64) {
+	x := float64(k.M * (f.wingWidth + f.bodyWidth))
+	y := float64(k.N*f.height) + math.Abs(float64(k.M%2))*float64(f.halfHeight)
+	return x, y
+}
+
+// wtok finds the Key that these coordinates are inside.
+func (f *Field) wtok(x, y float64) Key {
+	// translate the x,y coordinates, because the center of a hex is 0,0.
+	x = x + float64(f.bodyWidth/2+f.wingWidth)
+	y = y + float64(f.height)/2
+
+	m := int(math.Floor(x / f.xStride()))
+	if m%2 != 0 {
+		y = y - float64(f.height)/2
+	}
+	n := int(math.Floor(y / f.yStride()))
+
+	// abs returns the absolute value of n.
+	abs := func(n int) int {
+		if n < 0 {
+			return -n
+		}
+		return n
+	}
+	lx, ly := abs(int(x)%(f.wingWidth+f.bodyWidth)), abs(int(y)%f.height)
+	triangle := f.local(lx, ly)
+
+	switch triangle {
+	case 1:
+		// NW of m,n
+		return Key{m, n}.ToNW()
+	case 2:
+		// SW of m,n
+		return Key{m, n}.ToSW()
+	}
+
+	return Key{m, n}
+}
+
+// local takes integral coordinates and translates them to either 1 (NW), 2
+// (SW), or 0 (the central Hex).
+func (f *Field) local(x, y int) int {
+	if x >= f.wingWidth {
+		return 0
+	}
+	if x < 0 || y < 0 || y >= f.height {
+		fmt.Printf("local(%d,%d): incoherant\n", x, y)
+		return 0
+	}
+	return f.clickMap[x+y*f.wingWidth]
+}
+
+// Load a collection of Keys into the Field.
+func (f *Field) Load(keys []Key) error {
+	f.hexes = map[Key]*Hex{}
 
 	for _, k := range keys {
-		hexes[k] = &Hex{M: k.M, N: k.N}
+		x, y := f.Ktow(k)
+		current := Hex{
+			x:   x,
+			y:   y,
+			key: k,
+		}
+
+		// TODO: any use for this??
+		// for neighbor := range k.Neighbors() {
+		// 	if h, ok := f.hexes[neighbor]; ok {
+		// 		// link current and h
+		// 	}
+
+		// }
+
+		f.hexes[k] = &current
 	}
-
-	f.hexes = hexes
-
-	f.calcNeighbors()
+	return nil
 }
 
-func (f *Field) calcNeighbors() {
-	for _, hex := range f.hexes {
-		hex.neighbors = []*Hex{}
-		hex.neighborsByDirection = map[DirectionType]*Hex{}
-		m, n := hex.M, hex.N
-		// Find neighbor candidates.
-		candidates := []struct {
-			m, n int
-			d    DirectionType
-		}{
-			{m, n - 2, N}, // N
-			{m, n + 2, S}, // S
-		}
-		if n%2 == 0 {
-			// then the E ones have the same M, and the W ones are -1 M
-			candidates = append(candidates, []struct {
-				m, n int
-				d    DirectionType
-			}{
-				{m - 1, n - 1, NW}, // NW
-				{m - 1, n + 1, SW}, // SW
-				{m, n + 1, SE},     // SE
-				{m, n - 1, NE},     // NE
-			}...)
-		} else {
-			// then the E ones are +1 M, and the W ones have the same M
-			candidates = append(candidates, []struct {
-				m, n int
-				d    DirectionType
-			}{
-				{m, n - 1, NW},     // NW
-				{m, n + 1, SW},     // SW
-				{m + 1, n + 1, SE}, // SE
-				{m + 1, n - 1, NE}, // NE
-			}...)
-		}
-
-		// Attach as neighbors only the ones that appear in the field.
-		for _, candidate := range candidates {
-			neighbor := f.Get(candidate.m, candidate.n)
-			if neighbor == nil {
-				continue
-			}
-			hex.neighbors = append(hex.neighbors, neighbor)
-			hex.neighborsByDirection[candidate.d] = neighbor
-		}
+// Center returns a world coordinate that half the loaded hexagons are
+// above, half below, half to the left, and half to the right.
+func (f *Field) Center() (float64, float64) {
+	sumX, sumY := 0.0, 0.0
+	total := float64(len(f.Hexes()))
+	for _, h := range f.Hexes() {
+		x, y := h.Center()
+		sumX += x
+		sumY += y
 	}
+	return sumX / total, sumY / total
 }
 
 // Hexes generates a slice of the Hexes of the Field.
@@ -149,184 +265,4 @@ func (f *Field) Hexes() []*Hex {
 		i++
 	}
 	return result
-}
-
-// Width of the Field in pixels.
-func (f *Field) Width() float64 {
-	maxM, maxN := f.Dimensions()
-
-	return 12 + float64(maxM*17*2) + float64(maxN%2)*12.0
-}
-
-// Height of the Field in pixels.
-func (f *Field) Height() float64 {
-	_, maxN := f.Dimensions()
-
-	return 8 + float64(maxN%2*8) + float64(maxN/2)*16
-}
-
-// relative coordinates are global x,y coordinates translated to the roughMN
-// rectangle coordinates. Will not return negative numbers, or values that
-// exceed 16,15.
-func relative(x, y int) (int, int) {
-	rx, ry := x, y
-	if isOddN(x) {
-		ry -= 8
-	}
-
-	for {
-		if rx >= 0 {
-			break
-		}
-		rx += 17
-	}
-	rx = rx % 17
-
-	for {
-		if ry >= 0 {
-			break
-		}
-		ry += 16
-	}
-	ry = ry % 16
-	return rx, ry
-}
-
-// Get accepts M,N coordinates and returns the Hex with those coordinates if it
-// exists in the field.
-func (f *Field) Get(m, n int) *Hex {
-	hex, ok := f.hexes[Key{m, n}]
-	if !ok {
-		return nil
-	}
-	return hex
-}
-
-// At accepts world coordinates and returns the Hex there if there is one.
-func (f *Field) At(x, y int) *Hex {
-	rx, ry := relative(x, y)
-	m, n := roughMN(x, y)
-
-	m, n = xyToMN(rx, ry, m, n)
-
-	return f.Get(m, n)
-}
-
-// Dimensions returns the maximum extent of the field in M and N dimensions.
-// FIXME: This needs to be refactored to account for negative Hexes I think.
-func (f *Field) Dimensions() (M, N int) {
-	var maxM, maxN int
-	for k := range f.hexes {
-		if k.M > maxM {
-			maxM = k.M
-		}
-		if k.N > maxN {
-			maxN = k.N
-		}
-	}
-	return maxM + 1, maxN + 1
-}
-
-// isOddN determines whether the N coordinate will be odd or not.
-func isOddN(x int) bool {
-	if x < 0 {
-		// -51 to -35 == true
-		// -34 to -18 == false
-		// -17 to -1 == true
-		return (x+1)/17%2 == 0
-	}
-	// 0 to 16 == false
-	// 17 to 33 == true
-	// 34 to 50 == false
-	// 51 to 67 == true
-	return (x/17)%2 == 1
-}
-
-// roughMN determines which 17x16 rectangle version of a hex coordinates x,y
-// fall into. Each rectangle comprises the rectangular center part of the hex,
-// as well as the two triangle parts of the adjacent hexes to the top left and
-// bottom left. This is only a rough guess as to the final M,N coordinates, and
-// needs to be processed further before it's an accurate determination.
-func roughMN(x, y int) (int, int) {
-	var m, n int
-	if x < 0 {
-		m = x/34 - 1
-	} else {
-		m = x / 34
-	}
-
-	if isOddN(x) {
-		if y-8 < 0 {
-			// -24,-9 == -3
-			//  -8, 7 == -1
-			n = (y-7)/16*2 - 1
-		} else {
-			//  8,23 == 1
-			// 24,39 == 3
-			// 40,55 == 5
-			n = (y-8)/16*2 + 1
-		}
-
-	} else {
-		if y < 0 {
-			// -64,-33 == -6
-			// -32,-17 == -4
-			// -16, -1 == -2
-			n = (y/16 - 1) * 2
-		} else {
-			//   0,15  ==  0
-			//  16,31  ==  2
-			//  32,47  ==  4
-			//  48,63  ==  6
-			n = (y / 16) * 2
-		}
-
-	}
-
-	return m, n
-}
-
-// XYToMN translates x,y coordinates relative to a 17x16 rect superimposed over
-// Hex m,n to the Hex coordinates that the x,y coordinates lie inside.
-func xyToMN(x, y, m, n int) (int, int) {
-	if x < 0 || x > 16 || y < 0 || y > 15 {
-		panic(fmt.Sprintf("x/y out of bounds %d,%d\n", x, y))
-	}
-
-	// If the x coordinate is greater or equal to 7, then it is in the
-	// rectangular part of the RoughMN, so there is no special calculation
-	// required.
-	if x >= 7 {
-		return m, n
-	}
-
-	// lookup is a map of x,y coordinates where -1 represents the hex to
-	// the northwest, 0 represents this hex, and 1 represents the hex to
-	// the southwest.
-	lookup := map[int]map[int]int{
-		0: {0: -1, 1: -1, 2: -1, 3: -1, 4: -1, 5: -1, 6: -1, 7: 0, 8: 0, 9: 1, 10: 1, 11: 1, 12: 1, 13: 1, 14: 1, 15: 1},
-		1: {0: -1, 1: -1, 2: -1, 3: -1, 4: -1, 5: -1, 6: 0, 7: 0, 8: 0, 9: 0, 10: 1, 11: 1, 12: 1, 13: 1, 14: 1, 15: 1},
-		2: {0: -1, 1: -1, 2: -1, 3: -1, 4: -1, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 1, 12: 1, 13: 1, 14: 1, 15: 1},
-		3: {0: -1, 1: -1, 2: -1, 3: -1, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0, 12: 1, 13: 1, 14: 1, 15: 1},
-		4: {0: -1, 1: -1, 2: -1, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0, 13: 1, 14: 1, 15: 1},
-		5: {0: -1, 1: -1, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0, 13: 0, 14: 1, 15: 1},
-		6: {0: -1, 1: 0, 2: 0, 3: 0, 4: 0, 5: 0, 6: 0, 7: 0, 8: 0, 9: 0, 10: 0, 11: 0, 12: 0, 13: 0, 14: 0, 15: 1},
-	}
-
-	switch lookup[x][y] {
-	case -1: // top-left triangle
-		if n%2 == 0 {
-			return m - 1, n - 1
-		}
-		return m, n - 1
-	case 0: // center triangle
-		return m, n
-	case 1: // bottom left triangle
-		if n%2 == 0 {
-			return m - 1, n + 1
-		}
-		return m, n + 1
-	default:
-		panic("lookup table contained a value other than -1, 0, or 1: incoherant state not handled")
-	}
 }

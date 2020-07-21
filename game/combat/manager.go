@@ -66,7 +66,7 @@ type Manager struct {
 
 // NewManager creates a new combat Manager.
 func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus, archive *data.Archive) *Manager {
-	f := geom.NewField()
+	f := geom.NewField(10, 7, 16)
 
 	cm := Manager{
 		mgr:                  mgr,
@@ -103,7 +103,7 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus, archive *da
 func (cm *Manager) handleTargetSelected(x, y float64) {
 	ctx := cm.state.(*selectingTargetState)
 
-	h := cm.field.At(int(x), int(y))
+	h := cm.field.At(x, y)
 
 	s := cm.archive.Skill(ctx.Skill)
 	switch s.Targeting {
@@ -150,8 +150,8 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 	ctx := cm.state.(*confirmingSelectedTargetState)
 
 	obstacle := cm.mgr.Component(cm.turnToken, "Obstacle").(*game.Obstacle)
-	origin := cm.field.Get(obstacle.M, obstacle.N)
-	selected := cm.field.At(int(x), int(y))
+	origin := cm.field.Get(geom.Key{obstacle.M, obstacle.N})
+	selected := cm.field.At(x, y)
 	if selected == nil {
 		// We cannot confirm the selection of something outside the hexes of the
 		// field.
@@ -195,7 +195,7 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 	cm.setState(ExecutingState)
 
 	if s.IsAttack() {
-		cm.mgr.AddComponent(cm.turnToken, &game.Facer{Face: geom.BestFacing(origin.Key(), selected.Key())})
+		cm.mgr.AddComponent(cm.turnToken, &game.Facer{Face: geom.S})
 	}
 	cm.bus.Publish(&UsingSkill{
 		User:     cm.turnToken,
@@ -255,11 +255,13 @@ func semiSort(m, n int, f *geom.Field) []*geom.Hex {
 		distance float64
 		h        *geom.Hex
 	}
-	start := geom.Hex{M: m, N: n}
+
+	startX, startY := f.Ktow(geom.Key{m, n})
 	distances := make([]s, len(f.Hexes()))
 
 	for i, h := range f.Hexes() {
-		distances[i] = s{math.Pow(math.Abs(h.X()-start.X()), 2) + math.Pow(math.Abs(h.Y()-start.Y()), 2), h}
+		x, y := f.Ktow(h.Key())
+		distances[i] = s{math.Pow(math.Abs(x-startX), 2) + math.Pow(math.Abs(y-startY), 2), h}
 	}
 	sort.Slice(distances, func(i, j int) bool {
 		return distances[i].distance < distances[j].distance
@@ -288,13 +290,13 @@ func semiSort(m, n int, f *geom.Field) []*geom.Hex {
 }
 
 // isBlocked determines if a Character can be placed at m,n.
-func isBlocked(field *geom.Field, m, n int, mgr *ecs.World) bool {
+func isBlocked(field *geom.Field, k geom.Key, mgr *ecs.World) bool {
 	// blockages is a set of Keys that are taken by other things
 	blockages := map[geom.Key]struct{}{}
 	for _, e := range mgr.Get([]string{"Obstacle"}) {
 		o := mgr.Component(e, "Obstacle").(*game.Obstacle)
 
-		h := field.Get(o.M, o.N)
+		h := field.Get(geom.Key{o.M, o.N})
 		if h == nil {
 			panic(fmt.Sprintf("there is no hex where Obstacle(%d,%s) is present (%d,%d)", e, o.ObstacleType, o.M, o.N))
 		}
@@ -302,26 +304,16 @@ func isBlocked(field *geom.Field, m, n int, mgr *ecs.World) bool {
 		// FIXME: We're making the assumption again here that all obstacles
 		// are total obstacles. Even conceptually things like shallow water
 		// or bushes that should only impede movement slightly.
-		for _, h := range h.Hexes() {
-			blockages[h.Key()] = struct{}{}
-		}
+		blockages[h.Key()] = struct{}{}
 	}
 
-	hex := field.Get(m, n)
+	hex := field.Get(k)
 	if hex == nil {
 		return true
 	}
 
-	// occupy is the list of Hexes a Character with sz and m,n will occupy.
-	occupy := hex.Hexes()
-
-	for _, h := range occupy {
-		if h == nil {
-			return true
-		}
-		if _, blocked := blockages[geom.Key{M: h.M, N: h.N}]; blocked {
-			return true
-		}
+	if _, blocked := blockages[k]; blocked {
+		return true
 	}
 
 	return false
@@ -358,7 +350,7 @@ func (sp *startProvider) getNearby(team *game.Team, f *geom.Field) []*geom.Hex {
 
 func (cm *Manager) getStart(nearbys []*geom.Hex) *geom.Hex {
 	for _, h := range nearbys {
-		if isBlocked(cm.field, h.M, h.N, cm.mgr) {
+		if isBlocked(cm.field, h.Key(), cm.mgr) {
 			continue
 		}
 
@@ -368,7 +360,7 @@ func (cm *Manager) getStart(nearbys []*geom.Hex) *geom.Hex {
 }
 
 // createParticipation adds a new Entity to participate in combat based on a Character.
-func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, h *geom.Hex) {
+func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, atHex *geom.Hex) {
 	e := cm.mgr.NewEntity()
 	cm.mgr.Tag(e, "combat")
 
@@ -411,19 +403,20 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, h
 	cm.mgr.AddComponent(e, team)
 
 	// Add Position.
-	start := cm.field.Get(h.M, h.N)
+	cm.field.Ktow(atHex.Key())
+	x, y := atHex.Center()
 	cm.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
-			X: start.X(),
-			Y: start.Y(),
+			X: x,
+			Y: y,
 		},
 		Layer: 10,
 	})
 
 	// Add Obstacle.
 	o := game.Obstacle{
-		M:            h.M,
-		N:            h.N,
+		M:            atHex.Key().M,
+		N:            atHex.Key().N,
 		ObstacleType: game.CharacterObstacle,
 	}
 	cm.mgr.AddComponent(e, &o)
@@ -457,15 +450,22 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 				keys[i] = hex.Position
 			}
 			cm.field.Load(keys)
+			// TODO: center on the midpoint between selected start locations instead of
+			// the middle of the map. Or maybe the start location of the player's team?
+			x, y := cm.field.Center()
+			cm.bus.Publish(&game.SomethingInteresting{
+				X: x,
+				Y: y,
+			})
 			for _, hex := range combatMap.Hexes {
-				h := cm.field.Get(hex.Position.M, hex.Position.N)
+				h := cm.field.Get(geom.Key{M: hex.Position.M, N: hex.Position.N})
 				if hex.Obstacle {
 					// add obstacle
 					e := cm.mgr.NewEntity()
 					cm.mgr.Tag(e, "combat")
 					cm.mgr.AddComponent(e, &game.Obstacle{
-						M:            h.M,
-						N:            h.N,
+						M:            h.Key().M,
+						N:            h.Key().N,
 						ObstacleType: game.TreeObstacle, // FIXME: what sort of obstacle is it?
 					})
 				}
@@ -477,10 +477,11 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 					cm.mgr.Tag(e, "combat")
 
 					// add position
+					x, y := h.Center()
 					cm.mgr.AddComponent(e, &game.Position{
 						Center: game.Center{
-							X: h.X(),
-							Y: h.Y(),
+							X: x,
+							Y: y,
 						},
 						Layer: vis.Layer,
 					})
@@ -539,12 +540,6 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 			// Announce that the Combat has begun.
 			cm.bus.Publish(&game.CombatBegan{})
 		},
-	})
-	// TODO: center on the midpoint between selected start locations instead of
-	// the middle of the map. Or maybe the start location of the player's team?
-	cm.bus.Publish(&game.SomethingInteresting{
-		X: cm.field.Width() / 2,
-		Y: cm.field.Height() / 2,
 	})
 	cm.hud.Enable()
 }
@@ -786,7 +781,7 @@ func (cm *Manager) MousePosition(x, y int) {
 		return
 	}
 
-	h := cm.field.At(int(wx), int(wy))
+	h := cm.field.At(wx, wy)
 	var newSelected *geom.Key
 	if h != nil {
 		k := h.Key()
@@ -815,7 +810,7 @@ func (cm *Manager) syncParticipantObstacle(evt *ParticipantMovementConcluded) {
 	obstacle := cm.mgr.Component(evt.Entity, "Obstacle").(*game.Obstacle)
 	position := cm.mgr.Component(evt.Entity, "Position").(*game.Position)
 
-	h := cm.field.At(int(position.Center.X), int(position.Center.Y))
+	h := cm.field.At(position.Center.X, position.Center.Y)
 	k := h.Key()
 	obstacle.M = k.M
 	obstacle.N = k.N
@@ -906,7 +901,7 @@ func (cm *Manager) handleCharacterEnteredCombat(et event.Typer) {
 	char := recipe.Construct(nil)
 	e := cm.mgr.NewEntity()
 	cm.mgr.AddComponent(e, char)
-	cm.createParticipation(e, evt.Team, cm.field.Get(evt.At.M, evt.At.N))
+	cm.createParticipation(e, evt.Team, cm.field.Get(evt.At))
 }
 
 func (cm *Manager) handleParticipantDefiled(et event.Typer) {
@@ -916,65 +911,64 @@ func (cm *Manager) handleParticipantDefiled(et event.Typer) {
 }
 
 func (cm *Manager) addGrass() {
-	M, N := cm.field.Dimensions()
-	for n := 0; n < N; n++ {
-		for m := 0; m < M; m++ {
-			h := cm.field.Get(m, n)
-			e := cm.mgr.NewEntity()
-			cm.mgr.Tag(e, "combat")
+	for _, h := range cm.field.Hexes() {
 
-			cm.mgr.AddComponent(e, &game.Sprite{
-				Texture: "terrain.png",
-				X:       0,
-				Y:       0,
-				W:       24,
-				H:       16,
-			})
+		h := cm.field.Get(h.Key())
+		e := cm.mgr.NewEntity()
+		cm.mgr.Tag(e, "combat")
 
-			cm.mgr.AddComponent(e, &game.Position{
-				Center: game.Center{
-					X: h.X(),
-					Y: h.Y(),
-				},
-				Layer: 1,
-			})
-		}
+		cm.mgr.AddComponent(e, &game.Sprite{
+			Texture: "terrain.png",
+			X:       0,
+			Y:       0,
+			W:       24,
+			H:       16,
+		})
+
+		x, y := h.Center()
+		cm.mgr.AddComponent(e, &game.Position{
+			Center: game.Center{
+				X: x,
+				Y: y,
+			},
+			Layer: 1,
+		})
 	}
 }
 
 func (cm *Manager) addTrees() {
-	M, N := cm.field.Dimensions()
-	for n := 0; n < N; n++ {
-		for m := 0; m < M; m++ {
-			if m == 4 && n == 14 {
-				continue
-			}
-			i := m + n*M
-			h := cm.field.Get(m, n)
-			if i%17 == 1 || i%23 == 1 {
-				e := cm.mgr.NewEntity()
-				cm.mgr.Tag(e, "combat")
-				cm.mgr.AddComponent(e, &game.Sprite{
-					Texture: "trees.png",
-					X:       0,
-					Y:       0,
-					W:       24,
-					H:       48,
-					OffsetY: -16,
-				})
-				cm.mgr.AddComponent(e, &game.Position{
-					Center: game.Center{
-						X: h.X(),
-						Y: h.Y(),
-					},
-					Layer: 10,
-				})
-				cm.mgr.AddComponent(e, &game.Obstacle{
-					M:            h.M,
-					N:            h.N,
-					ObstacleType: game.TreeObstacle,
-				})
-			}
+	for i, h := range cm.field.Hexes() {
+		k := h.Key()
+		m, n := k.M, k.N
+		if m == 4 && n == 14 {
+			continue
+		}
+		// i := m + n*M
+		h := cm.field.Get(k)
+		if i%17 == 1 || i%23 == 1 {
+			e := cm.mgr.NewEntity()
+			cm.mgr.Tag(e, "combat")
+			cm.mgr.AddComponent(e, &game.Sprite{
+				Texture: "trees.png",
+				X:       0,
+				Y:       0,
+				W:       24,
+				H:       48,
+				OffsetY: -16,
+			})
+			x, y := h.Center()
+			cm.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: x,
+					Y: y,
+				},
+				Layer: 10,
+			})
+			cm.mgr.AddComponent(e, &game.Obstacle{
+				M:            k.M,
+				N:            k.N,
+				ObstacleType: game.TreeObstacle,
+			})
 		}
 	}
 }

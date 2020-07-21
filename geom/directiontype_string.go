@@ -14,7 +14,6 @@ func _() {
 	_ = x[S-3]
 	_ = x[SW-4]
 	_ = x[NW-5]
-	_ = x[CENTER-6]
 }
 
 const _DirectionType_name = "NNESESSWNWCENTER"

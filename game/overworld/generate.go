@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"math/rand"
 
+	"github.com/griffithsh/squads/graph"
+
 	"github.com/griffithsh/squads/baddy"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
@@ -24,7 +26,7 @@ func connect(n1 *Node, n2 *Node) error {
 		fmt.Printf("neighbors of n1 (%v): %v\n", n1.ID, n1Neighbors)
 		fmt.Printf("neighbors of n2 (%v): %v\n", n2.ID, n2.ID.Neighbors())
 
-		return fmt.Errorf("n1 (%v) is not a neighbor of n2 (%v)", n1, n2)
+		return fmt.Errorf("cannot connect n1 (%v) to n2 (%v): not neighbors", n1, n2)
 	}
 
 	dirOfN1 := geom.Opposite[dirOfN2]
@@ -146,26 +148,57 @@ func generate(rng *rand.Rand, recipe *Recipe, lvl int) Map {
 			continue
 		}
 
-		steps, err := geom.Navigate(origin, poi, func(k geom.Key) bool {
-			_, ok := keySet[k]
-			return ok
-		}, func(k geom.Key) float64 {
+		cost := func(_ graph.Vertex, v graph.Vertex) float64 {
+			k := v.(geom.Key)
 			if _, ok := d.Nodes[k]; ok {
 				return 0.0
 			}
 			return 1.0
-		})
-		if err != nil {
+		}
+		edge := func(v graph.Vertex) []graph.Vertex {
+			k := v.(geom.Key)
+
+			result := make([]graph.Vertex, 0, 6)
+			neighbors := []geom.Key{
+				k.ToN(),
+				k.ToNE(),
+				k.ToSE(),
+				k.ToS(),
+				k.ToSW(),
+				k.ToNW(),
+			}
+			for _, k := range neighbors {
+				if _, ok := keySet[k]; ok {
+					result = append(result, k)
+				}
+			}
+			return result
+		}
+		guess := func(v1, v2 graph.Vertex) float64 {
+			squareDiff := func(a, b int) float64 {
+				diff := a - b
+				if diff < 0 {
+					diff = -diff
+				}
+				return float64(diff * diff)
+			}
+			a, b := v1.(geom.Key), v2.(geom.Key)
+
+			return squareDiff(a.M, b.M) + squareDiff(a.N, b.N)
+		}
+		steps := graph.NewSearcher(cost, edge, guess).Search(origin, poi)
+		if steps == nil {
 			// Points of interest should never be located in areas of the map
 			// that are inaccessible? This can only panic on recipes with
 			// non-contiguous Paths, right?
-			panic(fmt.Sprintf("uh-oh! %v", err))
+
+			panic(fmt.Sprintf("there was no path from %v to the PoI at %v", origin, poi))
 		}
 
 		var prev geom.Key
-		prev = geom.Key{M: steps[0].M, N: steps[0].N}
+		prev = geom.Key{M: steps[0].V.(geom.Key).M, N: steps[0].V.(geom.Key).N}
 		for i, step := range steps[1:] {
-			k := geom.Key{M: step.M, N: step.N}
+			k := geom.Key{M: step.V.(geom.Key).M, N: step.V.(geom.Key).N}
 
 			// If this step is not already in nodes, add it.
 			if _, ok := d.Nodes[k]; !ok {

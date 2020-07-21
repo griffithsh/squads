@@ -8,6 +8,7 @@ import (
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
+	"github.com/griffithsh/squads/graph"
 )
 
 // MoveIntent is a Component that indicates that this Entity should move.
@@ -60,12 +61,10 @@ func (s *IntentSystem) Update() {
 		s.mgr.RemoveComponent(e, intent)
 
 		var start, goal geom.Key
-		var stepToWaypoint func(geom.NavigateStep) Waypoint
-		exists := ExistsFuncFactory(s.field)
-		costs := CostsFuncFactory(s.field, s.mgr, e)
+		var stepToWaypoint func(graph.Step) Waypoint
 
-		startHex := s.field.At(int(pos.Center.X), int(pos.Center.Y))
-		goalHex := s.field.At(int(intent.X), int(intent.Y))
+		startHex := s.field.At(pos.Center.X, pos.Center.Y)
+		goalHex := s.field.At(intent.X, intent.Y)
 		if startHex == nil || goalHex == nil || startHex.Key() == goalHex.Key() {
 			// Don't navigate.
 			s.Publish(&ParticipantMovementConcluded{Entity: e})
@@ -73,17 +72,21 @@ func (s *IntentSystem) Update() {
 		}
 		start = startHex.Key()
 		goal = goalHex.Key()
-		stepToWaypoint = func(step geom.NavigateStep) Waypoint {
-			h := s.field.Get(step.M, step.N)
+		stepToWaypoint = func(step graph.Step) Waypoint {
+			k := step.V.(geom.Key)
+			x, y := s.field.Ktow(k)
 			return Waypoint{
-				X: h.X(),
-				Y: h.Y(),
+				X: x,
+				Y: y,
 			}
 		}
 
-		steps, err := geom.Navigate(start, goal, exists, costs)
-		if err != nil {
-			fmt.Printf("Navigate: %v\n", err)
+		costs := CostsFuncFactory(s.field, s.mgr, e)
+		edges := EdgeFuncFactory(s.field)
+		guess := HeuristicFactory(s.field)
+		steps := graph.NewSearcher(costs, edges, guess).Search(start, goal)
+		if steps == nil {
+			fmt.Printf("Search: no path to %v\n", goal)
 			s.Publish(&ParticipantMovementConcluded{Entity: e})
 			continue
 		}
@@ -91,7 +94,7 @@ func (s *IntentSystem) Update() {
 		m := Mover{}
 		cost := 0
 		for _, step := range steps {
-			if int(step.Cost) > participant.ActionPoints.Cur {
+			if step.Cost > float64(participant.ActionPoints.Cur) {
 				break
 			}
 			cost = int(step.Cost)
@@ -115,16 +118,13 @@ type ExistsFunc func(geom.Key) bool
 // ExistsFuncFactory constructs ExistsFuncs from a context.
 func ExistsFuncFactory(f *geom.Field) ExistsFunc {
 	return func(k geom.Key) bool {
-		return f.Get(k.M, k.N) != nil
+		return f.Get(k) != nil
 	}
 }
 
-// CostsFunc is a function that will return the cost of moving to M,N in a specific context.
-type CostsFunc func(geom.Key) float64
-
-// CostsFuncFactory constructs a CostsFunc that returns the costs of moving to
-// an M,N for an Entity from a context.
-func CostsFuncFactory(f *geom.Field, mgr *ecs.World, participantEntity ecs.Entity) CostsFunc {
+// CostsFuncFactory constructs a CostsFunc that returns the costs of moving from
+// one location to another for an Entity from a context.
+func CostsFuncFactory(f *geom.Field, mgr *ecs.World, participantEntity ecs.Entity) graph.CostFunc {
 	var obstacles []ContextualObstacle
 	for _, e := range mgr.Get([]string{"Obstacle"}) {
 		// A Participant is not an obstacle to itself.
@@ -133,38 +133,76 @@ func CostsFuncFactory(f *geom.Field, mgr *ecs.World, participantEntity ecs.Entit
 		}
 		obstacle := mgr.Component(e, "Obstacle").(*game.Obstacle)
 
-		h := f.Get(obstacle.M, obstacle.N)
-		if h == nil {
+		if h := f.Get(geom.Key{obstacle.M, obstacle.N}); h == nil {
+
 			continue
 		}
-		for _, h := range h.Hexes() {
-			// Translate the Obstacles into ContextualObstacles based on
-			// how much of an Obstacle this is to the Mover in this context.
-			obstacles = append(obstacles, ContextualObstacle{
-				M:    h.M,
-				N:    h.N,
-				Cost: math.Inf(0), // just pretend these all are total obstacles for now
-			})
-		}
+		// Translate the Obstacles into ContextualObstacles based on
+		// how much of an Obstacle this is to the Mover in this context.
+		obstacles = append(obstacles, ContextualObstacle{
+			M:    obstacle.M,
+			N:    obstacle.N,
+			Cost: math.Inf(0), // just pretend these all are total obstacles for now...
+		})
 	}
 
-	return func(k geom.Key) float64 {
-		hex := f.Get(k.M, k.N)
+	return func(vFrom, vTo graph.Vertex) float64 {
+		// from := vFrom.(geom.Key)
+		to := vTo.(geom.Key)
+
+		hex := f.Get(to)
 
 		if hex == nil {
 			return math.Inf(0)
 		}
-		cost := 1.0
-		for _, hex := range hex.Hexes() {
-			for _, o := range obstacles {
-				if o.M == hex.M && o.N == hex.N {
-					if math.IsInf(o.Cost, 0) {
-						return math.Inf(0)
-					}
-					cost = cost * o.Cost
+		cost := 10.0
+		for _, o := range obstacles {
+			if to == (geom.Key{o.M, o.N}) {
+				if math.IsInf(o.Cost, 0) {
+					return math.Inf(0)
 				}
+				cost = cost * o.Cost
 			}
 		}
 		return cost
+	}
+}
+
+// EdgeFuncFactory generates a function that returns the connected Keys of a Key
+// given the context of a Field.
+func EdgeFuncFactory(f *geom.Field) graph.EdgeFunc {
+	return func(v graph.Vertex) []graph.Vertex {
+		key, ok := v.(geom.Key)
+		if !ok {
+			return []graph.Vertex{}
+		}
+		candidates := []geom.Key{
+			key.ToN(),
+			key.ToS(),
+			key.ToNW(),
+			key.ToNE(),
+			key.ToSW(),
+			key.ToSE(),
+		}
+		result := make([]graph.Vertex, 0, 6)
+		for _, adj := range candidates {
+			if f.Get(adj) != nil {
+				result = append(result, adj)
+			}
+		}
+
+		return result
+	}
+}
+
+// HeuristicFactory returns a function that calculates the as-the-crow-flies
+// distance between two geom.Keys.
+// TODO: there's an optimisation here, because this should not require a
+// geom.Field to calculate this, but could use the number of steps between any
+// two M,N coordinate pairs.
+func HeuristicFactory(f *geom.Field) graph.Heuristic {
+	return func(v1, v2 graph.Vertex) float64 {
+		a, b := v1.(geom.Key), v2.(geom.Key)
+		return geom.DistanceSquared(f.Get(a), f.Get(b))
 	}
 }

@@ -232,6 +232,8 @@ func (m *Manager) playerTeam() *game.Team {
 }
 
 func (m *Manager) boot(d Map) {
+
+	f := geom.NewField(50, 47, 96)
 	// Add a Sprite for every Node.
 	positions := map[geom.Key]game.Center{}
 	for _, n := range d.Nodes {
@@ -249,7 +251,7 @@ func (m *Manager) boot(d Map) {
 			Trigger: m.newNodeClickHandler(n),
 		})
 
-		x, y := geom.XY(n.ID.M, n.ID.N, 144, 96)
+		x, y := f.Ktow(n.ID)
 
 		rx, ry := randInHex()
 		x = rx + x
@@ -293,7 +295,7 @@ func (m *Manager) boot(d Map) {
 			fmt.Printf("unknown tile %d at %v\n", tile, k)
 		}
 
-		x, y := geom.XY(k.M, k.N, 144, 96)
+		x, y := f.Ktow(k)
 
 		m.mgr.AddComponent(e, &game.Position{
 			Center: game.Center{
@@ -423,7 +425,7 @@ func (m *Manager) boot(d Map) {
 
 	// Now add fog-of-war sprites over the fogged nodes.
 	for k, e := range m.fogged {
-		x, y := geom.XY(k.M, k.N, 144, 96)
+		x, y := f.Ktow(k)
 
 		m.mgr.AddComponent(e, &game.Sprite{
 			Texture: "overworld-grass.png",

@@ -99,7 +99,8 @@ func (se *skillExecutor) determineAffected(ev *UsingSkill, s *skill.Description)
 			if !exists {
 				continue
 			}
-			if ev.Selected.M == o.M && ev.Selected.N == o.N {
+			k := ev.Selected.Key()
+			if k.M == o.M && k.N == o.N {
 				affected = append(affected, e)
 				break
 			}

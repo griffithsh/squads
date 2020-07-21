@@ -8,6 +8,7 @@ import (
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
+	"github.com/griffithsh/squads/graph"
 	"github.com/griffithsh/squads/skill"
 )
 
@@ -195,7 +196,7 @@ func (cm *CursorManager) paintSingleHex() {
 	for i, e := range cm.mgr.Tagged(pathNavigationTag) {
 		cm.mgr.RemoveTag(e, invalidatedCursorsTag)
 		if i == 0 && cm.selectedKey != nil {
-			h := cm.field.Get(cm.selectedKey.M, cm.selectedKey.N)
+			x, y := cm.field.Ktow(*cm.selectedKey)
 			cm.mgr.AddComponent(e, &game.Sprite{
 				Texture: "cursors.png",
 
@@ -204,8 +205,8 @@ func (cm *CursorManager) paintSingleHex() {
 			})
 			cm.mgr.AddComponent(e, &game.Position{
 				Center: game.Center{
-					X: h.X(),
-					Y: h.Y(),
+					X: x,
+					Y: y,
 				},
 				Layer: 10,
 			})
@@ -222,11 +223,12 @@ func (cm *CursorManager) paintNavigationHighlights() {
 
 	var start, goal geom.Key
 
-	sh := cm.field.At(int(pos.Center.X), int(pos.Center.Y))
+	sh := cm.field.At(pos.Center.X, pos.Center.Y)
 	start = sh.Key()
 
-	exists := ExistsFuncFactory(cm.field)
-	costs := CostsFuncFactory(cm.field, cm.mgr, cm.turnToken)
+	cost := CostsFuncFactory(cm.field, cm.mgr, cm.turnToken)
+	edges := EdgeFuncFactory(cm.field)
+	guess := HeuristicFactory(cm.field)
 
 	type comps struct {
 		p game.Position
@@ -235,63 +237,60 @@ func (cm *CursorManager) paintNavigationHighlights() {
 	c := []comps{}
 	used := map[*geom.Hex]struct{}{}
 
-	var steps []geom.NavigateStep
-	var err error
+	var steps []graph.Step
 	if cm.selectedKey == nil {
 		goto repaintLabel
 	}
 	goal = *cm.selectedKey
-	steps, err = geom.Navigate(start, goal, exists, costs)
-	if err != nil {
-		h := cm.field.Get(goal.M, goal.N)
+	steps = graph.NewSearcher(cost, edges, guess).Search(start, goal)
+	if steps == nil {
+		h := cm.field.Get(goal)
 		if h == nil {
 			goto repaintLabel
 		}
-		for _, h := range h.Hexes() {
-			c = append(c, comps{
-				s: game.Sprite{
-					Texture: "cursors.png",
+		x, y := cm.field.Ktow(goal)
+		c = append(c, comps{
+			s: game.Sprite{
+				Texture: "cursors.png",
 
-					X: 24, Y: 16,
-					W: 24, H: 16,
+				X: 24, Y: 16,
+				W: 24, H: 16,
+			},
+			p: game.Position{
+				Center: game.Center{
+					X: x,
+					Y: y,
 				},
-				p: game.Position{
-					Center: game.Center{
-						X: h.X(),
-						Y: h.Y(),
-					},
-					Layer: 10,
-				},
-			})
-		}
+				Layer: 10,
+			},
+		})
 		goto repaintLabel
 	}
 
 	for _, step := range steps {
-		h := cm.field.Get(step.M, step.N)
-		for _, h := range h.Hexes() {
-			if _, ok := used[h]; ok {
-				continue
-			}
-			used[h] = struct{}{}
-			c = append(c, comps{
-				s: game.Sprite{
-					Texture: "cursors.png",
+		h := cm.field.Get(step.V.(geom.Key))
+		if _, ok := used[h]; ok {
+			continue
+		}
+		used[h] = struct{}{}
+		x, y := h.Center()
+		c = append(c, comps{
+			s: game.Sprite{
+				Texture: "cursors.png",
 
-					X: 0, Y: 16,
-					W: 24, H: 16,
+				X: 0, Y: 16,
+				W: 24, H: 16,
+			},
+			p: game.Position{
+				Center: game.Center{
+					X: x,
+					Y: y,
 				},
-				p: game.Position{
-					Center: game.Center{
-						X: h.X(),
-						Y: h.Y(),
-					},
-					Layer: 10,
-				},
-			})
-			if int(step.Cost) > participant.ActionPoints.Cur {
-				c[len(c)-1].s.X = 48
-			}
+				Layer: 10,
+			},
+		})
+		if step.Cost > float64(participant.ActionPoints.Cur) {
+			c[len(c)-1].s.X = 48
 		}
 	}
 

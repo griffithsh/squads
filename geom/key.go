@@ -1,12 +1,13 @@
 package geom
 
-// Key is a way of referencing a hypothetical hexagon.
+// Key is a way of referencing a Hexagon in a Field.
 type Key struct {
 	M, N int
 }
 
 // Equal determines if the M and N values of the passed pointers differ. If
 // either value is nil, then it only returns true if the other is also nil.
+// TODO: this may make more sense in the combat package as that is its only usage.
 func Equal(a, b *Key) bool {
 	if a == nil && b != nil {
 		return false
@@ -19,48 +20,79 @@ func Equal(a, b *Key) bool {
 	}
 }
 
+// ToN returns the Key that is to the North of that Key.
+func (k Key) ToN() Key {
+	return Key{k.M, k.N - 1}
+}
+
+// ToS returns the Key that is to the South of that Key.
+func (k Key) ToS() Key {
+	return Key{k.M, k.N + 1}
+}
+
+// ToNW returns the Key that is to the Northwest of that Key.
+func (k Key) ToNW() Key {
+	if k.M%2 != 0 {
+		return Key{k.M - 1, k.N}
+	}
+	return Key{k.M - 1, k.N - 1}
+}
+
+// ToSW returns the Key that is to the Southwest of that Key.
+func (k Key) ToSW() Key {
+	if k.M%2 != 0 {
+		return Key{k.M - 1, k.N + 1}
+	}
+	return Key{k.M - 1, k.N}
+}
+
+// ToNE returns the Key that is to the Northeast of that Key.
+func (k Key) ToNE() Key {
+	if k.M%2 != 0 {
+		return Key{k.M + 1, k.N}
+	}
+	return Key{k.M + 1, k.N - 1}
+}
+
+// ToSE returns the Key that is to the Southeast of that Key.
+func (k Key) ToSE() Key {
+	if k.M%2 != 0 {
+		return Key{k.M + 1, k.N + 1}
+	}
+	return Key{k.M + 1, k.N}
+}
+
 // Neighbors calculates the neighbors of a Key and returns them keyed by their Keys.
 func (k Key) Neighbors() map[Key]DirectionType {
 	result := map[Key]DirectionType{
-		Key{k.M, k.N - 2}: N,
-		Key{k.M, k.N + 2}: S,
+		Key{k.M, k.N - 1}: N,
+		Key{k.M, k.N + 1}: S,
 	}
 
-	if k.N%2 == 0 {
-		// then the E ones have the same M, and the W ones are -1 M
+	if k.M%2 == 0 {
+		// Then the Southern ones have the same N, and the Northern ones are -1 N.
 		result[Key{k.M - 1, k.N - 1}] = NW
-		result[Key{k.M - 1, k.N + 1}] = SW
-		result[Key{k.M, k.N + 1}] = SE
-		result[Key{k.M, k.N - 1}] = NE
-	} else {
-		// then the E ones are +1 M, and the W ones have the same M
-		result[Key{k.M, k.N - 1}] = NW
-		result[Key{k.M, k.N + 1}] = SW
-		result[Key{k.M + 1, k.N + 1}] = SE
+		result[Key{k.M - 1, k.N}] = SW
+		result[Key{k.M + 1, k.N}] = SE
 		result[Key{k.M + 1, k.N - 1}] = NE
+	} else {
+		// Then the Southern ones are +1 N, and the Northern ones have the same N.
+		result[Key{k.M - 1, k.N}] = NW
+		result[Key{k.M - 1, k.N + 1}] = SW
+		result[Key{k.M + 1, k.N + 1}] = SE
+		result[Key{k.M + 1, k.N}] = NE
 	}
 	return result
 }
 
 // Adjacent calculates the neighbors of a Key and returns them keyed by direction.
 func (k Key) Adjacent() map[DirectionType]Key {
-	result := map[DirectionType]Key{
-		N: Key{k.M, k.N - 2},
-		S: Key{k.M, k.N + 2},
+	return map[DirectionType]Key{
+		N:  k.ToN(),
+		S:  k.ToS(),
+		SE: k.ToSE(),
+		SW: k.ToSW(),
+		NE: k.ToNE(),
+		NW: k.ToNW(),
 	}
-
-	if k.N%2 == 0 {
-		// then the E ones have the same M, and the W ones are -1 M
-		result[NW] = Key{k.M - 1, k.N - 1}
-		result[SW] = Key{k.M - 1, k.N + 1}
-		result[SE] = Key{k.M, k.N + 1}
-		result[NE] = Key{k.M, k.N - 1}
-	} else {
-		// then the E ones are +1 M, and the W ones have the same M
-		result[NW] = Key{k.M, k.N - 1}
-		result[SW] = Key{k.M, k.N + 1}
-		result[SE] = Key{k.M + 1, k.N + 1}
-		result[NE] = Key{k.M + 1, k.N - 1}
-	}
-	return result
 }
