@@ -5,8 +5,11 @@ import (
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
+	"image"
+	"image/png"
 	"io"
 	"path/filepath"
+	"strings"
 
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/game/overworld"
@@ -20,6 +23,7 @@ type Archive struct {
 	performances     map[PerformanceKey]*game.PerformanceSet
 	names            map[string][]string
 	combatMaps       []game.CombatMapRecipe // eventually these would be keyed by their terrain in some way?
+	images           map[string]image.Image
 }
 
 // NewArchive constructs a new Archive.
@@ -29,6 +33,7 @@ func NewArchive() (*Archive, error) {
 		skills:           skill.Map{},
 		performances:     map[PerformanceKey]*game.PerformanceSet{},
 		names:            map[string][]string{},
+		images:           map[string]image.Image{},
 	}
 	for _, sd := range internalSkills {
 		archive.skills[sd.ID] = sd
@@ -40,6 +45,9 @@ func NewArchive() (*Archive, error) {
 	for k, v := range internalNames {
 		archive.names[k] = v
 	}
+
+	archive.combatMaps = append(archive.combatMaps, internalCombatMaps...)
+
 	return &archive, nil
 }
 
@@ -62,35 +70,57 @@ func (a *Archive) Load(r io.Reader) error {
 		}
 
 		if head.Typeflag == tar.TypeReg {
-			switch filepath.Ext(head.Name) {
-			case ".overworld-recipe":
-				recipe, err := overworld.ParseRecipe(tr)
-				if err != nil {
-					return fmt.Errorf("parse %s.overworld-recipe: %v", head.Name, err)
+			if strings.HasPrefix(head.Name, "combat-terrain/") {
+				fmt.Println("found file in combat-terrain", head.Name)
+				switch filepath.Ext(head.Name) {
+				case ".png":
+					decoded, err := png.Decode(tr)
+					if err != nil {
+						return fmt.Errorf("png.Decode %s: %s", head.Name, err)
+					}
+					a.images[head.Name] = decoded
+
+				case ".terrain":
+					dec := json.NewDecoder(tr)
+					var v game.CombatMapRecipe
+					err := dec.Decode(&v)
+					if err != nil {
+						return fmt.Errorf("parse %s: %v", head.Name, err)
+					}
+					a.combatMaps = append(a.combatMaps, v)
 				}
-				a.overworldRecipes = append(a.overworldRecipes, recipe)
-			case ".performance-set":
-				dec := json.NewDecoder(tr)
-				v := defaultPerformanceSet()
-				err := dec.Decode(v)
-				if err != nil {
-					return fmt.Errorf("parse %s.performance-set: %v", head.Name, err)
+			} else {
+				switch filepath.Ext(head.Name) {
+				case ".overworld-recipe":
+					recipe, err := overworld.ParseRecipe(tr)
+					if err != nil {
+						return fmt.Errorf("parse %s: %v", head.Name, err)
+					}
+					a.overworldRecipes = append(a.overworldRecipes, recipe)
+				case ".performance-set":
+					dec := json.NewDecoder(tr)
+					v := defaultPerformanceSet()
+					err := dec.Decode(v)
+					if err != nil {
+						return fmt.Errorf("parse %s: %v", head.Name, err)
+					}
+					for _, sex := range v.Sexes {
+						a.performances[PerformanceKey{sex, v.Name}] = v
+					}
+				case ".skill-thingy?":
+					// TODO:
+				case ".names":
+					// .names are a csv-like file that include names with tags for
+					// how they should be used, like M and F for sexes etc.
+					names, err := parseNames(tr)
+					if err != nil {
+						return fmt.Errorf("parse %s.names: %v", head.Name, err)
+					}
+					for k, v := range names {
+						a.names[k] = v
+					}
 				}
-				for _, sex := range v.Sexes {
-					a.performances[PerformanceKey{sex, v.Name}] = v
-				}
-			case ".skill-thingy?":
-				// TODO:
-			case ".names":
-				// .names are a csv-like file that include names with tags for
-				// how they should be used, like M and F for sexes etc.
-				names, err := parseNames(tr)
-				if err != nil {
-					return fmt.Errorf("parse %s.names: %v", head.Name, err)
-				}
-				for k, v := range names {
-					a.names[k] = v
-				}
+
 			}
 		}
 	}
@@ -101,4 +131,10 @@ func (a *Archive) Load(r io.Reader) error {
 // GetRecipes returns overworld recipes.
 func (a *Archive) GetRecipes() []*overworld.Recipe {
 	return a.overworldRecipes
+}
+
+// GetImage returns an image that has been loaded dynamically into the archive.
+func (a *Archive) GetImage(name string) (val image.Image, ok bool) {
+	val, ok = a.images[name]
+	return val, ok
 }

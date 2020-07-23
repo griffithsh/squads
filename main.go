@@ -141,7 +141,7 @@ func setup(w, h int) (*system, error) {
 	recipes := archive.GetRecipes()
 	s := system{
 		bus:        bus,
-		render:     game.NewRenderer(),
+		render:     game.NewRenderer(archive),
 		anim:       &game.AnimationSystem{},
 		expiry:     ecs.NewExpirySystem(mgr),
 		traversals: &overworld.TraversalSystem{},

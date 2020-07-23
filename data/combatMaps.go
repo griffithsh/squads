@@ -7,6 +7,8 @@ import (
 	"github.com/griffithsh/squads/geom"
 )
 
+var internalCombatMaps = []game.CombatMapRecipe{}
+
 // mbyn creates a slice of Keys that fill a rectangular field of m by n.
 func mbyn(m, n int) []geom.Key {
 	var result []geom.Key
@@ -18,8 +20,7 @@ func mbyn(m, n int) []geom.Key {
 	return result
 }
 
-func (a *Archive) GetCombatMap() *game.CombatMapRecipe {
-	// FIXME: query from Archive.combatMaps instead of generating a random one.
+func random() *game.CombatMapRecipe {
 	recipe := game.CombatMapRecipe{
 		Starts: []geom.Key{
 			{M: 6, N: 18},
@@ -64,4 +65,17 @@ func (a *Archive) GetCombatMap() *game.CombatMapRecipe {
 		}
 	}
 	return &recipe
+}
+
+// GetCombatMap for use in a combat.
+func (a *Archive) GetCombatMap() *game.CombatMapRecipe {
+
+	switch len(a.combatMaps) {
+	case 0:
+		return random()
+	case 1:
+		return &a.combatMaps[0]
+	default:
+		return &a.combatMaps[rand.Intn(len(a.combatMaps))]
+	}
 }

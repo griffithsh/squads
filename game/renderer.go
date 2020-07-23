@@ -13,13 +13,19 @@ import (
 
 // Renderer is a System that draws world-positioned Sprites to the screen.
 type Renderer struct {
-	textures map[string]*ebiten.Image
+	textures      map[string]*ebiten.Image
+	imageProvider ImageProvider
+}
+
+type ImageProvider interface {
+	GetImage(name string) (val image.Image, ok bool)
 }
 
 // NewRenderer creates a new Renderer.
-func NewRenderer() *Renderer {
+func NewRenderer(images ImageProvider) *Renderer {
 	return &Renderer{
-		textures: map[string]*ebiten.Image{},
+		textures:      map[string]*ebiten.Image{},
+		imageProvider: images,
 	}
 }
 
@@ -156,9 +162,12 @@ func (r *Renderer) picForTexture(filename string) (*ebiten.Image, error) {
 		return pic, nil
 	}
 
-	inline, ok := res.Images[filename]
+	inline, ok := r.imageProvider.GetImage(filename)
 	if !ok {
-		return nil, fmt.Errorf("%s missing", filename)
+		inline, ok = res.Images[filename]
+		if !ok {
+			return nil, fmt.Errorf("%s missing", filename)
+		}
 	}
 	img, err := ebiten.NewImageFromImage(inline, ebiten.FilterNearest)
 	if err != nil {
