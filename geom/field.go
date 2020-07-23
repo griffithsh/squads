@@ -98,7 +98,7 @@ func (f *Field) Get(k Key) *Hex {
 // At looks for a Hexagon that is located at the world coordinates x,y. Returns
 // nil if there is no Hexagon for those coordinates.
 func (f *Field) At(x, y float64) *Hex {
-	k := f.wtok(x, y)
+	k := f.Wtok(x, y)
 	h, _ := f.hexes[k]
 	return h
 }
@@ -171,8 +171,8 @@ func (f *Field) Ktow(k Key) (float64, float64) {
 	return x, y
 }
 
-// wtok finds the Key that these coordinates are inside.
-func (f *Field) wtok(x, y float64) Key {
+// Wtok finds the Key that these coordinates are inside.
+func (f *Field) Wtok(x, y float64) Key {
 	// translate the x,y coordinates, because the center of a hex is 0,0.
 	x = x + float64(f.bodyWidth/2+f.wingWidth)
 	y = y + float64(f.height)/2

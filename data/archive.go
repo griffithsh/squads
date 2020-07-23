@@ -71,7 +71,6 @@ func (a *Archive) Load(r io.Reader) error {
 
 		if head.Typeflag == tar.TypeReg {
 			if strings.HasPrefix(head.Name, "combat-terrain/") {
-				fmt.Println("found file in combat-terrain", head.Name)
 				switch filepath.Ext(head.Name) {
 				case ".png":
 					decoded, err := png.Decode(tr)

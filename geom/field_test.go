@@ -22,7 +22,7 @@ func TestKeyToWorldtoKey(t *testing.T) {
 				f := NewField(tc.bodyWidth, tc.wingWidth, tc.height)
 				t.Run(fmt.Sprintf("%s-(%d,%d)", tc.name, m, n), func(t *testing.T) {
 					x, y := f.Ktow(k)
-					got := f.wtok(x, y)
+					got := f.Wtok(x, y)
 					if got != k {
 						t.Errorf("got %f,%f and %v", x, y, got)
 					}
@@ -165,7 +165,7 @@ func TestWorldToKey(t *testing.T) {
 						for _, loc := range locations {
 							t.Run(loc.desc, func(t *testing.T) {
 								centerX, centerY := f.Ktow(Key{m, n})
-								got := f.wtok(centerX+loc.xOffset, centerY+loc.yOffset)
+								got := f.Wtok(centerX+loc.xOffset, centerY+loc.yOffset)
 								if got != neighbors[loc.want] {
 									t.Errorf("(%f+%f,%f+%f): want %v, got %v", centerX, loc.xOffset, centerY, loc.yOffset, neighbors[loc.want], got)
 								}
