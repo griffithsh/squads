@@ -66,7 +66,7 @@ type Manager struct {
 
 // NewManager creates a new combat Manager.
 func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus, archive *data.Archive) *Manager {
-	f := geom.NewField(10, 7, 16)
+	f := geom.NewField(hexagonBodyWidth, hexagonWingWidth, hexagonHeight)
 
 	cm := Manager{
 		mgr:                  mgr,
@@ -150,7 +150,7 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 	ctx := cm.state.(*confirmingSelectedTargetState)
 
 	obstacle := cm.mgr.Component(cm.turnToken, "Obstacle").(*game.Obstacle)
-	origin := cm.field.Get(geom.Key{obstacle.M, obstacle.N})
+	origin := cm.field.Get(geom.Key{M: obstacle.M, N: obstacle.N})
 	selected := cm.field.At(x, y)
 	if selected == nil {
 		// We cannot confirm the selection of something outside the hexes of the
@@ -430,7 +430,6 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, a
 // TODO: Begin should be provided with information about the squads and the
 // terrain to fight on.
 func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
-
 	cm.setState(FadingIn)
 	e := cm.mgr.NewEntity()
 	cm.mgr.Tag(e, "combat")
@@ -485,13 +484,19 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 						},
 						Layer: vis.Layer,
 					})
+					if vis.XOffset != 0 || vis.YOffset != 0 {
+						cm.mgr.AddComponent(e, &game.RenderOffset{
+							X: -vis.XOffset,
+							Y: -vis.YOffset,
+						})
+					}
 					if len(vis.Frames) == 1 {
 						cm.mgr.AddComponent(e, &game.Sprite{
 							Texture: vis.Frames[0].Texture,
 							X:       vis.Frames[0].X,
 							Y:       vis.Frames[0].Y,
-							W:       combatMap.TileW,
-							H:       combatMap.TileH,
+							W:       vis.Frames[0].W,
+							H:       vis.Frames[0].H,
 						})
 					} else { // not zero or one, and definitely not negative
 						// add frame animation
@@ -501,8 +506,8 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 								Texture: frame.Texture,
 								X:       frame.X,
 								Y:       frame.Y,
-								W:       combatMap.TileW,
-								H:       combatMap.TileH,
+								W:       frame.W,
+								H:       frame.H,
 							})
 							fa.Timings = append(fa.Timings, frame.Duration)
 						}

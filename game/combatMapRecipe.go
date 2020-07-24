@@ -9,12 +9,14 @@ import (
 type CombatMapRecipeHexFrame struct {
 	Texture  string
 	X, Y     int
+	W, H     int
 	Duration time.Duration
 }
 
 type CombatMapRecipeVisual struct {
-	Frames []CombatMapRecipeHexFrame
-	Layer  int
+	Frames           []CombatMapRecipeHexFrame
+	XOffset, YOffset int
+	Layer            int
 }
 
 type CombatMapRecipeHex struct {

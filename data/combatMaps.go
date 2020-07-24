@@ -20,6 +20,7 @@ func mbyn(m, n int) []geom.Key {
 	return result
 }
 
+// random generates a deprecated size map. FIXME
 func random() *game.CombatMapRecipe {
 	recipe := game.CombatMapRecipe{
 		Starts: []geom.Key{

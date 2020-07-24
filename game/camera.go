@@ -20,11 +20,10 @@ type Camera struct {
 
 // NewCamera creates a new camera for a view of the requested width and height
 func NewCamera(width, height int, bus *event.Bus) *Camera {
-
 	c := Camera{
 		focusX:  0,
 		focusY:  0,
-		zoom:    3.0,
+		zoom:    2.0,
 		screenW: width,
 		screenH: height,
 	}
