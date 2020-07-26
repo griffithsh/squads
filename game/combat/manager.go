@@ -410,7 +410,7 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, a
 			X: x,
 			Y: y,
 		},
-		Layer: 10,
+		Layer: participantLayer,
 	})
 
 	// Add Obstacle.
@@ -936,7 +936,7 @@ func (cm *Manager) addGrass() {
 				X: x,
 				Y: y,
 			},
-			Layer: 1,
+			Layer: terrainLayer,
 		})
 	}
 }
@@ -967,7 +967,7 @@ func (cm *Manager) addTrees() {
 					X: x,
 					Y: y,
 				},
-				Layer: 10,
+				Layer: terrainLayer,
 			})
 			cm.mgr.AddComponent(e, &game.Obstacle{
 				M:            k.M,

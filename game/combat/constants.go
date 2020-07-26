@@ -7,3 +7,10 @@ const (
 	hexagonTileWidth int = hexagonWingWidth + hexagonBodyWidth + hexagonWingWidth
 	hexagonHeight    int = 40
 )
+
+// define the z-ordering render layers used by combat
+const (
+	terrainLayer     = 10
+	cursorLayer      = 90
+	participantLayer = 100
+)

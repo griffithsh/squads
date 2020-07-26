@@ -149,7 +149,7 @@ func (cm *CursorManager) repaintLiveParticipants() {
 			cm.mgr.AddComponent(slot, &spr)
 			cm.mgr.AddComponent(slot, &game.Leash{
 				Owner:       entities[i],
-				LayerOffset: -1,
+				LayerOffset: -5,
 			})
 		} else {
 			// hide cursor
@@ -208,7 +208,7 @@ func (cm *CursorManager) paintSingleHex() {
 					X: x,
 					Y: y,
 				},
-				Layer: 10,
+				Layer: cursorLayer,
 			})
 			continue
 		}
@@ -261,7 +261,7 @@ func (cm *CursorManager) paintNavigationHighlights() {
 					X: x,
 					Y: y,
 				},
-				Layer: 10,
+				Layer: cursorLayer,
 			},
 		})
 		goto repaintLabel
@@ -286,7 +286,7 @@ func (cm *CursorManager) paintNavigationHighlights() {
 					X: x,
 					Y: y,
 				},
-				Layer: 10,
+				Layer: cursorLayer,
 			},
 		})
 		if step.Cost > float64(participant.ActionPoints.Cur) {
