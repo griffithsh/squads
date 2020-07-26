@@ -144,7 +144,7 @@ func (cm *CursorManager) repaintLiveParticipants() {
 				Texture: "cursors.png",
 
 				X: 0, Y: 0,
-				W: 24, H: 16,
+				W: hexagonTileWidth, H: hexagonHeight,
 			}
 			cm.mgr.AddComponent(slot, &spr)
 			cm.mgr.AddComponent(slot, &game.Leash{
@@ -200,8 +200,8 @@ func (cm *CursorManager) paintSingleHex() {
 			cm.mgr.AddComponent(e, &game.Sprite{
 				Texture: "cursors.png",
 
-				X: 0, Y: 16,
-				W: 24, H: 16,
+				X: 0, Y: hexagonHeight * 1,
+				W: hexagonTileWidth, H: hexagonHeight,
 			})
 			cm.mgr.AddComponent(e, &game.Position{
 				Center: game.Center{
@@ -253,8 +253,8 @@ func (cm *CursorManager) paintNavigationHighlights() {
 			s: game.Sprite{
 				Texture: "cursors.png",
 
-				X: 24, Y: 16,
-				W: 24, H: 16,
+				X: hexagonTileWidth * 1, Y: hexagonHeight * 1,
+				W: hexagonTileWidth, H: hexagonHeight,
 			},
 			p: game.Position{
 				Center: game.Center{
@@ -278,8 +278,8 @@ func (cm *CursorManager) paintNavigationHighlights() {
 			s: game.Sprite{
 				Texture: "cursors.png",
 
-				X: 0, Y: 16,
-				W: 24, H: 16,
+				X: 0, Y: hexagonHeight * 1,
+				W: hexagonTileWidth, H: hexagonHeight,
 			},
 			p: game.Position{
 				Center: game.Center{
@@ -290,7 +290,8 @@ func (cm *CursorManager) paintNavigationHighlights() {
 			},
 		})
 		if step.Cost > float64(participant.ActionPoints.Cur) {
-			c[len(c)-1].s.X = 48
+			c[len(c)-1].s.X = 0
+			c[len(c)-1].s.Y = hexagonHeight * 2
 		}
 	}
 
