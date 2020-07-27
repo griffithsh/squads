@@ -486,8 +486,8 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 					})
 					if vis.XOffset != 0 || vis.YOffset != 0 {
 						cm.mgr.AddComponent(e, &game.RenderOffset{
-							X: -vis.XOffset,
-							Y: -vis.YOffset,
+							X: vis.XOffset / 2,
+							Y: vis.YOffset / 2,
 						})
 					}
 					if len(vis.Frames) == 1 {
