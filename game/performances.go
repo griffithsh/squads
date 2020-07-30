@@ -42,19 +42,9 @@ func (pfd *PerformancesForDirection) ForDirection(dir geom.DirectionType) []Fram
 
 // PerformanceSet is a set of performances for a profession and sex(es).
 type PerformanceSet struct {
-	Name    string                   `json:"name"`
-	Sexes   []CharacterSex           `json:"-"`
-	Idle    PerformancesForDirection `json:"idle"`
-	Move    PerformancesForDirection `json:"move"`
-	Attack  PerformancesForDirection `json:"attack"`
-	Spell   []Frame                  `json:"spell"`
-	Death   []Frame                  `json:"death"`
-	Rise    []Frame                  `json:"rise"`
-	Victory []Frame                  `json:"victory"`
-
-	MoveSpeed  time.Duration `json:"-"`
-	AttackApex time.Duration `json:"-"`
-	SpellApex  time.Duration `json:"-"`
+	Name  string                   `json:"name"`
+	Sexes []CharacterSex           `json:"-"`
+	Idle  PerformancesForDirection `json:"idle"`
 }
 
 // UnmarshalJSON exists to extract the string based Sex values into enum values.
@@ -63,10 +53,7 @@ func (ps *PerformanceSet) UnmarshalJSON(data []byte) error {
 
 	var a struct {
 		alias
-		Sexes        []string `json:"sexes"`
-		MoveSpeedMs  int      `json:"moveSpeed"`
-		AttackApexMs int      `json:"attackApexMs"`
-		SpellApexMs  int      `json:"spellApexMs"`
+		Sexes []string `json:"sexes"`
 	}
 
 	if err := json.Unmarshal(data, &a); err != nil {
@@ -84,26 +71,17 @@ func (ps *PerformanceSet) UnmarshalJSON(data []byte) error {
 		}
 	}
 
-	ps.MoveSpeed = time.Duration(a.MoveSpeedMs) * time.Millisecond
-	ps.AttackApex = time.Duration(a.AttackApexMs) * time.Millisecond
-	ps.SpellApex = time.Duration(a.SpellApexMs) * time.Millisecond
-
 	return nil
 }
 
+// MarshalJSON implements the json marshaling interface.
 func (ps PerformanceSet) MarshalJSON() ([]byte, error) {
 	type v PerformanceSet
 	alias := struct {
 		v
-		Sexes        []string `json:"sexes"`
-		MoveSpeed    int      `json:"moveSpeed"`
-		AttackApexMs int      `json:"attackApexMs"`
-		SpellApexMs  int      `json:"spellApexMs"`
+		Sexes []string `json:"sexes"`
 	}{
-		v:            v(ps),
-		MoveSpeed:    int(ps.MoveSpeed / time.Millisecond),
-		AttackApexMs: int(ps.AttackApex / time.Millisecond),
-		SpellApexMs:  int(ps.SpellApex / time.Millisecond),
+		v: v(ps),
 	}
 	for _, sex := range ps.Sexes {
 		if sex == Male {

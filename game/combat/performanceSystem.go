@@ -6,7 +6,6 @@ import (
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
-	"github.com/griffithsh/squads/geom"
 )
 
 /*
@@ -97,89 +96,40 @@ func (ps *PerformanceSystem) getPerformances(e ecs.Entity) *game.PerformanceSet 
 
 func (ps *PerformanceSystem) handleParticipantMoving(t event.Typer) {
 	ev := t.(*ParticipantMoving)
-	e := ev.Entity
-	facer := ps.mgr.Component(e, "Facer").(*game.Facer)
-	performances := ps.getPerformances(ev.Entity)
-	frames := performances.Move.ForDirection(facer.Face)
 
 	// If the facing has changed, then we need to edit the FrameAnimation.
 	if ev.OldFacing != ev.NewFacing {
-		fa := game.NewFrameAnimationFromFrames(frames)
-		ps.mgr.AddComponent(e, fa)
 	}
 
 	if ev.NewSpeed == 0 {
 		// If the entity has stopped moving, then we must delete the sprite so
 		// that Update can add the Idle animation in.
-		ps.mgr.RemoveComponent(e, &game.Sprite{})
-		ps.mgr.RemoveComponent(e, &game.AnimationSpeed{})
 	} else if ev.OldSpeed != ev.NewSpeed {
 		// Otherwise the speed has changed ...
-		ps.mgr.AddComponent(e, &game.AnimationSpeed{
-			Speed: ev.NewSpeed,
-		})
-		if ev.OldSpeed == 0 {
-			fa := game.NewFrameAnimationFromFrames(frames)
-			ps.mgr.AddComponent(e, fa)
-		}
 	}
 }
 
 func (ps *PerformanceSystem) handleCharacterCelebrating(t event.Typer) {
-	ev := t.(*CharacterCelebrating)
-	e := ev.Entity
+	// ev := t.(*CharacterCelebrating)
 
-	performances := ps.getPerformances(e)
-	fa := game.NewFrameAnimationFromFrames(performances.Victory)
-	ps.mgr.AddComponent(e, fa)
+	// TODO: something?
 }
 
 func (ps *PerformanceSystem) handleUsingSkill(t event.Typer) {
-	ev := t.(*UsingSkill)
-	e := ev.User
+	// ev := t.(*UsingSkill)
 
-	performances := ps.getPerformances(e)
-	skill := ps.archive.Skill(ev.Skill)
-	var frames []game.Frame
-	frames = performances.Spell
-	if skill.IsAttack() {
-		facer := ps.mgr.Component(e, "Facer").(*game.Facer)
-
-		switch facer.Face {
-		case geom.N:
-			frames = performances.Attack.N
-		case geom.S:
-			frames = performances.Attack.S
-		case geom.SE:
-			frames = performances.Attack.SE
-		case geom.SW:
-			frames = performances.Attack.SW
-		case geom.NE:
-			frames = performances.Attack.NE
-		case geom.NW:
-			frames = performances.Attack.NW
-		}
-	}
-	fa := game.NewFrameAnimationFromFrames(frames)
-	fa.EndBehavior = game.HoldLastFrame
-	ps.mgr.AddComponent(e, fa)
+	// TODO!
 }
 
 func (ps *PerformanceSystem) handleParticipantDied(t event.Typer) {
-	pde := t.(*ParticipantDied)
+	// ev := t.(*ParticipantDied)
 
-	performances := ps.getPerformances(pde.Entity)
-	fa := game.NewFrameAnimationFromFrames(performances.Death)
-	fa.EndBehavior = game.HoldLastFrame
-	ps.mgr.AddComponent(pde.Entity, fa)
+	// TODO!
 }
 
 func (ps *PerformanceSystem) handleParticipantRevived(t event.Typer) {
-	ev := t.(*ParticipantRevived)
-	performances := ps.getPerformances(ev.Entity)
-	fa := game.NewFrameAnimationFromFrames(performances.Rise)
-	fa.EndBehavior = game.HoldLastFrame // So that the FrameAnimation is removed
-	ps.mgr.AddComponent(ev.Entity, fa)
+	// ev := t.(*ParticipantRevived)
+	// TODO: something?
 }
 
 func (ps *PerformanceSystem) handleParticipantDefiled(t event.Typer) {

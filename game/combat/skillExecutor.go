@@ -117,25 +117,11 @@ func (se *skillExecutor) determineAffected(ev *UsingSkill, s *skill.Description)
 
 // createRealiser creates a new timing point realiser for figuring out when
 // effects with virtual timing points should be executed.
+// FIXME: delete this?
 func (se *skillExecutor) createRealiser(ev *UsingSkill, s *skill.Description) func(skill.Timing) time.Duration {
-	participant := se.mgr.Component(ev.User, "Participant").(*Participant)
-	prof, sex := participant.Profession, participant.Sex
-	perf := se.archive.Performances(prof, sex)
-	var apex, end time.Duration
-	for _, t := range s.Tags {
-		if t == skill.Attack {
-			apex = perf.AttackApex
-			end = time.Duration(len(perf.Attack.S)) * time.Millisecond
-			break
-		} else if t == skill.Spell {
-			apex = perf.SpellApex
-			end = time.Duration(len(perf.Spell)) * time.Millisecond
-			break
-		}
-	}
 	m := map[skill.TimingPoint]time.Duration{
-		skill.AttackApexTimingPoint: apex,
-		skill.EndTimingPoint:        end,
+		skill.AttackApexTimingPoint: 0,
+		skill.EndTimingPoint:        0,
 	}
 	return skill.NewTimingRealiser(m)
 }

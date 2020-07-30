@@ -44,25 +44,5 @@ func defaultPerformanceSet() *game.PerformanceSet {
 			SE: []game.Frame{{DurationMs: 10, Sprite: s}},
 			SW: []game.Frame{{DurationMs: 10, Sprite: s}},
 		},
-		Move: game.PerformancesForDirection{
-			N:  []game.Frame{{DurationMs: 10, Sprite: s}},
-			S:  []game.Frame{{DurationMs: 10, Sprite: s}},
-			NE: []game.Frame{{DurationMs: 10, Sprite: s}},
-			NW: []game.Frame{{DurationMs: 10, Sprite: s}},
-			SE: []game.Frame{{DurationMs: 10, Sprite: s}},
-			SW: []game.Frame{{DurationMs: 10, Sprite: s}},
-		},
-		Attack: game.PerformancesForDirection{
-			N:  []game.Frame{{DurationMs: 10, Sprite: s}},
-			S:  []game.Frame{{DurationMs: 10, Sprite: s}},
-			NE: []game.Frame{{DurationMs: 10, Sprite: s}},
-			NW: []game.Frame{{DurationMs: 10, Sprite: s}},
-			SE: []game.Frame{{DurationMs: 10, Sprite: s}},
-			SW: []game.Frame{{DurationMs: 10, Sprite: s}},
-		},
-		Spell:   []game.Frame{{DurationMs: 10, Sprite: s}},
-		Death:   []game.Frame{{DurationMs: 10, Sprite: s}},
-		Rise:    []game.Frame{{DurationMs: 10, Sprite: s}},
-		Victory: []game.Frame{{DurationMs: 10, Sprite: s}},
 	}
 }
