@@ -37,13 +37,18 @@ func (s *Searcher) Search(start, goal Vertex) []Step {
 	}
 
 	for len(open) > 0 {
-		var current Vertex
 		low := math.MaxFloat64
+		var current Vertex
 		for k := range open {
-			if guesses[k] < low || k == goal {
+			if guesses[k] < low {
 				current = k
 				low = guesses[k]
 			}
+		}
+		var unassigned Vertex
+		if current == unassigned {
+			// We've gone through the entire open list without finding a path.
+			return nil
 		}
 		if current == goal {
 			m := map[Vertex]Vertex{}
