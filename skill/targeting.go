@@ -10,7 +10,12 @@ const (
 
 	// TargetAdjacent means that a skill can be targeted on any hex adjacent to
 	// the origin.
+	// FIXME: should be TargetWithin, and introduce a distance field to implement
+	// the size of the aoe.
 	TargetAdjacent
+
+	// TargetLinear allows selections that are in a straight line with the origin.
+	// TODO: implement TargetLinear
 )
 
 // TargetingBrush enumerates the different rule sets for which hex or hexes are
@@ -24,4 +29,8 @@ const (
 	// Pathfinding is a special rule set that highlights a path of hexes on the
 	// way from the origin to the target.
 	Pathfinding
+
+	// AreaOfEffect indicates that the target and all hexes within a configured
+	// distance are highlighted.
+	// TODO: implement AreaOfEffect
 )

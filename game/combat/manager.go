@@ -127,6 +127,9 @@ func (cm *Manager) handleTargetSelected(x, y float64) {
 		}
 	}
 
+	// TODO: extra validation needs to happen here - you can only raise skeleton
+	// if there is a downed character here, right?
+
 	var selected *geom.Key
 	if h != nil {
 		// Go to confirming state if a Hex was selected, and save the Key of the

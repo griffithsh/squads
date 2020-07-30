@@ -133,7 +133,7 @@ func CostsFuncFactory(f *geom.Field, mgr *ecs.World, participantEntity ecs.Entit
 		}
 		obstacle := mgr.Component(e, "Obstacle").(*game.Obstacle)
 
-		if h := f.Get(geom.Key{obstacle.M, obstacle.N}); h == nil {
+		if h := f.Get(geom.Key{M: obstacle.M, N: obstacle.N}); h == nil {
 
 			continue
 		}
@@ -157,7 +157,7 @@ func CostsFuncFactory(f *geom.Field, mgr *ecs.World, participantEntity ecs.Entit
 		}
 		cost := 10.0
 		for _, o := range obstacles {
-			if to == (geom.Key{o.M, o.N}) {
+			if to == (geom.Key{M: o.M, N: o.N}) {
 				if math.IsInf(o.Cost, 0) {
 					return math.Inf(0)
 				}
