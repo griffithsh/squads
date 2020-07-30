@@ -16,9 +16,9 @@ func _() {
 	_ = x[NW-5]
 }
 
-const _DirectionType_name = "NNESESSWNWCENTER"
+const _DirectionType_name = "NNESESSWNW"
 
-var _DirectionType_index = [...]uint8{0, 1, 3, 5, 6, 8, 10, 16}
+var _DirectionType_index = [...]uint8{0, 1, 3, 5, 6, 8, 10}
 
 func (i DirectionType) String() string {
 	if i < 0 || i >= DirectionType(len(_DirectionType_index)-1) {
