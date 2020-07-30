@@ -21,7 +21,7 @@ type CombatMapRecipeVisual struct {
 
 type CombatMapRecipeHex struct {
 	Position geom.Key
-	Obstacle bool
+	Obstacle ObstacleType
 	Visuals  []CombatMapRecipeVisual
 }
 type CombatMapRecipe struct {

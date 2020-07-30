@@ -8,14 +8,17 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[CharacterObstacle-0]
-	_ = x[CrevasseObstacle-1]
-	_ = x[TreeObstacle-2]
+	_ = x[NonObstacle-0]
+	_ = x[CharacterObstacle-1]
+	_ = x[CrevasseObstacle-2]
+	_ = x[TreeObstacle-3]
+	_ = x[DeepWaterObstacle-4]
+	_ = x[MudObstacle-5]
 }
 
-const _ObstacleType_name = "CharacterObstacleCrevasseObstacleTreeObstacle"
+const _ObstacleType_name = "NonObstacleCharacterObstacleCrevasseObstacleTreeObstacleDeepWaterObstacleMudObstacle"
 
-var _ObstacleType_index = [...]uint8{0, 17, 33, 45}
+var _ObstacleType_index = [...]uint8{0, 11, 28, 44, 56, 73, 84}
 
 func (i ObstacleType) String() string {
 	if i < 0 || i >= ObstacleType(len(_ObstacleType_index)-1) {

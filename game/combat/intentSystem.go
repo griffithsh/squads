@@ -139,10 +139,17 @@ func CostsFuncFactory(f *geom.Field, mgr *ecs.World, participantEntity ecs.Entit
 		}
 		// Translate the Obstacles into ContextualObstacles based on
 		// how much of an Obstacle this is to the Mover in this context.
+
+		// maybe anything other than nonobstacle is a total blocker?
+		cost := math.Inf(0)
+		// TODO: extra rules for more than just mud here.
+		if obstacle.ObstacleType == game.MudObstacle {
+			cost = 2.0
+		}
 		obstacles = append(obstacles, ContextualObstacle{
 			M:    obstacle.M,
 			N:    obstacle.N,
-			Cost: math.Inf(0), // just pretend these all are total obstacles for now...
+			Cost: cost,
 		})
 	}
 

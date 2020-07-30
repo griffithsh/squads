@@ -52,7 +52,7 @@ func random() *game.CombatMapRecipe {
 		if (m != 4 || n != 14) && i%17 == 1 || i%23 == 1 {
 			// add a tree!
 			last := len(recipe.Hexes) - 1
-			recipe.Hexes[last].Obstacle = true
+			recipe.Hexes[last].Obstacle = game.TreeObstacle
 			recipe.Hexes[last].Visuals = append(recipe.Hexes[last].Visuals, game.CombatMapRecipeVisual{
 				Frames: []game.CombatMapRecipeHexFrame{
 					{

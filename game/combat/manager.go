@@ -461,14 +461,14 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 			})
 			for _, hex := range combatMap.Hexes {
 				h := cm.field.Get(geom.Key{M: hex.Position.M, N: hex.Position.N})
-				if hex.Obstacle {
+				if hex.Obstacle != game.NonObstacle {
 					// add obstacle
 					e := cm.mgr.NewEntity()
 					cm.mgr.Tag(e, "combat")
 					cm.mgr.AddComponent(e, &game.Obstacle{
 						M:            h.Key().M,
 						N:            h.Key().N,
-						ObstacleType: game.TreeObstacle, // FIXME: what sort of obstacle is it?
+						ObstacleType: hex.Obstacle,
 					})
 				}
 				for _, vis := range hex.Visuals {
