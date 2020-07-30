@@ -255,11 +255,15 @@ func generate(rng *rand.Rand, recipe *Recipe, lvl int) Map {
 				}
 				return result
 			}
-			switch rng.Intn(2) {
+			switch rng.Intn(4) {
 			case 0:
 				d.Enemies[key] = rollCharacters(rng, squad.SoloSkellington)
 			case 1:
 				d.Enemies[key] = rollCharacters(rng, squad.WolfPack1)
+			case 2:
+				d.Enemies[key] = rollCharacters(rng, squad.SoloNecro)
+			case 3:
+				d.Enemies[key] = rollCharacters(rng, squad.NecroCohort)
 			}
 		}
 	}

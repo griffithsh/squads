@@ -12,6 +12,7 @@ type RecipeID int
 const (
 	Skellington RecipeID = iota
 	Wolf
+	Necro
 )
 
 // Recipe describes a way to construct a baddy.
@@ -77,6 +78,27 @@ var Recipes map[RecipeID]Recipe = map[RecipeID]Recipe{
 			Texture: "hud.png",
 			X:       52,
 			Y:       24,
+			W:       52,
+			H:       52,
+		},
+	},
+	Necro: Recipe{
+		ActionPoints: 60,
+		Preparation:  50,
+		Name:         "Pabst",
+		Sex:          game.Male,
+		Profession:   "Necromancer",
+		SmallIcon: game.Sprite{
+			Texture: "necromancer-portrait.png",
+			X:       0,
+			Y:       0,
+			W:       26,
+			H:       26,
+		},
+		BigIcon: game.Sprite{
+			Texture: "necromancer-portrait.png",
+			X:       26,
+			Y:       0,
 			W:       52,
 			H:       52,
 		},
