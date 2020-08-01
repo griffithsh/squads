@@ -40,10 +40,6 @@ func NewPerformanceSystem(mgr *ecs.World, bus *event.Bus, archive SkillArchive) 
 		archive: archive,
 	}
 
-	// TODO:
-	// each handler applies an animation. Some animations wear off, and leave
-	// only a sprite. Others continue indefinitely. In Update, Participants
-	// without an Animation receive the idle animation.
 	bus.Subscribe(ParticipantMoving{}.Type(), ps.handleParticipantMoving)
 	bus.Subscribe(CharacterCelebrating{}.Type(), ps.handleCharacterCelebrating)
 	bus.Subscribe(UsingSkill{}.Type(), ps.handleUsingSkill)
@@ -54,44 +50,24 @@ func NewPerformanceSystem(mgr *ecs.World, bus *event.Bus, archive SkillArchive) 
 	return &ps
 }
 
-// Update the System.
+// Update the System, applying a Sprite Appearance to any participant without
+// one.
 func (ps *PerformanceSystem) Update(elapse time.Duration) {
 	// For every Participant in the combat ...
 	for _, e := range ps.mgr.Get([]string{"Participant"}) {
 		// If the Entity has a FrameAnimation already, then they are animating
 		// some action (or they might be idling already?), so don't change
 		// anything.
-		if _, ok := ps.mgr.Component(e, "FrameAnimation").(*game.FrameAnimation); ok {
+		if _, ok := ps.mgr.Component(e, "Sprite").(*game.Sprite); ok {
 			continue
 		}
 
 		participant := ps.mgr.Component(e, "Participant").(*Participant)
-		if participant.Status != Alive {
-			// If they're not alive, then we want to just leave them on the last
-			// frame of their death animation. (The FrameAnimation should have
-			// been removed due to HoldLastFrame being set). They might also be
-			// Escaped or Defiled, and have no visual representation at all.
-			continue
-		}
-
-		// In all other cases, we should apply the Idle animation.
-		facer := ps.mgr.Component(e, "Facer").(*game.Facer)
-
-		performances := ps.getPerformances(e)
-
-		frames := performances.Idle.ForDirection(facer.Face)
-		fa := game.NewFrameAnimationFromFrames(frames)
-
-		// Start at a random point of the Idle animation.
-		ps.mgr.AddComponent(e, fa.Randomise())
+		prof := participant.Profession
+		sex := participant.Sex
+		appearance := ps.archive.Appearance(prof, sex)
+		ps.mgr.AddComponent(e, &appearance.Participant)
 	}
-}
-
-func (ps *PerformanceSystem) getPerformances(e ecs.Entity) *game.PerformanceSet {
-	participant := ps.mgr.Component(e, "Participant").(*Participant)
-	prof := participant.Profession
-	sex := participant.Sex
-	return ps.archive.Performances(prof, sex)
 }
 
 func (ps *PerformanceSystem) handleParticipantMoving(t event.Typer) {

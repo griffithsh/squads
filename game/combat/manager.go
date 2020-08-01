@@ -22,7 +22,7 @@ type SkillArchive interface {
 	Skill(skill.ID) *skill.Description
 	SkillsByProfession(string) []*skill.Description
 	SkillsByWeaponClass(game.ItemClass) []*skill.Description
-	Performances(profession string, sex game.CharacterSex) *game.PerformanceSet
+	Appearance(profession string, sex game.CharacterSex) *game.Appearance
 	Profession(profession string) *game.ProfessionDetails
 }
 

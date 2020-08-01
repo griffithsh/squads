@@ -20,7 +20,7 @@ import (
 type Archive struct {
 	overworldRecipes []*overworld.Recipe
 	skills           skill.Map
-	performances     map[PerformanceKey]*game.PerformanceSet
+	appearances      map[AppearanceKey]*game.Appearance
 	names            map[string][]string
 	combatMaps       []game.CombatMapRecipe // eventually these would be keyed by their terrain in some way?
 	images           map[string]image.Image
@@ -31,7 +31,7 @@ func NewArchive() (*Archive, error) {
 	archive := Archive{
 		overworldRecipes: []*overworld.Recipe{},
 		skills:           skill.Map{},
-		performances:     map[PerformanceKey]*game.PerformanceSet{},
+		appearances:      map[AppearanceKey]*game.Appearance{},
 		names:            map[string][]string{},
 		images:           map[string]image.Image{},
 	}
@@ -39,8 +39,8 @@ func NewArchive() (*Archive, error) {
 		archive.skills[sd.ID] = sd
 	}
 
-	for k, v := range internalPerformances {
-		archive.performances[k] = v
+	for k, v := range internalAppearances {
+		archive.appearances[k] = v
 	}
 	for k, v := range internalNames {
 		archive.names[k] = v
@@ -96,16 +96,6 @@ func (a *Archive) Load(r io.Reader) error {
 						return fmt.Errorf("parse %s: %v", head.Name, err)
 					}
 					a.overworldRecipes = append(a.overworldRecipes, recipe)
-				case ".performance-set":
-					dec := json.NewDecoder(tr)
-					v := defaultPerformanceSet()
-					err := dec.Decode(v)
-					if err != nil {
-						return fmt.Errorf("parse %s: %v", head.Name, err)
-					}
-					for _, sex := range v.Sexes {
-						a.performances[PerformanceKey{sex, v.Name}] = v
-					}
 				case ".skill-thingy?":
 					// TODO:
 				case ".names":
