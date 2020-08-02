@@ -21,6 +21,8 @@ type Archive struct {
 	overworldRecipes []*overworld.Recipe
 	skills           skill.Map
 	appearances      map[AppearanceKey]*game.Appearance
+	hairColors       []string
+	skinColors       []string
 	names            map[string][]string
 	combatMaps       []game.CombatMapRecipe // eventually these would be keyed by their terrain in some way?
 	images           map[string]image.Image
@@ -54,6 +56,9 @@ func NewArchive() (*Archive, error) {
 // Load data into the Archive from a tar.gz archive, replacing data already in
 // the Archive if the provided files share the same filenames.
 func (a *Archive) Load(r io.Reader) error {
+
+	hairColors := map[string]struct{}{}
+	skinColors := map[string]struct{}{}
 	gzr, err := gzip.NewReader(r)
 	if err != nil {
 		return fmt.Errorf("new reader: %v", err)
@@ -88,6 +93,46 @@ func (a *Archive) Load(r io.Reader) error {
 					}
 					a.combatMaps = append(a.combatMaps, v)
 				}
+			} else if strings.HasPrefix(head.Name, "character-appearance/") {
+				switch {
+				case strings.HasSuffix(head.Name, ".variations.png"):
+					decoded, err := png.Decode(tr)
+					if err != nil {
+						return fmt.Errorf("png.Decode %s: %s", head.Name, err)
+					}
+					a.images[head.Name] = decoded
+				case strings.HasSuffix(head.Name, ".appearance"):
+					dec := json.NewDecoder(tr)
+					var v struct {
+						game.Appearance
+						Sex        string
+						Profession string
+						Haircolor  string
+						Skincolor  string
+					}
+					err := dec.Decode(&v)
+					if err != nil {
+						return fmt.Errorf("parse %s: %v", head.Name, err)
+					}
+					var sex game.CharacterSex
+					if v.Sex == "XX" {
+						sex = game.Female
+					} else if v.Sex == "XY" {
+						sex = game.Male
+					} else {
+						return fmt.Errorf("unknown Sex %s", v.Sex)
+					}
+
+					key := AppearanceKey{
+						Sex:        sex,
+						Profession: v.Profession,
+						Hair:       v.Haircolor,
+						Skin:       v.Skincolor,
+					}
+					hairColors[key.Hair] = struct{}{}
+					skinColors[key.Skin] = struct{}{}
+					a.appearances[key] = &v.Appearance
+				}
 			} else {
 				switch filepath.Ext(head.Name) {
 				case ".overworld-recipe":
@@ -114,6 +159,13 @@ func (a *Archive) Load(r io.Reader) error {
 		}
 	}
 
+	for color := range hairColors {
+		a.hairColors = append(a.hairColors, color)
+	}
+
+	for color := range skinColors {
+		a.skinColors = append(a.skinColors, color)
+	}
 	return nil
 }
 

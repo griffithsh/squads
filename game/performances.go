@@ -12,7 +12,7 @@ type Frame struct {
 // Appearance is how a Character appears in combat.
 type Appearance struct {
 	Participant Sprite
-	Icon        Sprite
+	Portrait    Sprite
 }
 
 // NewFrameAnimationFromFrames creates a new animation from a slice of Frames.
