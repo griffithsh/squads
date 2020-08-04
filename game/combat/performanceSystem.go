@@ -66,7 +66,13 @@ func (ps *PerformanceSystem) Update(elapse time.Duration) {
 		prof := participant.Profession
 		sex := participant.Sex
 		appearance := ps.archive.Appearance(prof, sex)
-		ps.mgr.AddComponent(e, &appearance.Participant)
+		// copy the archive sprite
+		spr := appearance.Participant
+
+		spr.OffsetX = spr.W/2 - appearance.FeetX // almost always going to be zero
+		spr.OffsetY = spr.H/2 - appearance.FeetY // should be negative number
+
+		ps.mgr.AddComponent(e, &spr)
 	}
 }
 
