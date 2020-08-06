@@ -48,6 +48,8 @@ type Participant struct {
 
 	Name      string
 	Level     int
+	Hair      string
+	Skin      string
 	SmallIcon game.Sprite // (26x26)
 	BigIcon   game.Sprite // (52x52)
 

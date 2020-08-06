@@ -17,24 +17,24 @@ const (
 
 // Recipe describes a way to construct a baddy.
 type Recipe struct {
-	ActionPoints       int
-	Preparation        int
-	Name               string
-	Sex                game.CharacterSex
-	Profession         string
-	SmallIcon, BigIcon game.Sprite
+	ActionPoints int
+	Preparation  int
+	Name         string
+	Sex          game.CharacterSex
+	Profession   string
+	Hair, Skin   string
 }
 
 // Construct a baddy from a Recipe.
 func (recipe Recipe) Construct(rng *rand.Rand) *game.Character {
 	return &game.Character{
 		Name:                 recipe.Name,
+		Hair:                 recipe.Hair,
+		Skin:                 recipe.Skin,
 		Sex:                  recipe.Sex,
 		Profession:           recipe.Profession,
 		InherantPreparation:  recipe.Preparation,
 		InherantActionPoints: recipe.ActionPoints,
-		SmallIcon:            recipe.SmallIcon,
-		BigIcon:              recipe.BigIcon,
 	}
 }
 
@@ -46,20 +46,8 @@ var Recipes map[RecipeID]Recipe = map[RecipeID]Recipe{
 		Name:         "Dumble",
 		Sex:          game.Male,
 		Profession:   "Skeleton",
-		SmallIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       0,
-			Y:       154,
-			W:       26,
-			H:       26,
-		},
-		BigIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       0,
-			Y:       102,
-			W:       52,
-			H:       52,
-		},
+		Hair:         "black",
+		Skin:         "green",
 	},
 	Wolf: Recipe{
 		ActionPoints: 60,
@@ -67,20 +55,8 @@ var Recipes map[RecipeID]Recipe = map[RecipeID]Recipe{
 		Name:         "Hustle",
 		Sex:          game.Male,
 		Profession:   "Wolf",
-		SmallIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       52,
-			Y:       76,
-			W:       26,
-			H:       26,
-		},
-		BigIcon: game.Sprite{
-			Texture: "hud.png",
-			X:       52,
-			Y:       24,
-			W:       52,
-			H:       52,
-		},
+		Hair:         "black",
+		Skin:         "green",
 	},
 	Necro: Recipe{
 		ActionPoints: 60,
@@ -88,19 +64,7 @@ var Recipes map[RecipeID]Recipe = map[RecipeID]Recipe{
 		Name:         "Pabst",
 		Sex:          game.Male,
 		Profession:   "Necromancer",
-		SmallIcon: game.Sprite{
-			Texture: "necromancer-portrait.png",
-			X:       0,
-			Y:       0,
-			W:       26,
-			H:       26,
-		},
-		BigIcon: game.Sprite{
-			Texture: "necromancer-portrait.png",
-			X:       26,
-			Y:       0,
-			W:       52,
-			H:       52,
-		},
+		Hair:         "black",
+		Skin:         "green",
 	},
 }

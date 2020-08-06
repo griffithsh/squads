@@ -25,7 +25,12 @@ func newGenerator(archive Archive) generator {
 func (g *generator) generateChar() *game.Character {
 	sex := g.generateSex()
 
-	small, big := g.generateIcons(sex)
+	hairs := g.archive.HairVariations()
+	skins := g.archive.SkinVariations()
+
+	hair := hairs[g.r.Intn(len(hairs))]
+	skin := skins[g.r.Intn(len(skins))]
+
 	return &game.Character{
 		Level:         1,
 		Disambiguator: g.r.Float64(),
@@ -35,8 +40,8 @@ func (g *generator) generateChar() *game.Character {
 		Profession:           "Villager",
 		InherantPreparation:  -50 + g.r.Intn(101),
 		InherantActionPoints: int(g.r.NormFloat64()*1.4 + 8),
-		SmallIcon:            small,
-		BigIcon:              big,
+		Hair:                 hair,
+		Skin:                 skin,
 
 		CurrentHealth:        17,
 		BaseHealth:           25,
@@ -129,39 +134,6 @@ func (g *generator) generateName(sex game.CharacterSex) string {
 		}
 	}
 	return fmt.Sprintf("Unhandled Sex %s", sex)
-}
-
-var maleIcons = []int{
-	0, 1, 3, 4, 5, 6, 9, 10, 11,
-}
-
-var femaleIcons = []int{
-	0, 2, 3, 5, 7, 8,
-}
-
-func (g *generator) generateIcons(sex game.CharacterSex) (small game.Sprite, big game.Sprite) {
-	i := 0
-	switch sex {
-	case game.Male:
-		i = g.r.Intn(len(maleIcons))
-		i = maleIcons[i]
-	default:
-		i = g.r.Intn(len(femaleIcons))
-		i = femaleIcons[i]
-	}
-	return game.Sprite{
-			Texture: "portraits-26.png",
-			X:       (i % 9) * 26,
-			Y:       (i / 9) * 26,
-			W:       26,
-			H:       26,
-		}, game.Sprite{
-			Texture: "portraits-52.png",
-			X:       (i % 9) * 52,
-			Y:       (i / 9) * 52,
-			W:       52,
-			H:       52,
-		}
 }
 
 func (g *generator) generateMasteries() map[game.Mastery]int {

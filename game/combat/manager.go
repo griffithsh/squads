@@ -22,7 +22,7 @@ type SkillArchive interface {
 	Skill(skill.ID) *skill.Description
 	SkillsByProfession(string) []*skill.Description
 	SkillsByWeaponClass(game.ItemClass) []*skill.Description
-	Appearance(profession string, sex game.CharacterSex) *game.Appearance
+	Appearance(profession string, sex game.CharacterSex, hair string, skin string) *game.Appearance
 	Profession(profession string) *game.ProfessionDetails
 }
 
@@ -372,11 +372,15 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, a
 	char := cm.mgr.Component(charEntity, "Character").(*game.Character)
 	prof := cm.archive.Profession(char.Profession)
 
+	app := cm.archive.Appearance(char.Profession, char.Sex, char.Hair, char.Skin)
+
 	participant := &Participant{
 		Name:       char.Name,
 		Level:      char.Level,
-		SmallIcon:  char.SmallIcon,
-		BigIcon:    char.BigIcon,
+		Hair:       char.Hair,
+		Skin:       char.Skin,
+		SmallIcon:  app.SmallIcon(),
+		BigIcon:    app.BigIcon(),
 		Profession: char.Profession,
 		Sex:        char.Sex,
 		PreparationThreshold: CurMax{
@@ -397,6 +401,7 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, a
 		EquippedWeaponClass: equipment.WeaponClass(),
 		ItemStats:           equipment.SumModifiers(),
 	}
+
 	participant.Character = charEntity
 	participant.ActionPoints.Cur = participant.ActionPoints.Max
 	participant.Status = Alive

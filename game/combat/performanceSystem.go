@@ -65,7 +65,7 @@ func (ps *PerformanceSystem) Update(elapse time.Duration) {
 		participant := ps.mgr.Component(e, "Participant").(*Participant)
 		prof := participant.Profession
 		sex := participant.Sex
-		appearance := ps.archive.Appearance(prof, sex)
+		appearance := ps.archive.Appearance(prof, sex, participant.Hair, participant.Skin)
 		// copy the archive sprite
 		spr := appearance.Participant
 

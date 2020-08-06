@@ -28,9 +28,9 @@ const (
 // is over.
 type Character struct {
 	// Things that don't affect gameplay.
-	Name      string
-	SmallIcon Sprite // (26x26)
-	BigIcon   Sprite // (52x52)
+	Name string
+	Skin string
+	Hair string
 
 	// Intrinsic to the Character
 	Profession string

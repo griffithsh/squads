@@ -107,8 +107,8 @@ func (a *Archive) Load(r io.Reader) error {
 						game.Appearance
 						Sex        string
 						Profession string
-						Haircolor  string
-						Skincolor  string
+						HairColor  string
+						SkinColor  string
 					}
 					err := dec.Decode(&v)
 					if err != nil {
@@ -126,11 +126,15 @@ func (a *Archive) Load(r io.Reader) error {
 					key := AppearanceKey{
 						Sex:        sex,
 						Profession: v.Profession,
-						Hair:       v.Haircolor,
-						Skin:       v.Skincolor,
+						Hair:       v.HairColor,
+						Skin:       v.SkinColor,
 					}
 					hairColors[key.Hair] = struct{}{}
 					skinColors[key.Skin] = struct{}{}
+					if _, ok := a.appearances[key]; ok {
+						//stomp alert!
+						return fmt.Errorf("duplicate appearance %v %s, %s-hair, %s skin", sex, v.Profession, v.HairColor, v.SkinColor)
+					}
 					a.appearances[key] = &v.Appearance
 				}
 			} else {

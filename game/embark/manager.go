@@ -13,6 +13,9 @@ import (
 type Archive interface {
 	Profession(profession string) *game.ProfessionDetails
 	Names() map[string][]string
+	Appearance(profession string, sex game.CharacterSex, hair string, skin string) *game.Appearance
+	HairVariations() []string
+	SkinVariations() []string
 }
 
 // Manager holds state and provides methods to control that state for an embark
@@ -202,9 +205,11 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 	})
 
 	// Icon
+	app := em.archive.Appearance(char.Profession, char.Sex, char.Hair, char.Skin)
 	e = em.mgr.NewEntity()
 	em.mgr.Dependency(container, e)
-	em.mgr.AddComponent(e, &char.BigIcon)
+	spr := app.BigIcon()
+	em.mgr.AddComponent(e, &spr)
 	em.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
 			X: left + 108,

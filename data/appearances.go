@@ -20,13 +20,13 @@ type AppearanceKey struct {
 }
 
 // Appearance retrieves an appropriate Appearance object to use for a character in combat.
-func (a *Archive) Appearance(profession string, sex game.CharacterSex) *game.Appearance {
+func (a *Archive) Appearance(profession string, sex game.CharacterSex, hair string, skin string) *game.Appearance {
 	// FIXME: implementation
 	key := AppearanceKey{
 		Profession: profession,
 		Sex:        sex,
-		Hair:       "blonde", // TODO
-		Skin:       "tanned", // TODO
+		Hair:       hair,
+		Skin:       skin,
 	}
 	v, ok := a.appearances[key]
 	if !ok {
