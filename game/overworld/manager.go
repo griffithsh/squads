@@ -489,6 +489,10 @@ func (m *Manager) boot(d Map) {
 
 func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, recipe *Recipe, lvl int) func(x, y float64) {
 	return func(float64, float64) {
+		// Remove the interactive we just clicked on so that we cannot
+		// double-click by access.
+		m.mgr.RemoveComponent(e, &ui.Interactive{})
+
 		// Change this card to the selected card sprite.
 		m.mgr.AddComponent(e, &game.Sprite{
 			Texture: "overworld-cards.png",
