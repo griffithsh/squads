@@ -15,17 +15,24 @@ import (
 type Renderer struct {
 	textures      map[string]*ebiten.Image
 	imageProvider ImageProvider
+
+	worldCanvas *ebiten.Image
+	uiCanvas    *ebiten.Image
 }
 
+// ImageProvider is the contract that the Renderer needs to retrieve images to
+// use for Sprites.
 type ImageProvider interface {
 	GetImage(name string) (val image.Image, ok bool)
 }
 
 // NewRenderer creates a new Renderer.
 func NewRenderer(images ImageProvider) *Renderer {
+	c, _ := ebiten.NewImage(1, 1, ebiten.FilterNearest)
 	return &Renderer{
 		textures:      map[string]*ebiten.Image{},
 		imageProvider: images,
+		worldCanvas:   c,
 	}
 }
 
@@ -37,8 +44,8 @@ type entity struct {
 	repeat *SpriteRepeat
 }
 
-// drawImageOptions creates an newebite.DrawImageOptions for this entity.
-func (e entity) drawImageOptions(x, y, zoom, w, h, xOff, yOff float64) *ebiten.DrawImageOptions {
+// drawImageOptions creates an new ebiten.DrawImageOptions for this entity.
+func (e entity) drawImageOptions(x, y, w, h, xOff, yOff float64) *ebiten.DrawImageOptions {
 	op := ebiten.DrawImageOptions{}
 
 	// ebiten uses top-left corner coordinates, so we need to translate
@@ -71,14 +78,8 @@ func (e entity) drawImageOptions(x, y, zoom, w, h, xOff, yOff float64) *ebiten.D
 	}
 
 	if !e.p.Absolute {
-		// Scale the rendered entities based on the zoom value from the camera.
-		// NB: This needs to happen after the other translations!
-		op.GeoM.Scale(zoom, zoom)
-
-		// We also need to correct for the dimensions of the screen, or the
-		// focus will appear in the top-left corner of the screen. This comes
-		// after the scaling, because the screen size does not change based on
-		// the zoom.
+		// We need to correct for the dimensions of the screen, or the
+		// focus will appear in the top-left corner of the screen.
 		op.GeoM.Translate(w/2, h/2)
 	}
 	return &op
@@ -177,13 +178,38 @@ func (r *Renderer) picForTexture(filename string) (*ebiten.Image, error) {
 	return img, nil
 }
 
+// ensureCanvases makes sure the canvases used for offscreen rendering each
+// frame are the correct size based on the current screen dimensions and zoom.
+func (r *Renderer) ensureCanvases(w, h, z float64) {
+	b := r.worldCanvas.Bounds()
+	if b.Max.X-b.Min.X != int(w/z) || b.Max.Y-b.Min.Y != int(h/z) {
+		r.worldCanvas, _ = ebiten.NewImage(int(w/z), int(h/z), ebiten.FilterNearest)
+
+		// NB: UI elements are not zoomed by z, which is the world zoom here.
+		r.uiCanvas, _ = ebiten.NewImage(int(w), int(h), ebiten.FilterNearest)
+	}
+}
+
+// target returns the correct render target to use for this entity.
+func (r *Renderer) target(e entity) *ebiten.Image {
+	result := r.worldCanvas
+	if e.p.Absolute {
+		result = r.uiCanvas
+	}
+	return result
+}
+
 // Render all sprites in the world to the Target. We need to know where in the
 // world we are focused, as well as how zoomed in we are, and the dimensions of
 // the screen.
 func (r *Renderer) Render(screen *ebiten.Image, mgr *ecs.World, focusX, focusY, zoom, screenW, screenH float64) error {
+	r.ensureCanvases(screenW, screenH, zoom)
+
 	entities := r.getEntities(mgr)
 
-	screen.Fill(color.NRGBA{40, 34, 31, 0xff})
+	r.worldCanvas.Fill(color.NRGBA{40, 34, 31, 0xff})
+	r.uiCanvas.Clear()
+
 	for _, e := range entities {
 		img, err := r.picForTexture(e.s.Texture)
 		if err != nil {
@@ -228,8 +254,8 @@ func (r *Renderer) Render(screen *ebiten.Image, mgr *ecs.World, focusX, focusY, 
 					offX := float64(x*tileW) - float64(e.repeat.W)/2 + float64(tileW)/2
 					offY := float64(y*tileH) - float64(e.repeat.H)/2 + float64(tileH)/2
 
-					op := e.drawImageOptions(focusX, focusY, zoom, screenW, screenH, offX, offY)
-					screen.DrawImage(img, op)
+					op := e.drawImageOptions(focusX, focusY, screenW/zoom, screenH/zoom, offX, offY)
+					r.target(e).DrawImage(img, op)
 				}
 			}
 			if err != nil {
@@ -238,11 +264,18 @@ func (r *Renderer) Render(screen *ebiten.Image, mgr *ecs.World, focusX, focusY, 
 			continue
 		}
 
-		op := e.drawImageOptions(focusX, focusY, zoom, screenW, screenH, 0, 0)
-		if err := screen.DrawImage(img, op); err != nil {
-			return fmt.Errorf("DrawImage: %v", err)
-		}
+		op := e.drawImageOptions(focusX, focusY, screenW/zoom, screenH/zoom, 0, 0)
+		r.target(e).DrawImage(img, op)
 	}
+
+	screen.Clear()
+
+	op := ebiten.DrawImageOptions{}
+	op.GeoM.Scale(zoom, zoom)
+	screen.DrawImage(r.worldCanvas, &op)
+
+	op = ebiten.DrawImageOptions{}
+	screen.DrawImage(r.uiCanvas, &op)
 
 	return nil
 }
