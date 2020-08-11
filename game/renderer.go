@@ -104,6 +104,9 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 			continue
 		}
 
+		// TODO: Don't bother including anything that's outside the visible
+		// area. Ebiten does not perform frustrum culling.
+
 		entities = append(entities, entity{
 			s: sprite,
 			p: mgr.Component(e, "Position").(*Position),
@@ -199,7 +202,67 @@ func (r *Renderer) target(e entity) *ebiten.Image {
 	return result
 }
 
-// Render all sprites in the world to the Target. We need to know where in the
+// renderEntity renders a single entity to the appropriate render target in the Renderer.
+func (r *Renderer) renderEntity(e entity, focusX, focusY, zoom, screenW, screenH float64) error {
+	img, err := r.picForTexture(e.s.Texture)
+	if err != nil {
+		return fmt.Errorf("get texture: %v", err)
+	}
+
+	img, ok := img.SubImage(image.Rectangle{image.Point{e.s.X, e.s.Y}, image.Point{e.s.X + e.s.W, e.s.Y + e.s.H}}).(*ebiten.Image)
+	if !ok {
+		return fmt.Errorf("SubImage %s: invalid type cast", e.s.Texture)
+	}
+	target := r.target(e)
+	if e.repeat != nil {
+		tileW, tileH := img.Size()
+
+		for y := 0; y < e.repeat.H/tileH+1; y++ {
+			if y == e.repeat.H/tileH {
+				// last
+				remainder := e.repeat.H % tileH
+				if remainder == 0 {
+					continue
+				}
+				// FIXME: this is unfinished and not usable for cicada
+				// layers with non-evenly divisible bounds.
+				// TODO: cut off the bottom of the img for the last row,
+				// then continue into the for x ...
+				// TODO: set tileH to be what's in remainder ...
+			}
+
+			for x := 0; x < e.repeat.W/tileW+1; x++ {
+				if x == e.repeat.W/tileW {
+					// last
+					remainder := e.repeat.W % tileW
+					if remainder == 0 {
+						continue
+					}
+					// FIXME: this is unfinished and not usable for cicada
+					// layers with non-evenly divisible bounds.
+					// TODO: cut off the right of the img for the last
+					// column, then continue onto the DrawImage call ...
+					// TODO: set tileW to be what's in the remainder ...
+				}
+				offX := float64(x*tileW) - float64(e.repeat.W)/2 + float64(tileW)/2
+				offY := float64(y*tileH) - float64(e.repeat.H)/2 + float64(tileH)/2
+
+				op := e.drawImageOptions(focusX, focusY, screenW/zoom, screenH/zoom, offX, offY)
+				target.DrawImage(img, op)
+			}
+		}
+		if err != nil {
+			return fmt.Errorf("SpriteRepeat: %v", err)
+		}
+		return nil
+	}
+
+	op := e.drawImageOptions(focusX, focusY, screenW/zoom, screenH/zoom, 0, 0)
+	target.DrawImage(img, op)
+	return nil
+}
+
+// Render all sprites in the world to the screen. We need to know where in the
 // world we are focused, as well as how zoomed in we are, and the dimensions of
 // the screen.
 func (r *Renderer) Render(screen *ebiten.Image, mgr *ecs.World, focusX, focusY, zoom, screenW, screenH float64) error {
@@ -211,61 +274,10 @@ func (r *Renderer) Render(screen *ebiten.Image, mgr *ecs.World, focusX, focusY, 
 	r.uiCanvas.Clear()
 
 	for _, e := range entities {
-		img, err := r.picForTexture(e.s.Texture)
+		err := r.renderEntity(e, focusX, focusY, zoom, screenW, screenH)
 		if err != nil {
-			return fmt.Errorf("get texture: %v", err)
+			return err
 		}
-
-		img, ok := img.SubImage(image.Rectangle{image.Point{e.s.X, e.s.Y}, image.Point{e.s.X + e.s.W, e.s.Y + e.s.H}}).(*ebiten.Image)
-		if !ok {
-			return fmt.Errorf("SubImage %s: invalid type cast", e.s.Texture)
-		}
-
-		if e.repeat != nil {
-			tileW, tileH := img.Size()
-
-			for y := 0; y < e.repeat.H/tileH+1; y++ {
-				if y == e.repeat.H/tileH {
-					// last
-					remainder := e.repeat.H % tileH
-					if remainder == 0 {
-						continue
-					}
-					// FIXME: this is unfinished and not usable for cicada
-					// layers with non-evenly divisible bounds.
-					// TODO: cut off the bottom of the img for the last row,
-					// then continue into the for x ...
-					// TODO: set tileH to be what's in remainder ...
-				}
-
-				for x := 0; x < e.repeat.W/tileW+1; x++ {
-					if x == e.repeat.W/tileW {
-						// last
-						remainder := e.repeat.W % tileW
-						if remainder == 0 {
-							continue
-						}
-						// FIXME: this is unfinished and not usable for cicada
-						// layers with non-evenly divisible bounds.
-						// TODO: cut off the right of the img for the last
-						// column, then continue onto the DrawImage call ...
-						// TODO: set tileW to be what's in the remainder ...
-					}
-					offX := float64(x*tileW) - float64(e.repeat.W)/2 + float64(tileW)/2
-					offY := float64(y*tileH) - float64(e.repeat.H)/2 + float64(tileH)/2
-
-					op := e.drawImageOptions(focusX, focusY, screenW/zoom, screenH/zoom, offX, offY)
-					r.target(e).DrawImage(img, op)
-				}
-			}
-			if err != nil {
-				return fmt.Errorf("SpriteRepeat: %v", err)
-			}
-			continue
-		}
-
-		op := e.drawImageOptions(focusX, focusY, screenW/zoom, screenH/zoom, 0, 0)
-		r.target(e).DrawImage(img, op)
 	}
 
 	screen.Clear()
