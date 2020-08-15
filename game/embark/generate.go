@@ -42,6 +42,8 @@ func (g *generator) generateChar() *game.Character {
 		InherantActionPoints: int(g.r.NormFloat64()*1.4 + 8),
 		Hair:                 hair,
 		Skin:                 skin,
+		PortraitBG:           g.r.Intn(mathx.MinI(len(game.PortraitBGBig), len(game.PortraitBGSmall))),
+		PortraitFrame:        g.r.Intn(mathx.MinI(len(game.PortraitFrameBig), len(game.PortraitFrameSmall))),
 
 		CurrentHealth:        17,
 		BaseHealth:           25,

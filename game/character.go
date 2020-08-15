@@ -28,9 +28,11 @@ const (
 // is over.
 type Character struct {
 	// Things that don't affect gameplay.
-	Name string
-	Skin string
-	Hair string
+	Name          string
+	Skin          string
+	Hair          string
+	PortraitBG    int
+	PortraitFrame int
 
 	// Intrinsic to the Character
 	Profession string
