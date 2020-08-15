@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/mathx"
 )
 
 type generator struct {

@@ -204,19 +204,36 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 		Layer: 100,
 	})
 
-	// Icon
-	app := em.archive.Appearance(char.Profession, char.Sex, char.Hair, char.Skin)
+	// Icon (BG, portrait, then frame)
+	center := game.Center{
+		X: left + 108,
+		Y: top + 56/2,
+	}
 	e = em.mgr.NewEntity()
 	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &game.Position{
+		Center: center,
+		Layer:  99,
+	})
+	em.mgr.AddComponent(e, &game.PortraitBGBig[char.PortraitBG])
+
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
+	em.mgr.AddComponent(e, &game.Position{
+		Center: center,
+		Layer:  100,
+	})
+	app := em.archive.Appearance(char.Profession, char.Sex, char.Hair, char.Skin)
 	spr := app.BigIcon()
 	em.mgr.AddComponent(e, &spr)
+
+	e = em.mgr.NewEntity()
+	em.mgr.Dependency(container, e)
 	em.mgr.AddComponent(e, &game.Position{
-		Center: game.Center{
-			X: left + 108,
-			Y: top + 56/2,
-		},
-		Layer: 100,
+		Center: center,
+		Layer:  101,
 	})
+	em.mgr.AddComponent(e, &game.PortraitFrameBig[char.PortraitFrame])
 
 	// Profession
 	e = em.mgr.NewEntity()
