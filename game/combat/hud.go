@@ -695,7 +695,7 @@ func (hud *HUD) repaintSkills() {
 }
 
 const turnQueueSlots int = 8
-const entitiesPerTurnQueueSlot int = 3
+const entitiesPerTurnQueueSlot int = 5
 
 func (hud *HUD) showTurnQueue() {
 	e := hud.mgr.AnyTagged(turnQueueTag)
@@ -742,6 +742,8 @@ func (hud *HUD) repaintTurnQueue() {
 		textureY      int
 		current, max  int
 		icon          *game.Sprite
+		bg            *game.Sprite
+		frame         *game.Sprite
 		disambiguator float64
 	}
 
@@ -765,6 +767,8 @@ func (hud *HUD) repaintTurnQueue() {
 			current:       participant.PreparationThreshold.Cur,
 			max:           participant.PreparationThreshold.Max,
 			icon:          &participant.SmallIcon,
+			bg:            &participant.SmallPortraitBG,
+			frame:         &participant.SmallPortraitFrame,
 			disambiguator: participant.Disambiguator,
 		})
 	}
@@ -779,35 +783,55 @@ func (hud *HUD) repaintTurnQueue() {
 	x, y := 10, 10+13
 	stride := 42
 	for i := 0; i < turnQueueSlots; i++ {
-		// participant's portrait icon
-		child := children.Value[i*3]
-
 		// If we have no more Characters for this slot, then hide it.
 		if i >= len(q) {
-			hud.mgr.RemoveComponent(children.Value[i*3+0], &game.Sprite{})
-			hud.mgr.RemoveComponent(children.Value[i*3+1], &game.Sprite{})
-			hud.mgr.AddComponent(children.Value[i*3+2], &game.Font{})
+			hud.mgr.RemoveComponent(children.Value[i*entitiesPerTurnQueueSlot+0], &game.Sprite{})
+			hud.mgr.RemoveComponent(children.Value[i*entitiesPerTurnQueueSlot+1], &game.Sprite{})
+			hud.mgr.RemoveComponent(children.Value[i*entitiesPerTurnQueueSlot+2], &game.Sprite{})
+			hud.mgr.RemoveComponent(children.Value[i*entitiesPerTurnQueueSlot+3], &game.Sprite{})
+			hud.mgr.AddComponent(children.Value[i*entitiesPerTurnQueueSlot+4], &game.Font{})
 			continue
 		}
 
 		v := q[i]
+
+		// participant's portrait icon
+		center := game.Center{
+			X: float64(13+x+i*stride) * hud.scale,
+			Y: float64(y) * hud.scale,
+		}
+		scale := game.Scale{
+			X: hud.scale,
+			Y: hud.scale,
+		}
+		child := children.Value[i*entitiesPerTurnQueueSlot]
+		hud.mgr.AddComponent(child, v.bg)
+		hud.mgr.AddComponent(child, &game.Position{
+			Center:   center,
+			Layer:    hud.layer - 1,
+			Absolute: true,
+		})
+		hud.mgr.AddComponent(child, &scale)
+		child = children.Value[i*entitiesPerTurnQueueSlot+1]
 		hud.mgr.AddComponent(child, v.icon)
 		hud.mgr.AddComponent(child, &game.Position{
-			Center: game.Center{
-				X: float64(13+x+i*stride) * hud.scale,
-				Y: float64(y) * hud.scale,
-			},
+			Center:   center,
 			Layer:    hud.layer,
 			Absolute: true,
 		})
-		hud.mgr.AddComponent(child, &game.Scale{
-			X: hud.scale,
-			Y: hud.scale,
+		hud.mgr.AddComponent(child, &scale)
+		child = children.Value[i*entitiesPerTurnQueueSlot+2]
+		hud.mgr.AddComponent(child, v.frame)
+		hud.mgr.AddComponent(child, &game.Position{
+			Center:   center,
+			Layer:    hud.layer + 1,
+			Absolute: true,
 		})
+		hud.mgr.AddComponent(child, &scale)
 
 		// current preparation progressbar
 		prepPerc := float64(v.current) / float64(v.max)
-		child = children.Value[i*3+1]
+		child = children.Value[i*entitiesPerTurnQueueSlot+3]
 		hud.mgr.Dependency(parent, child)
 		hud.mgr.AddComponent(child, &game.Sprite{
 			Texture: "tranquility-plus-39-palette.png",
@@ -830,7 +854,7 @@ func (hud *HUD) repaintTurnQueue() {
 		})
 
 		// current/max preparation text
-		child = children.Value[i*3+2]
+		child = children.Value[i*entitiesPerTurnQueueSlot+4]
 		hud.mgr.Dependency(parent, child)
 		hud.mgr.AddComponent(child, &game.Font{
 			Text: fmt.Sprintf("%d/%d", v.current, v.max),
