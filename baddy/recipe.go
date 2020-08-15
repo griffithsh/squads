@@ -47,7 +47,7 @@ var Recipes map[RecipeID]Recipe = map[RecipeID]Recipe{
 		Sex:          game.Male,
 		Profession:   "Skeleton",
 		Hair:         "black",
-		Skin:         "green",
+		Skin:         "pale",
 	},
 	Wolf: Recipe{
 		ActionPoints: 60,
@@ -56,7 +56,7 @@ var Recipes map[RecipeID]Recipe = map[RecipeID]Recipe{
 		Sex:          game.Male,
 		Profession:   "Wolf",
 		Hair:         "black",
-		Skin:         "green",
+		Skin:         "pale",
 	},
 	Necro: Recipe{
 		ActionPoints: 60,
@@ -65,6 +65,6 @@ var Recipes map[RecipeID]Recipe = map[RecipeID]Recipe{
 		Sex:          game.Male,
 		Profession:   "Necromancer",
 		Hair:         "black",
-		Skin:         "green",
+		Skin:         "pale",
 	},
 }
