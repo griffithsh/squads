@@ -375,14 +375,18 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, a
 	app := cm.archive.Appearance(char.Profession, char.Sex, char.Hair, char.Skin)
 
 	participant := &Participant{
-		Name:       char.Name,
-		Level:      char.Level,
-		Hair:       char.Hair,
-		Skin:       char.Skin,
-		SmallIcon:  app.SmallIcon(),
-		BigIcon:    app.BigIcon(),
-		Profession: char.Profession,
-		Sex:        char.Sex,
+		Name:               char.Name,
+		Level:              char.Level,
+		Hair:               char.Hair,
+		Skin:               char.Skin,
+		SmallPortraitBG:    game.PortraitBGSmall[char.PortraitBG],
+		BigPortraitBG:      game.PortraitBGBig[char.PortraitBG],
+		SmallPortraitFrame: game.PortraitFrameSmall[char.PortraitFrame],
+		BigPortraitFrame:   game.PortraitFrameBig[char.PortraitFrame],
+		SmallIcon:          app.SmallIcon(),
+		BigIcon:            app.BigIcon(),
+		Profession:         char.Profession,
+		Sex:                char.Sex,
 		PreparationThreshold: CurMax{
 			Max: char.InherantPreparation + prof.Preparation + equipment.WeaponPreparation(),
 		},

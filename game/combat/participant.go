@@ -46,12 +46,17 @@ type Participant struct {
 	Character ecs.Entity
 	// Hexes occupied? Do we merge with Obstacle?
 
-	Name      string
-	Level     int
-	Hair      string
-	Skin      string
-	SmallIcon game.Sprite // (26x26)
-	BigIcon   game.Sprite // (52x52)
+	Level int
+
+	Name               string
+	Hair               string
+	Skin               string
+	SmallPortraitBG    game.Sprite
+	BigPortraitBG      game.Sprite
+	SmallPortraitFrame game.Sprite
+	BigPortraitFrame   game.Sprite
+	SmallIcon          game.Sprite // (26x26)
+	BigIcon            game.Sprite // (52x52)
 
 	Profession string
 	Sex        game.CharacterSex

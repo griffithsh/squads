@@ -41,16 +41,18 @@ Entities.
 */
 
 var (
-	combatHUDTag                  = "COMBAT_HUD"
-	timePassingTag                = combatHUDTag + ".TIME_PASSING"
-	currentParticipantTag         = combatHUDTag + ".CURRENT_PARTICIPANT"
-	currentParticipantHovererTag  = currentParticipantTag + ".HOVERER"
-	currentParticipantPortraitTag = currentParticipantTag + ".PORTRAIT"
-	currentParticipantNameTag     = currentParticipantTag + ".NAME"
-	currentParticipantStatsTag    = currentParticipantTag + ".STATS"
-	skillsTag                     = currentParticipantTag + ".SKILLS"
-	turnQueueTag                  = combatHUDTag + ".TURN_QUEUE"
-	endTurnButtonTag              = combatHUDTag + ".END_TURN_BUTTON"
+	combatHUDTag                       = "COMBAT_HUD"
+	timePassingTag                     = combatHUDTag + ".TIME_PASSING"
+	currentParticipantTag              = combatHUDTag + ".CURRENT_PARTICIPANT"
+	currentParticipantHovererTag       = currentParticipantTag + ".HOVERER"
+	currentParticipantPortraitTag      = currentParticipantTag + ".PORTRAIT"
+	currentParticipantPortraitBGTag    = currentParticipantPortraitTag + ".BG"
+	currentParticipantPortraitFrameTag = currentParticipantPortraitTag + ".FRAME"
+	currentParticipantNameTag          = currentParticipantTag + ".NAME"
+	currentParticipantStatsTag         = currentParticipantTag + ".STATS"
+	skillsTag                          = currentParticipantTag + ".SKILLS"
+	turnQueueTag                       = combatHUDTag + ".TURN_QUEUE"
+	endTurnButtonTag                   = combatHUDTag + ".END_TURN_BUTTON"
 
 	invalidatedTag = combatHUDTag + ".INVALIDATED"
 )
@@ -311,7 +313,13 @@ func (hud *HUD) showCurrentParticipant() {
 
 	e = hud.mgr.NewEntity()
 	hud.mgr.Dependency(parent, e)
+	hud.mgr.Tag(e, currentParticipantPortraitBGTag)
+	e = hud.mgr.NewEntity()
+	hud.mgr.Dependency(parent, e)
 	hud.mgr.Tag(e, currentParticipantPortraitTag)
+	e = hud.mgr.NewEntity()
+	hud.mgr.Dependency(parent, e)
+	hud.mgr.Tag(e, currentParticipantPortraitFrameTag)
 
 	e = hud.mgr.NewEntity()
 	hud.mgr.Dependency(parent, e)
@@ -356,21 +364,37 @@ func (hud *HUD) repaintCurrentParticipant() {
 	hud.mgr.AddComponent(e, game.NewHoverAnimation())
 
 	// Repaint the current Participant's portrait.
-	e = hud.mgr.AnyTagged(currentParticipantPortraitTag)
-	participant := hud.mgr.Component(hud.turnToken, "Participant").(*Participant)
-
-	hud.mgr.AddComponent(e, &participant.BigIcon)
-
-	hud.mgr.AddComponent(e, &game.Scale{
+	center := game.Center{
+		X: 30 * hud.scale,
+		Y: (hud.centerY * 2) - 30*hud.scale,
+	}
+	scale := game.Scale{
 		X: hud.scale,
 		Y: hud.scale,
-	})
+	}
+	participant := hud.mgr.Component(hud.turnToken, "Participant").(*Participant)
+	e = hud.mgr.AnyTagged(currentParticipantPortraitBGTag)
+	hud.mgr.AddComponent(e, &participant.BigPortraitBG)
+	hud.mgr.AddComponent(e, &scale)
 	hud.mgr.AddComponent(e, &game.Position{
-		Center: game.Center{
-			X: 30 * hud.scale,
-			Y: (hud.centerY * 2) - 30*hud.scale,
-		},
+		Center:   center,
+		Layer:    hud.layer - 1,
+		Absolute: true,
+	})
+	e = hud.mgr.AnyTagged(currentParticipantPortraitTag)
+	hud.mgr.AddComponent(e, &participant.BigIcon)
+	hud.mgr.AddComponent(e, &scale)
+	hud.mgr.AddComponent(e, &game.Position{
+		Center:   center,
 		Layer:    hud.layer,
+		Absolute: true,
+	})
+	e = hud.mgr.AnyTagged(currentParticipantPortraitFrameTag)
+	hud.mgr.AddComponent(e, &participant.BigPortraitFrame)
+	hud.mgr.AddComponent(e, &scale)
+	hud.mgr.AddComponent(e, &game.Position{
+		Center:   center,
+		Layer:    hud.layer + 1,
 		Absolute: true,
 	})
 
