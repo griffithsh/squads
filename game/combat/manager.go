@@ -496,31 +496,27 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 						},
 						Layer: vis.Layer,
 					})
-					if vis.XOffset != 0 || vis.YOffset != 0 {
-						cm.mgr.AddComponent(e, &game.RenderOffset{
-							X: vis.XOffset / 2,
-							Y: vis.YOffset / 2,
-						})
+
+					sprite := func(frame game.CombatMapRecipeHexFrame) game.Sprite {
+						return game.Sprite{
+							Texture: frame.Texture,
+							X:       frame.X,
+							Y:       frame.Y,
+							W:       frame.W,
+							H:       frame.H,
+							OffsetX: vis.XOffset + frame.W/2 - hexagonTileWidth/2,
+							OffsetY: vis.YOffset - frame.H/2 + hexagonHeight/2,
+						}
 					}
+					// If there is only one frame, add a Sprite Component.
 					if len(vis.Frames) == 1 {
-						cm.mgr.AddComponent(e, &game.Sprite{
-							Texture: vis.Frames[0].Texture,
-							X:       vis.Frames[0].X,
-							Y:       vis.Frames[0].Y,
-							W:       vis.Frames[0].W,
-							H:       vis.Frames[0].H,
-						})
+						spr := sprite(vis.Frames[0])
+						cm.mgr.AddComponent(e, &spr)
 					} else { // not zero or one, and definitely not negative
-						// add frame animation
+						// If there is more than frame, add a FrameAnimationComponent.
 						fa := game.FrameAnimation{}
 						for _, frame := range vis.Frames {
-							fa.Frames = append(fa.Frames, game.Sprite{
-								Texture: frame.Texture,
-								X:       frame.X,
-								Y:       frame.Y,
-								W:       frame.W,
-								H:       frame.H,
-							})
+							fa.Frames = append(fa.Frames, sprite(frame))
 							fa.Timings = append(fa.Timings, frame.Duration)
 						}
 						fa.Randomise()
