@@ -17,6 +17,7 @@ type CombatMapRecipeVisual struct {
 	Frames           []CombatMapRecipeHexFrame
 	XOffset, YOffset int
 	Layer            int
+	Obscures         []geom.Key
 }
 
 type CombatMapRecipeHex struct {
