@@ -62,6 +62,10 @@ type Manager struct {
 	celebrations time.Duration
 
 	squads []ecs.Entity
+
+	// vanishers is the list of entities that will vanish when a participant
+	// goes behind them.
+	vanishers map[ecs.Entity][]geom.Key
 }
 
 // NewManager creates a new combat Manager.
@@ -96,6 +100,7 @@ func NewManager(mgr *ecs.World, camera *game.Camera, bus *event.Bus, archive *da
 	cm.bus.Subscribe(SkillUseConcluded{}.Type(), cm.handleSkillUseConcluded)
 	cm.bus.Subscribe(CharacterEnteredCombat{}.Type(), cm.handleCharacterEnteredCombat)
 	cm.bus.Subscribe(ParticipantDefiled{}.Type(), cm.handleParticipantDefiled)
+	cm.bus.Subscribe(ParticipantMoving{}.Type(), cm.handleParticipantMoving)
 
 	return &cm
 }
@@ -461,6 +466,7 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 				keys[i] = hex.Position
 			}
 			cm.field.Load(keys)
+			cm.vanishers = make(map[ecs.Entity][]geom.Key)
 			// TODO: center on the midpoint between selected start locations instead of
 			// the middle of the map. Or maybe the start location of the player's team?
 			x, y := cm.field.Center()
@@ -486,6 +492,14 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 					}
 					e := cm.mgr.NewEntity()
 					cm.mgr.Tag(e, "combat")
+
+					for _, o := range vis.Obscures {
+						if val, ok := cm.vanishers[e]; ok {
+							cm.vanishers[e] = append(val, o)
+						} else {
+							cm.vanishers[e] = []geom.Key{o}
+						}
+					}
 
 					// add position
 					x, y := h.Center()
@@ -549,6 +563,10 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 
 				cm.createParticipation(e, team, h)
 			}
+
+			// This is a bit of a hacky way call the code to hide or show trees
+			// etc on initialisation.
+			cm.handleParticipantMoving(nil)
 
 			// Announce that the Combat has begun.
 			cm.bus.Publish(&game.CombatBegan{})
@@ -921,6 +939,34 @@ func (cm *Manager) handleParticipantDefiled(et event.Typer) {
 	pde := et.(*ParticipantDefiled)
 
 	cm.mgr.RemoveComponent(pde.Entity, &game.Obstacle{})
+}
+
+func (cm *Manager) handleParticipantMoving(event.Typer) {
+	// get a list of the Keys that participants currently reside in.
+	participants := []geom.Key{}
+	for _, e := range cm.mgr.Get([]string{"Participant", "Position"}) {
+		pos := cm.mgr.Component(e, "Position").(*game.Position)
+		k := cm.field.Wtok(pos.Center.X, pos.Center.Y)
+		participants = append(participants, k)
+	}
+
+	// Go through every "vanisher" (a tile that obscures the view of other
+	// tiles), and check if a participant is on one of the tiles it obscures. If
+	// it is, then hide this vanisher, otherwise, show it.
+	for vanisher, keys := range cm.vanishers {
+		cm.mgr.RemoveComponent(vanisher, &game.Hidden{})
+		for _, key := range keys {
+			for _, participant := range participants {
+				if participant == key {
+					cm.mgr.AddComponent(vanisher, &game.Hidden{})
+
+					// break out of two layers of for loop.
+					goto nextVanisher
+				}
+			}
+		}
+	nextVanisher:
+	}
 }
 
 func (cm *Manager) addGrass() {
