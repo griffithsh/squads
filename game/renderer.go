@@ -42,6 +42,7 @@ type entity struct {
 	offset *RenderOffset
 	scale  *Scale
 	repeat *SpriteRepeat
+	alpha  *Alpha
 }
 
 // drawImageOptions creates an new ebiten.DrawImageOptions for this entity.
@@ -120,6 +121,9 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 		if repeat, ok := mgr.Component(e, "SpriteRepeat").(*SpriteRepeat); ok {
 			entities[len(entities)-1].repeat = repeat
 		}
+		if alpha, ok := mgr.Component(e, "Alpha").(*Alpha); ok {
+			entities[len(entities)-1].alpha = alpha
+		}
 	}
 
 	// sort by position layer, position.Y - sprite.Y/2
@@ -155,7 +159,11 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 
 		// TODO: also sort by color? See https://github.com/hajimehoshi/ebiten/wiki/Performance-Tips
 
-		return entities[i].s.Texture < entities[j].s.Texture
+		if entities[i].s.Texture != entities[j].s.Texture {
+			return entities[i].s.Texture < entities[j].s.Texture
+		}
+
+		return entities[i].alpha.Value < entities[j].alpha.Value
 	})
 
 	return entities
