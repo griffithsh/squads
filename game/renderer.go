@@ -18,6 +18,8 @@ type Renderer struct {
 
 	worldCanvas *ebiten.Image
 	uiCanvas    *ebiten.Image
+
+	alphaMask *ebiten.Image
 }
 
 // ImageProvider is the contract that the Renderer needs to retrieve images to
@@ -29,11 +31,18 @@ type ImageProvider interface {
 // NewRenderer creates a new Renderer.
 func NewRenderer(images ImageProvider) *Renderer {
 	c, _ := ebiten.NewImage(1, 1, ebiten.FilterNearest)
-	return &Renderer{
+
+	r := Renderer{
 		textures:      map[string]*ebiten.Image{},
 		imageProvider: images,
 		worldCanvas:   c,
 	}
+	i, err := r.picForTexture("renderer-alpha-mask.png")
+	if err != nil {
+		panic(fmt.Sprintf("Renderer: load alpha mask: %v", err))
+	}
+	r.alphaMask = i
+	return &r
 }
 
 type entity struct {
@@ -220,6 +229,14 @@ func (r *Renderer) renderEntity(e entity, focusX, focusY, zoom, screenW, screenH
 	img, ok := img.SubImage(image.Rectangle{image.Point{e.s.X, e.s.Y}, image.Point{e.s.X + e.s.W, e.s.Y + e.s.H}}).(*ebiten.Image)
 	if !ok {
 		return fmt.Errorf("SubImage %s: invalid type cast", e.s.Texture)
+	}
+	if e.alpha != nil && e.alpha.Value != 1.0 {
+		// Copy mask with imagefromimage?
+		mask, _ := ebiten.NewImageFromImage(r.alphaMask, ebiten.FilterDefault)
+		op := &ebiten.DrawImageOptions{}
+		op.CompositeMode = ebiten.CompositeModeSourceIn
+		mask.DrawImage(img, op)
+		img = mask
 	}
 	target := r.target(e)
 	if e.repeat != nil {

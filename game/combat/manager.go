@@ -955,11 +955,11 @@ func (cm *Manager) handleParticipantMoving(event.Typer) {
 	// tiles), and check if a participant is on one of the tiles it obscures. If
 	// it is, then hide this vanisher, otherwise, show it.
 	for vanisher, keys := range cm.vanishers {
-		cm.mgr.RemoveComponent(vanisher, &game.Hidden{})
+		cm.mgr.RemoveComponent(vanisher, &game.Alpha{})
 		for _, key := range keys {
 			for _, participant := range participants {
 				if participant == key {
-					cm.mgr.AddComponent(vanisher, &game.Hidden{})
+					cm.mgr.AddComponent(vanisher, &game.Alpha{})
 
 					// break out of two layers of for loop.
 					goto nextVanisher
