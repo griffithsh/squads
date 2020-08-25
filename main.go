@@ -2,6 +2,7 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
 	"image"
 	"log"
@@ -46,15 +47,18 @@ type system struct {
 }
 
 func main() {
-	// dump performance with pprof
-	f, err := os.Create("pprof/cpu.prof")
-	if err != nil {
-		log.Fatal("could not create CPU profile: ", err)
+	cpuProfile := flag.String("cpuprofile", "", "write cpu profile to file")
+	flag.Parse()
+	if *cpuProfile != "" {
+		f, err := os.Create(*cpuProfile)
+		if err != nil {
+			log.Fatal("could not create CPU profile: ", err)
+		}
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal("could not start CPU profile: ", err)
+		}
+		defer pprof.StopCPUProfile()
 	}
-	if err := pprof.StartCPUProfile(f); err != nil {
-		log.Fatal("could not start CPU profile: ", err)
-	}
-	defer pprof.StopCPUProfile()
 
 	rand.Seed(time.Now().Unix())
 	w, h := 1024, 768
@@ -69,7 +73,6 @@ func main() {
 		fmt.Printf("%v\n", err)
 		os.Exit(1)
 	}
-
 }
 
 // Controls represent debug controls
