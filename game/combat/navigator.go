@@ -139,6 +139,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 }
 
 // direction calculates which hexagonal direction the vector of x,y aligns with.
+// FIXME: hard-coded assumption about hexes being 24 by 16
 func direction(x, y float64) (geom.DirectionType, error) {
 	switch {
 	case x == 0 && y == 16:

@@ -264,7 +264,7 @@ func semiSort(m, n int, f *geom.Field) []*geom.Hex {
 		h        *geom.Hex
 	}
 
-	startX, startY := f.Ktow(geom.Key{m, n})
+	startX, startY := f.Ktow(geom.Key{M: m, N: n})
 	distances := make([]s, len(f.Hexes()))
 
 	for i, h := range f.Hexes() {
@@ -304,7 +304,7 @@ func isBlocked(field *geom.Field, k geom.Key, mgr *ecs.World) bool {
 	for _, e := range mgr.Get([]string{"Obstacle"}) {
 		o := mgr.Component(e, "Obstacle").(*game.Obstacle)
 
-		h := field.Get(geom.Key{o.M, o.N})
+		h := field.Get(geom.Key{M: o.M, N: o.N})
 		if h == nil {
 			panic(fmt.Sprintf("there is no hex where Obstacle(%d,%s) is present (%d,%d)", e, o.ObstacleType, o.M, o.N))
 		}
@@ -527,7 +527,7 @@ func (cm *Manager) Begin(participatingSquads []ecs.Entity) {
 						spr := sprite(vis.Frames[0])
 						cm.mgr.AddComponent(e, &spr)
 					} else { // not zero or one, and definitely not negative
-						// If there is more than frame, add a FrameAnimationComponent.
+						// If there is more than one frame, add a FrameAnimationComponent.
 						fa := game.FrameAnimation{}
 						for _, frame := range vis.Frames {
 							fa.Frames = append(fa.Frames, sprite(frame))
@@ -623,6 +623,7 @@ func (cm *Manager) Unpause() {
 			cm.mgr.RemoveComponent(e, &game.Hidden{})
 			cm.hud.Enable()
 		}
+		// TODO: recalc obscures if they're implemented with a Hidden Component.
 		cm.paused = false
 	}
 }
