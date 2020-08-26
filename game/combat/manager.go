@@ -955,11 +955,11 @@ func (cm *Manager) handleParticipantMoving(event.Typer) {
 	// tiles), and check if a participant is on one of the tiles it obscures. If
 	// it is, then hide this vanisher, otherwise, show it.
 	for vanisher, keys := range cm.vanishers {
-		cm.mgr.RemoveComponent(vanisher, &game.Hidden{})
+		var shouldVanish bool
 		for _, key := range keys {
 			for _, participant := range participants {
 				if participant == key {
-					cm.mgr.AddComponent(vanisher, &game.Hidden{})
+					shouldVanish = true
 
 					// break out of two layers of for loop.
 					goto nextVanisher
@@ -967,6 +967,25 @@ func (cm *Manager) handleParticipantMoving(event.Typer) {
 			}
 		}
 	nextVanisher:
+
+		var invisible bool
+		if alpha := cm.mgr.Component(vanisher, "Alpha"); alpha != nil {
+			if alpha.(*game.Alpha).Value == 0 {
+				invisible = true
+			}
+		}
+
+		var disappearing bool
+		if c := cm.mgr.Component(vanisher, "FadeOut"); c != nil {
+			disappearing = true
+		}
+		if shouldVanish && !invisible && !disappearing {
+			cm.mgr.AddComponent(vanisher, &game.FadeOut{Duration: time.Millisecond * 200})
+		}
+
+		if !shouldVanish && (invisible || disappearing) {
+			cm.mgr.AddComponent(vanisher, &game.FadeIn{Duration: time.Millisecond * 100})
+		}
 	}
 }
 
