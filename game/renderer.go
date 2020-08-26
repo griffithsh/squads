@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 	"image/color"
+	"math/rand"
 	"sort"
 
 	"github.com/griffithsh/squads/ecs"
@@ -18,6 +19,10 @@ type Renderer struct {
 
 	worldCanvas *ebiten.Image
 	uiCanvas    *ebiten.Image
+
+	// randFloats are used to define whether a tile of an Entity with an Alpha
+	// component should be shown or not.
+	randFloats []float64
 }
 
 // ImageProvider is the contract that the Renderer needs to retrieve images to
@@ -28,11 +33,21 @@ type ImageProvider interface {
 
 // NewRenderer creates a new Renderer.
 func NewRenderer(images ImageProvider) *Renderer {
+	// 4099 is the first prime number after 4096. Primae numbers have no
+	// factors, so they won't repeat a pattern on power of two sized textures.
+	// 4096 is 64*64. 64 is 512/8. 512x512 is a reasonably large texture size,
+	// and 8 is the width/height of one of the tiles.
+	pre := make([]float64, 4099)
+	for i := 0; i < len(pre); i++ {
+		pre[i] = rand.Float64()
+	}
+
 	c, _ := ebiten.NewImage(1, 1, ebiten.FilterNearest)
 	return &Renderer{
 		textures:      map[string]*ebiten.Image{},
 		imageProvider: images,
 		worldCanvas:   c,
+		randFloats:    pre,
 	}
 }
 
@@ -275,8 +290,27 @@ func (r *Renderer) renderEntity(e entity, focusX, focusY, zoom, screenW, screenH
 	if e.repeat != nil {
 		r.renderRepeatedEntity(e, img, target, focusX, focusY, zoom, screenW, screenH)
 		return nil
+	}
 
+	if e.alpha != nil {
+		const tileDim = 8
+		w, h := img.Size()
+		for y := 0; y < h; y += tileDim {
+			for x := 0; x < w; x += tileDim {
+				rng := r.randFloats[(x/tileDim+y/tileDim*64)%len(r.randFloats)]
+				show := (rng < e.alpha.Value)
+				if !show {
+					continue
+				}
+				tile, _ := img.SubImage(image.Rectangle{image.Point{e.s.X + x, e.s.Y + y}, image.Point{e.s.X + x + tileDim, e.s.Y + y + tileDim}}).(*ebiten.Image)
 
+				offX, offY := float64(x), float64(y)
+
+				op := e.drawImageOptions(focusX, focusY, screenW/zoom, screenH/zoom, offX, offY)
+				target.DrawImage(tile, op)
+			}
+		}
+		return nil
 	}
 
 	op := e.drawImageOptions(focusX, focusY, screenW/zoom, screenH/zoom, 0, 0)
