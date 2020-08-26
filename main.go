@@ -33,6 +33,7 @@ type system struct {
 	fonts        *game.FontSystem
 	hierarchy    *ecs.ParentSystem
 	leash        *game.LeashSystem
+	fades        *game.FadeSystem
 	wipes        *game.SceneWipeSystem
 	interactives *ui.InteractiveSystem
 
@@ -159,6 +160,7 @@ func setup(w, h int) (*system, error) {
 		fonts:        game.NewFontSystem(mgr),
 		hierarchy:    ecs.NewParentSystem(mgr),
 		leash:        &game.LeashSystem{},
+		fades:        &game.FadeSystem{},
 		wipes:        game.NewSceneWipeSystem(),
 		interactives: ui.NewInteractiveSystem(mgr, bus),
 	}
@@ -311,6 +313,7 @@ func (s *system) run(screen *ebiten.Image) error {
 	s.expiry.Update(elapsed)
 	s.fonts.Update()
 	s.leash.Update(s.mgr, elapsed)
+	s.fades.Update(s.mgr, elapsed)
 	s.anim.Update(s.mgr, elapsed)
 	s.traversals.Update(s.mgr, elapsed)
 	s.wipes.Update(s.mgr, elapsed)
