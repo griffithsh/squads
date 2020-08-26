@@ -210,6 +210,45 @@ func (r *Renderer) target(e entity) *ebiten.Image {
 	return result
 }
 
+func (r *Renderer) renderRepeatedEntity(e entity, img *ebiten.Image, target *ebiten.Image, focusX, focusY, zoom, screenW, screenH float64) {
+	tileW, tileH := img.Size()
+
+	for y := 0; y < e.repeat.H/tileH+1; y++ {
+		if y == e.repeat.H/tileH {
+			// last
+			remainder := e.repeat.H % tileH
+			if remainder == 0 {
+				continue
+			}
+			// FIXME: this is unfinished and not usable for cicada
+			// layers with non-evenly divisible bounds.
+			// TODO: cut off the bottom of the img for the last row,
+			// then continue into the for x ...
+			// TODO: set tileH to be what's in remainder ...
+		}
+
+		for x := 0; x < e.repeat.W/tileW+1; x++ {
+			if x == e.repeat.W/tileW {
+				// last
+				remainder := e.repeat.W % tileW
+				if remainder == 0 {
+					continue
+				}
+				// FIXME: this is unfinished and not usable for cicada
+				// layers with non-evenly divisible bounds.
+				// TODO: cut off the right of the img for the last
+				// column, then continue onto the DrawImage call ...
+				// TODO: set tileW to be what's in the remainder ...
+			}
+			offX := float64(x*tileW) - float64(e.repeat.W)/2 + float64(tileW)/2
+			offY := float64(y*tileH) - float64(e.repeat.H)/2 + float64(tileH)/2
+
+			op := e.drawImageOptions(focusX, focusY, screenW/zoom, screenH/zoom, offX, offY)
+			target.DrawImage(img, op)
+		}
+	}
+}
+
 // renderEntity renders a single entity to the appropriate render target in the Renderer.
 func (r *Renderer) renderEntity(e entity, focusX, focusY, zoom, screenW, screenH float64) error {
 	img, err := r.picForTexture(e.s.Texture)
@@ -223,50 +262,15 @@ func (r *Renderer) renderEntity(e entity, focusX, focusY, zoom, screenW, screenH
 	}
 	target := r.target(e)
 	if e.repeat != nil {
-		tileW, tileH := img.Size()
-
-		for y := 0; y < e.repeat.H/tileH+1; y++ {
-			if y == e.repeat.H/tileH {
-				// last
-				remainder := e.repeat.H % tileH
-				if remainder == 0 {
-					continue
-				}
-				// FIXME: this is unfinished and not usable for cicada
-				// layers with non-evenly divisible bounds.
-				// TODO: cut off the bottom of the img for the last row,
-				// then continue into the for x ...
-				// TODO: set tileH to be what's in remainder ...
-			}
-
-			for x := 0; x < e.repeat.W/tileW+1; x++ {
-				if x == e.repeat.W/tileW {
-					// last
-					remainder := e.repeat.W % tileW
-					if remainder == 0 {
-						continue
-					}
-					// FIXME: this is unfinished and not usable for cicada
-					// layers with non-evenly divisible bounds.
-					// TODO: cut off the right of the img for the last
-					// column, then continue onto the DrawImage call ...
-					// TODO: set tileW to be what's in the remainder ...
-				}
-				offX := float64(x*tileW) - float64(e.repeat.W)/2 + float64(tileW)/2
-				offY := float64(y*tileH) - float64(e.repeat.H)/2 + float64(tileH)/2
-
-				op := e.drawImageOptions(focusX, focusY, screenW/zoom, screenH/zoom, offX, offY)
-				target.DrawImage(img, op)
-			}
-		}
-		if err != nil {
-			return fmt.Errorf("SpriteRepeat: %v", err)
-		}
+		r.renderRepeatedEntity(e, img, target, focusX, focusY, zoom, screenW, screenH)
 		return nil
+
+
 	}
 
 	op := e.drawImageOptions(focusX, focusY, screenW/zoom, screenH/zoom, 0, 0)
 	target.DrawImage(img, op)
+
 	return nil
 }
 
