@@ -99,31 +99,42 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 		if mgr.Component(e, "Hidden") != nil {
 			continue
 		}
+
+		ent := entity{
+			p: mgr.Component(e, "Position").(*Position),
+		}
+
+		// Don't return entities with alpha set to zero.
+		alpha, ok := mgr.Component(e, "Alpha").(*Alpha)
+		if ok {
+			if alpha.Value == 0 {
+				continue
+			}
+			ent.alpha = alpha
+		}
+
+		ent.s = mgr.Component(e, "Sprite").(*Sprite)
 		// Don't attempt to render sprites without a Texture.
-		sprite := mgr.Component(e, "Sprite").(*Sprite)
-		if sprite.Texture == "" {
+		if ent.s.Texture == "" {
 			continue
 		}
 
 		// TODO: Don't bother including anything that's outside the visible
 		// area. Ebiten does not perform frustrum culling.
 
-		entities = append(entities, entity{
-			s: sprite,
-			p: mgr.Component(e, "Position").(*Position),
-		})
 		if offset, ok := mgr.Component(e, "RenderOffset").(*RenderOffset); ok {
-			entities[len(entities)-1].offset = offset
+			ent.offset = offset
 		}
 		if scale, ok := mgr.Component(e, "Scale").(*Scale); ok {
-			entities[len(entities)-1].scale = scale
+			ent.scale = scale
 		}
 		if repeat, ok := mgr.Component(e, "SpriteRepeat").(*SpriteRepeat); ok {
-			entities[len(entities)-1].repeat = repeat
+			ent.repeat = repeat
 		}
-		if alpha, ok := mgr.Component(e, "Alpha").(*Alpha); ok {
-			entities[len(entities)-1].alpha = alpha
+		if ok {
+			ent.alpha = alpha
 		}
+		entities = append(entities, ent)
 	}
 
 	// sort by position layer, position.Y - sprite.Y/2
