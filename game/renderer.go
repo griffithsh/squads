@@ -189,7 +189,15 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 			return entities[i].s.Texture < entities[j].s.Texture
 		}
 
-		return entities[i].alpha.Value < entities[j].alpha.Value
+		ia := 1.0
+		if entities[i].alpha != nil {
+			ia = entities[i].alpha.Value
+		}
+		ja := 1.0
+		if entities[j].alpha != nil {
+			ja = entities[j].alpha.Value
+		}
+		return ia < ja
 	})
 
 	return entities
