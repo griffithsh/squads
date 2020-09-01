@@ -440,6 +440,18 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, a
 
 	// Add Facer Component.
 	cm.mgr.AddComponent(e, &game.Facer{Face: geom.S})
+
+	leash := game.Leash{
+		Owner:       e,
+		LayerOffset: -1,
+	}
+	e = cm.mgr.NewEntity()
+	cm.mgr.Tag(e, "combat")
+
+	spr := cm.archive.GetPedestal(team.PedestalAppearance)
+
+	cm.mgr.AddComponent(e, spr)
+	cm.mgr.AddComponent(e, &leash)
 }
 
 // Begin should be called at the start of an engagement to set up components

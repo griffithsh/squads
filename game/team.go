@@ -21,8 +21,9 @@ const (
 // Team is a Component that represents a grouping of Characters that work
 // together, and share a source of control.
 type Team struct {
-	ID      int64
-	Control TeamControl
+	ID                 int64
+	Control            TeamControl
+	PedestalAppearance int
 }
 
 // NewTeam creates a new team.

@@ -142,7 +142,6 @@ func setup(w, h int) (*system, error) {
 	if err != nil {
 		return nil, fmt.Errorf("load archive: %v", err)
 	}
-	recipes := archive.GetRecipes()
 	s := system{
 		bus:        bus,
 		render:     game.NewRenderer(archive),
@@ -151,7 +150,7 @@ func setup(w, h int) (*system, error) {
 		traversals: &overworld.TraversalSystem{},
 		collisions: overworld.NewCollisionSystem(mgr, bus),
 		embark:     embark.NewManager(mgr, bus, archive),
-		overworld:  overworld.NewManager(mgr, bus, recipes),
+		overworld:  overworld.NewManager(mgr, bus, archive),
 		combat:     combat.NewManager(mgr, camera, bus, archive),
 
 		mgr:    mgr,

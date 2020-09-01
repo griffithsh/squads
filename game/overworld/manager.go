@@ -15,12 +15,18 @@ import (
 	"github.com/griffithsh/squads/ui"
 )
 
+type Archive interface {
+	PedestalAppearances() []int
+	GetRecipes() []*Recipe
+}
+
 // Manager is a game state that allows the player to pick which path to take,
 // and which combat to enter etc.
 type Manager struct {
 	mgr     *ecs.World
 	bus     *event.Bus
 	recipes []*Recipe
+	archive Archive
 
 	screenW, screenH int
 
@@ -33,11 +39,12 @@ type Manager struct {
 }
 
 // NewManager creates a new overworld Manager.
-func NewManager(mgr *ecs.World, bus *event.Bus, recipes []*Recipe) *Manager {
+func NewManager(mgr *ecs.World, bus *event.Bus, archive Archive) *Manager {
 	m := Manager{
 		mgr:     mgr,
 		bus:     bus,
-		recipes: recipes,
+		recipes: archive.GetRecipes(),
+		archive: archive,
 
 		dormant: false,
 		state:   Uninitialised,
@@ -366,10 +373,14 @@ func (m *Manager) boot(d Map) {
 	})
 	npcs := game.NewTeam()
 	npcs.Control = game.NoControl
+
+	apps := m.archive.PedestalAppearances()
+	npcs.PedestalAppearance = apps[rand.Intn(len(apps))]
 	m.mgr.AddComponent(e, npcs)
 
 	// Add a Token for every enemy Squad.
 	enemyTeam := game.NewTeam()
+	enemyTeam.PedestalAppearance = apps[rand.Intn(len(apps))]
 	for key, squadMembers := range d.Enemies {
 		position := m.mgr.Component(d.Nodes[key].e, "Position").(*game.Position)
 		// Add a Squad, and visible Token to the overworld map.
