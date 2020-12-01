@@ -17,7 +17,7 @@ type Archive interface {
 	Appearance(profession string, sex game.CharacterSex, hair string, skin string) *game.Appearance
 	HairVariations() []string
 	SkinVariations() []string
-	PedestalAppearances() []int
+	PedestalAppearances(sinister bool) []int
 }
 
 // Manager holds state and provides methods to control that state for an embark
@@ -137,7 +137,7 @@ func (em *Manager) repaint() {
 				em.mgr.AddComponent(e, &game.Squad{})
 				squad := em.mgr.Component(e, "Squad").(*game.Squad)
 				players := game.NewTeam()
-				apps := em.archive.PedestalAppearances()
+				apps := em.archive.PedestalAppearances(false)
 				players.PedestalAppearance = apps[rand.Intn(len(apps))]
 				em.mgr.AddComponent(e, players)
 

@@ -16,7 +16,7 @@ import (
 )
 
 type Archive interface {
-	PedestalAppearances() []int
+	PedestalAppearances(sinister bool) []int
 	GetRecipes() []*Recipe
 }
 
@@ -374,18 +374,18 @@ func (m *Manager) boot(d Map) {
 	npcs := game.NewTeam()
 	npcs.Control = game.NoControl
 
-	apps := m.archive.PedestalAppearances()
+	apps := m.archive.PedestalAppearances(true)
 	npcs.PedestalAppearance = apps[rand.Intn(len(apps))]
 	m.mgr.AddComponent(e, npcs)
 
 	// Add a Token for every enemy Squad.
-	enemyTeam := game.NewTeam()
-	enemyTeam.PedestalAppearance = apps[rand.Intn(len(apps))]
 	for key, squadMembers := range d.Enemies {
 		position := m.mgr.Component(d.Nodes[key].e, "Position").(*game.Position)
 		// Add a Squad, and visible Token to the overworld map.
 		e := m.mgr.NewEntity()
 		m.mgr.Tag(e, "overworld")
+		enemyTeam := game.NewTeam()
+		enemyTeam.PedestalAppearance = apps[rand.Intn(len(apps))]
 		enemyTeam.Control = game.ComputerControl
 		m.mgr.AddComponent(e, enemyTeam)
 		m.mgr.AddComponent(e, &game.Squad{})
