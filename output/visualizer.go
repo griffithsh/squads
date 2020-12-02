@@ -1,4 +1,4 @@
-package game
+package output
 
 import (
 	"fmt"
@@ -8,12 +8,13 @@ import (
 	"sort"
 
 	"github.com/griffithsh/squads/ecs"
+	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/res"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-// Renderer is a System that draws world-positioned Sprites to the screen.
-type Renderer struct {
+// Visualizer is a System that draws visible things to the screen with the ebiten game engine.
+type Visualizer struct {
 	textures      map[string]*ebiten.Image
 	imageProvider ImageProvider
 
@@ -25,14 +26,14 @@ type Renderer struct {
 	randFloats []float64
 }
 
-// ImageProvider is the contract that the Renderer needs to retrieve images to
+// ImageProvider is the contract that the Visualizer needs to retrieve images to
 // use for Sprites.
 type ImageProvider interface {
 	GetImage(name string) (val image.Image, ok bool)
 }
 
-// NewRenderer creates a new Renderer.
-func NewRenderer(images ImageProvider) *Renderer {
+// NewVisualizer creates a new Visualizer.
+func NewVisualizer(images ImageProvider) *Visualizer {
 	// 4099 is the first prime number after 4096. Primae numbers have no
 	// factors, so they won't repeat a pattern on power of two sized textures.
 	// 4096 is 64*64. 64 is 512/8. 512x512 is a reasonably large texture size,
@@ -42,7 +43,7 @@ func NewRenderer(images ImageProvider) *Renderer {
 		pre[i] = rand.Float64()
 	}
 
-	return &Renderer{
+	return &Visualizer{
 		textures:      map[string]*ebiten.Image{},
 		imageProvider: images,
 		worldCanvas:   ebiten.NewImage(1, 1),
@@ -51,12 +52,12 @@ func NewRenderer(images ImageProvider) *Renderer {
 }
 
 type entity struct {
-	s      *Sprite
-	p      *Position
-	offset *RenderOffset
-	scale  *Scale
-	repeat *SpriteRepeat
-	alpha  *Alpha
+	s      *game.Sprite
+	p      *game.Position
+	offset *game.RenderOffset
+	scale  *game.Scale
+	repeat *game.SpriteRepeat
+	alpha  *game.Alpha
 }
 
 // drawImageOptions creates an new ebiten.DrawImageOptions for this entity.
@@ -104,7 +105,7 @@ func (e entity) drawImageOptions(x, y, w, h, xOff, yOff float64) *ebiten.DrawIma
 // components.
 // FIXME: getEntities should be refactored so that non-Sprite renderable
 // components can also be returned.
-func (r *Renderer) getEntities(mgr *ecs.World) []entity {
+func (r *Visualizer) getEntities(mgr *ecs.World) []entity {
 	raw := mgr.Get([]string{"Sprite", "Position"})
 
 	entities := make([]entity, 0, len(raw))
@@ -115,11 +116,11 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 		}
 
 		ent := entity{
-			p: mgr.Component(e, "Position").(*Position),
+			p: mgr.Component(e, "Position").(*game.Position),
 		}
 
 		// Don't return entities with alpha set to zero.
-		alpha, ok := mgr.Component(e, "Alpha").(*Alpha)
+		alpha, ok := mgr.Component(e, "Alpha").(*game.Alpha)
 		if ok {
 			if alpha.Value == 0 {
 				continue
@@ -127,7 +128,7 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 			ent.alpha = alpha
 		}
 
-		ent.s = mgr.Component(e, "Sprite").(*Sprite)
+		ent.s = mgr.Component(e, "Sprite").(*game.Sprite)
 		// Don't attempt to render sprites without a Texture.
 		if ent.s.Texture == "" {
 			continue
@@ -136,13 +137,13 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 		// TODO: Don't bother including anything that's outside the visible
 		// area. Ebiten does not perform frustrum culling.
 
-		if offset, ok := mgr.Component(e, "RenderOffset").(*RenderOffset); ok {
+		if offset, ok := mgr.Component(e, "RenderOffset").(*game.RenderOffset); ok {
 			ent.offset = offset
 		}
-		if scale, ok := mgr.Component(e, "Scale").(*Scale); ok {
+		if scale, ok := mgr.Component(e, "Scale").(*game.Scale); ok {
 			ent.scale = scale
 		}
-		if repeat, ok := mgr.Component(e, "SpriteRepeat").(*SpriteRepeat); ok {
+		if repeat, ok := mgr.Component(e, "SpriteRepeat").(*game.SpriteRepeat); ok {
 			ent.repeat = repeat
 		}
 		if ok {
@@ -202,7 +203,7 @@ func (r *Renderer) getEntities(mgr *ecs.World) []entity {
 	return entities
 }
 
-func (r *Renderer) picForTexture(filename string) (*ebiten.Image, error) {
+func (r *Visualizer) picForTexture(filename string) (*ebiten.Image, error) {
 	if pic, ok := r.textures[filename]; ok {
 		return pic, nil
 	}
@@ -221,7 +222,7 @@ func (r *Renderer) picForTexture(filename string) (*ebiten.Image, error) {
 
 // ensureCanvases makes sure the canvases used for offscreen rendering each
 // frame are the correct size based on the current screen dimensions and zoom.
-func (r *Renderer) ensureCanvases(w, h, z float64) {
+func (r *Visualizer) ensureCanvases(w, h, z float64) {
 	b := r.worldCanvas.Bounds()
 	if b.Max.X-b.Min.X != int(w/z) || b.Max.Y-b.Min.Y != int(h/z) {
 		r.worldCanvas = ebiten.NewImage(int(w/z), int(h/z))
@@ -232,7 +233,7 @@ func (r *Renderer) ensureCanvases(w, h, z float64) {
 }
 
 // target returns the correct render target to use for this entity.
-func (r *Renderer) target(e entity) *ebiten.Image {
+func (r *Visualizer) target(e entity) *ebiten.Image {
 	result := r.worldCanvas
 	if e.p.Absolute {
 		result = r.uiCanvas
@@ -240,7 +241,7 @@ func (r *Renderer) target(e entity) *ebiten.Image {
 	return result
 }
 
-func (r *Renderer) renderRepeatedEntity(e entity, img *ebiten.Image, target *ebiten.Image, focusX, focusY, zoom, screenW, screenH float64) {
+func (r *Visualizer) renderRepeatedEntity(e entity, img *ebiten.Image, target *ebiten.Image, focusX, focusY, zoom, screenW, screenH float64) {
 	tileW, tileH := img.Size()
 
 	for y := 0; y < e.repeat.H/tileH+1; y++ {
@@ -279,8 +280,8 @@ func (r *Renderer) renderRepeatedEntity(e entity, img *ebiten.Image, target *ebi
 	}
 }
 
-// renderEntity renders a single entity to the appropriate render target in the Renderer.
-func (r *Renderer) renderEntity(e entity, focusX, focusY, zoom, screenW, screenH float64) error {
+// renderEntity renders a single entity to the appropriate render target in the Visualizer.
+func (r *Visualizer) renderEntity(e entity, focusX, focusY, zoom, screenW, screenH float64) error {
 	img, err := r.picForTexture(e.s.Texture)
 	if err != nil {
 		return fmt.Errorf("get texture: %v", err)
@@ -326,7 +327,7 @@ func (r *Renderer) renderEntity(e entity, focusX, focusY, zoom, screenW, screenH
 // Render all sprites in the world to the screen. We need to know where in the
 // world we are focused, as well as how zoomed in we are, and the dimensions of
 // the screen.
-func (r *Renderer) Render(screen *ebiten.Image, mgr *ecs.World, focusX, focusY, zoom, screenW, screenH float64) error {
+func (r *Visualizer) Render(screen *ebiten.Image, mgr *ecs.World, focusX, focusY, zoom, screenW, screenH float64) error {
 	r.ensureCanvases(screenW, screenH, zoom)
 
 	entities := r.getEntities(mgr)

@@ -14,6 +14,7 @@ import (
 	"github.com/griffithsh/squads/game/combat"
 	"github.com/griffithsh/squads/game/embark"
 	"github.com/griffithsh/squads/game/overworld"
+	"github.com/griffithsh/squads/output"
 	"github.com/griffithsh/squads/ui"
 	"github.com/hajimehoshi/ebiten/v2"
 	"github.com/hajimehoshi/ebiten/v2/inpututil"
@@ -21,7 +22,7 @@ import (
 
 type squads struct {
 	bus          *event.Bus
-	render       *game.Renderer
+	video        *output.Visualizer
 	expiry       *ecs.ExpirySystem
 	anim         *game.AnimationSystem
 	traversals   *overworld.TraversalSystem
@@ -62,7 +63,7 @@ func newSquads(w, h int) (*squads, error) {
 	}
 	s := squads{
 		bus:        bus,
-		render:     game.NewRenderer(archive),
+		video:      output.NewVisualizer(archive),
 		anim:       &game.AnimationSystem{},
 		expiry:     ecs.NewExpirySystem(mgr),
 		traversals: &overworld.TraversalSystem{},
@@ -285,7 +286,7 @@ func (s *squads) Update() error {
 
 func (s *squads) Draw(screen *ebiten.Image) {
 	w, h := ebiten.WindowSize()
-	if err := s.render.Render(screen, s.mgr, s.camera.GetX(), s.camera.GetY(), s.camera.GetZoom(), float64(w), float64(h)); err != nil {
+	if err := s.video.Render(screen, s.mgr, s.camera.GetX(), s.camera.GetY(), s.camera.GetZoom(), float64(w), float64(h)); err != nil {
 		panic("Draw frame: " + err.Error())
 	}
 }
