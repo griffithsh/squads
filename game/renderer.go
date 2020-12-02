@@ -9,7 +9,7 @@ import (
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/res"
-	"github.com/hajimehoshi/ebiten"
+	"github.com/hajimehoshi/ebiten/v2"
 )
 
 // Renderer is a System that draws world-positioned Sprites to the screen.
@@ -42,11 +42,10 @@ func NewRenderer(images ImageProvider) *Renderer {
 		pre[i] = rand.Float64()
 	}
 
-	c, _ := ebiten.NewImage(1, 1, ebiten.FilterNearest)
 	return &Renderer{
 		textures:      map[string]*ebiten.Image{},
 		imageProvider: images,
-		worldCanvas:   c,
+		worldCanvas:   ebiten.NewImage(1, 1),
 		randFloats:    pre,
 	}
 }
@@ -215,10 +214,7 @@ func (r *Renderer) picForTexture(filename string) (*ebiten.Image, error) {
 			return nil, fmt.Errorf("%s missing", filename)
 		}
 	}
-	img, err := ebiten.NewImageFromImage(inline, ebiten.FilterNearest)
-	if err != nil {
-		return nil, fmt.Errorf("load texture: %v", err)
-	}
+	img := ebiten.NewImageFromImage(inline)
 	r.textures[filename] = img
 	return img, nil
 }
@@ -228,10 +224,10 @@ func (r *Renderer) picForTexture(filename string) (*ebiten.Image, error) {
 func (r *Renderer) ensureCanvases(w, h, z float64) {
 	b := r.worldCanvas.Bounds()
 	if b.Max.X-b.Min.X != int(w/z) || b.Max.Y-b.Min.Y != int(h/z) {
-		r.worldCanvas, _ = ebiten.NewImage(int(w/z), int(h/z), ebiten.FilterNearest)
+		r.worldCanvas = ebiten.NewImage(int(w/z), int(h/z))
 
 		// NB: UI elements are not zoomed by z, which is the world zoom here.
-		r.uiCanvas, _ = ebiten.NewImage(int(w), int(h), ebiten.FilterNearest)
+		r.uiCanvas = ebiten.NewImage(int(w), int(h))
 	}
 }
 
