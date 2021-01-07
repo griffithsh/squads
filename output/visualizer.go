@@ -52,6 +52,7 @@ func NewVisualizer(images ImageProvider) *Visualizer {
 }
 
 type entity struct {
+	e      ecs.Entity
 	s      *game.Sprite
 	p      *game.Position
 	offset *game.RenderOffset
@@ -116,6 +117,7 @@ func (r *Visualizer) getEntities(mgr *ecs.World) []entity {
 		}
 
 		ent := entity{
+			e: e,
 			p: mgr.Component(e, "Position").(*game.Position),
 		}
 
@@ -197,7 +199,10 @@ func (r *Visualizer) getEntities(mgr *ecs.World) []entity {
 		if entities[j].alpha != nil {
 			ja = entities[j].alpha.Value
 		}
-		return ia < ja
+		if ia != ja {
+			return ia < ja
+		}
+		return entities[i].e < entities[j].e
 	})
 
 	return entities
