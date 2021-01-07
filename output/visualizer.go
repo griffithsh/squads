@@ -67,7 +67,7 @@ func (e entity) drawImageOptions(x, y, w, h, xOff, yOff float64) *ebiten.DrawIma
 
 	// ebiten uses top-left corner coordinates, so we need to translate
 	// from center-based coordinates by subtracting half the width/height.
-	op.GeoM.Translate(-0.5*float64(e.s.W), -0.5*float64(e.s.H))
+	op.GeoM.Translate(-float64(e.s.W/2), -float64(e.s.H/2))
 
 	// Some Entities might have an intrinsic scale.
 	if e.scale != nil {
