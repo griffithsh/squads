@@ -302,6 +302,7 @@ func (r *Visualizer) renderEntity(e entity, focusX, focusY, zoom, screenW, scree
 		return nil
 	}
 
+	// FIXME: if an entity is repeated and has an alpha the alpha will ignored!
 	if e.alpha != nil {
 		const tileDim = 8
 		w, h := img.Size()
