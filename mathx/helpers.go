@@ -7,3 +7,11 @@ func MinI(a, b int) int {
 	}
 	return a
 }
+
+// MinF64 returns the smaller of the two passed values.
+func MinF64(a, b float64) float64 {
+	if a > b {
+		return b
+	}
+	return a
+}

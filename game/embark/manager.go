@@ -9,6 +9,7 @@ import (
 	"sort"
 
 	"github.com/griffithsh/squads/graph"
+	"github.com/griffithsh/squads/mathx"
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
@@ -64,20 +65,25 @@ func NewManager(mgr *ecs.World, bus *event.Bus, archive Archive) *Manager {
 		field:   geom.NewField(10, 5, 12),
 	}
 	costs := func(gv1 graph.Vertex, gv2 graph.Vertex) float64 {
-		k := gv2.(geom.Key)
-		x, ok := em.taken[k]
-		if !ok {
-			return 1.0
+		k1 := gv1.(geom.Key)
+		k2 := gv2.(geom.Key)
+		cost := func(k geom.Key) float64 {
+			ht, ok := em.taken[k]
+			if !ok {
+				return 500.0
+			}
+			switch ht {
+			case blocked:
+				return math.Inf(0)
+			case roadway:
+				return 0
+			case pathway:
+				return 25.0
+			}
+			return 500.0
 		}
-		switch x {
-		case blocked:
-			return math.Inf(0)
-		case roadway:
-			return 0
-		case pathway:
-			return 0.25
-		}
-		return 1.0
+
+		return mathx.MinF64(cost(k1), cost(k2))
 	}
 	edges := func(gv graph.Vertex) []graph.Vertex {
 		k := gv.(geom.Key)
