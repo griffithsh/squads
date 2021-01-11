@@ -30,6 +30,7 @@ type Archive interface {
 
 const (
 	groundSpritesZ  = 0
+	grassSpriteZ    = 10
 	roadwaySpritesZ = 50
 	pathwaySpritesZ = 60
 	houseSpritesZ   = 80
@@ -193,7 +194,7 @@ func (em *Manager) addFeatureEntity(feat Feature, m, n, layer int) {
 func (em *Manager) rollHouses(villageW, villageH int) {
 	// adds blocked and initial pathway values to taken
 	// stores a Feature and a key to place it at - map[geom.Key]Feature
-	for i := 0; i < 12; i++ {
+	for i := 0; i < 5; i++ {
 		feat := houseFeatures[rand.Intn(len(houseFeatures))]
 		func(feat Feature) {
 			speculations := []geom.Key{
@@ -561,7 +562,7 @@ func (em *Manager) Begin() {
 
 	// # Add background tiles.
 	// expand taken keys.
-	for i := 0; i < 3; i++ {
+	for i := 0; i < 6; i++ {
 		toAdd := []geom.Key{}
 		for k := range em.taken {
 			for neighbor := range k.Neighbors() {
@@ -578,13 +579,23 @@ func (em *Manager) Begin() {
 				toAdd = append(toAdd, neighbor)
 			}
 		}
+		var ht hexType = clear
+		if i >= 2 {
+			ht = grassy
+		}
+		if i >= 3 {
+			ht = bushes
+		}
+		if i >= 5 {
+			ht = trees
+		}
 		// Add the cached keys.
 		for _, key := range toAdd {
-			em.taken[key] = clear
+			em.taken[key] = ht
 		}
 	}
-	// Add some hexagonal tiles for the background
-	for key := range em.taken {
+	// Add some short-grassy textured hexagonal tiles for the background.
+	for key, ht := range em.taken {
 		e := em.mgr.NewEntity()
 		em.mgr.Tag(e, "embark")
 
@@ -612,6 +623,97 @@ func (em *Manager) Begin() {
 			spr.X = 120
 		}
 		em.mgr.AddComponent(e, &spr)
+
+		if ht == grassy {
+			e := em.mgr.NewEntity()
+			em.mgr.Tag(e, "embark")
+
+			em.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: x, Y: y,
+				},
+				Layer: grassSpriteZ,
+			})
+			spr := game.Sprite{
+				Texture: "embark-tiles.png",
+
+				X: 140, Y: 0,
+				W: 20, H: 24,
+
+				OffsetY: -6,
+			}
+			switch rand.Intn(3) {
+			case 1:
+				spr.X = 160
+			case 2:
+				spr.X = 180
+			}
+			em.mgr.AddComponent(e, &spr)
+		} else if ht == bushes {
+			e := em.mgr.NewEntity()
+			em.mgr.Tag(e, "embark")
+
+			em.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: x, Y: y,
+				},
+				Layer: grassSpriteZ,
+			})
+			spr := game.Sprite{
+				Texture: "embark-tiles.png",
+
+				X: 0, Y: 0,
+				W: 20, H: 24,
+
+				OffsetY: -6,
+			}
+			switch rand.Intn(8) {
+			case 1:
+				spr.X = 20
+			case 2:
+				spr.X = 40
+			case 3:
+				spr.X = 140
+			case 4:
+				spr.X = 160
+			case 5:
+				spr.X = 180
+			case 6:
+				spr.X = 200
+			case 7:
+				spr.X = 220
+			}
+			em.mgr.AddComponent(e, &spr)
+		} else if ht == trees {
+			e := em.mgr.NewEntity()
+			em.mgr.Tag(e, "embark")
+
+			em.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: x, Y: y,
+				},
+				Layer: grassSpriteZ,
+			})
+			spr := game.Sprite{
+				Texture: "embark-tiles.png",
+
+				X: 0, Y: 0,
+				W: 20, H: 24,
+
+				OffsetY: -6,
+			}
+			switch rand.Intn(5) {
+			case 1:
+				spr.X = 20
+			case 2:
+				spr.X = 40
+			case 3:
+				spr.X = 200
+			case 4:
+				spr.X = 220
+			}
+			em.mgr.AddComponent(e, &spr)
+		}
 	}
 }
 
