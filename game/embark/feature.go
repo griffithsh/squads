@@ -119,3 +119,66 @@ var windmillFeature = Feature{
 	},
 	Coverage: []geom.DirectionType{geom.NE, geom.NW, geom.SW},
 }
+
+var flavorFeatures = []Feature{
+	Feature{
+		Sprite: game.Sprite{
+			Texture: "embark-tiles.png",
+
+			X: 0, Y: 203,
+			W: 35, H: 29,
+			OffsetX: 7,
+			OffsetY: -9,
+		},
+		Coverage: []geom.DirectionType{geom.NE, geom.NW},
+	},
+	Feature{
+		Sprite: game.Sprite{
+			Texture: "embark-tiles.png",
+
+			X: 35, Y: 203,
+			W: 35, H: 29,
+			OffsetX: -8,
+			OffsetY: -9,
+		},
+		Coverage: []geom.DirectionType{geom.NW, geom.NE},
+	},
+	Feature{
+		Sprite: game.Sprite{
+			Texture: "embark-tiles.png",
+
+			X: 0, Y: 232,
+			W: 20, H: 12,
+		},
+	},
+	Feature{
+		Sprite: game.Sprite{
+			Texture: "embark-tiles.png",
+
+			X: 20, Y: 232,
+			W: 20, H: 12,
+		},
+	},
+	Feature{
+		Sprite: game.Sprite{
+			Texture: "embark-tiles.png",
+
+			X: 70, Y: 203,
+			W: 35, H: 29,
+			OffsetX: 7,
+			OffsetY: -9,
+		},
+		Coverage: []geom.DirectionType{geom.NE, geom.NW},
+	},
+	Feature{
+		Sprite: game.Sprite{
+			Texture: "embark-tiles.png",
+
+			X: 105, Y: 203,
+			W: 35, H: 29,
+			OffsetX: -8,
+			OffsetY: -9,
+		},
+		Coverage: []geom.DirectionType{geom.NW, geom.NE},
+	},
+}

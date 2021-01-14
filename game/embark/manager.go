@@ -262,6 +262,78 @@ func (em *Manager) rollHouses(villageW, villageH int) {
 	}
 }
 
+func (em *Manager) rollFlavor(villageW, villageH int) {
+	for i := 0; i < int(float64(len(flavorFeatures))*1.5); i++ {
+		feat := flavorFeatures[rand.Intn(len(flavorFeatures))]
+		func(feat Feature) {
+			speculations := []geom.Key{
+				{M: rand.Intn(villageW) - villageW/2, N: rand.Intn(villageH) - villageH/2},
+				{M: rand.Intn(villageW) - villageW/2, N: rand.Intn(villageH) - villageH/2},
+				{M: rand.Intn(villageW) - villageW/2, N: rand.Intn(villageH) - villageH/2},
+				{M: rand.Intn(villageW) - villageW/2, N: rand.Intn(villageH) - villageH/2},
+				{M: rand.Intn(villageW) - villageW/2, N: rand.Intn(villageH) - villageH/2},
+				{M: rand.Intn(villageW) - villageW/2, N: rand.Intn(villageH) - villageH/2},
+				{M: rand.Intn(villageW) - villageW/2, N: rand.Intn(villageH) - villageH/2},
+				{M: rand.Intn(villageW) - villageW/2, N: rand.Intn(villageH) - villageH/2},
+				{M: rand.Intn(villageW) - villageW/2, N: rand.Intn(villageH) - villageH/2},
+				{M: rand.Intn(villageW) - villageW/2, N: rand.Intn(villageH) - villageH/2},
+				{M: rand.Intn(villageW) - villageW/2, N: rand.Intn(villageH) - villageH/2},
+				{M: rand.Intn(villageW) - villageW/2, N: rand.Intn(villageH) - villageH/2},
+				{M: rand.Intn(villageW) - villageW/2, N: rand.Intn(villageH) - villageH/2},
+				{M: rand.Intn(villageW) - villageW/2, N: rand.Intn(villageH) - villageH/2},
+			}
+			best := math.Inf(0)
+			m, n := 0, 0
+			for _, key := range speculations {
+				// Is this key better than our previous best?
+				x, y := em.field.Ktow(key)
+				guess := (x * x) + (y * y)
+				if best < guess {
+					continue
+				}
+
+				// Will this feature fit at this key?
+				for _, part := range feat.Occupies(key) {
+					if ht, ok := em.taken[part]; ok {
+						switch ht {
+						case blocked, roadway, pathway:
+							goto next
+						}
+					}
+				}
+
+				// Is the pathway connector of this feature open?
+				if len(feat.PathConnect) > 0 {
+					pathStart := feat.StartOfPathFor(key)
+					if ht, ok := em.taken[pathStart]; ok {
+						switch ht {
+						case blocked:
+							continue
+						}
+					}
+				}
+
+				// This speculation is the new best key to use!
+				best = guess
+				m, n = key.M, key.N
+			next:
+			}
+			// We were very unlucky to not find any available places for this feature ...?
+			if best == math.Inf(0) {
+				return
+			}
+
+			// Add blocked and pathway values to em.taken.
+			for _, part := range feat.Occupies(geom.Key{M: m, N: n}) {
+				em.taken[part] = blocked
+			}
+
+			// Add entity and components for the new feature.
+			em.addFeatureEntity(feat, m, n, houseSpritesZ)
+		}(feat)
+	}
+}
+
 func (em *Manager) addPathways() {
 	// By iterating through all in taken now, and picking the ones set to
 	// pathway, we can find every unconnected feature. We have to make the
@@ -557,6 +629,8 @@ func (em *Manager) Begin() {
 	em.rollRoadway(villageW, villageH)
 	em.addPathways()
 
+	em.rollFlavor(villageW, villageH)
+
 	// # Add other features
 	em.addMulliganHouse(villageW, villageH)
 
@@ -624,7 +698,35 @@ func (em *Manager) Begin() {
 		}
 		em.mgr.AddComponent(e, &spr)
 
-		if ht == grassy {
+		if ht == clear {
+			luck := rand.Intn(10)
+			if luck < 2 {
+				e := em.mgr.NewEntity()
+				em.mgr.Tag(e, "embark")
+
+				em.mgr.AddComponent(e, &game.Position{
+					Center: game.Center{
+						X: x, Y: y,
+					},
+					Layer: grassSpriteZ,
+				})
+				spr := game.Sprite{
+					Texture: "embark-tiles.png",
+
+					X: 0, Y: 179,
+					W: 20, H: 24,
+
+					OffsetY: -6,
+				}
+				switch luck {
+				case 1:
+					spr.X = 20
+				case 2:
+					spr.X = 40
+				}
+				em.mgr.AddComponent(e, &spr)
+			}
+		} else if ht == grassy {
 			e := em.mgr.NewEntity()
 			em.mgr.Tag(e, "embark")
 
