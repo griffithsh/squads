@@ -128,9 +128,9 @@ var internalSkills = []skill.Description{
 						{Operator: skill.AddOp, Variable: "1"},
 					},
 					Max: []skill.Operation{
-						{Operator: skill.AddOp, Variable: "7"},
+						{Operator: skill.AddOp, Variable: "70"},
 						{Operator: skill.MultOp, Variable: "$LIGHTNING"},
-						{Operator: skill.AddOp, Variable: "10"},
+						{Operator: skill.AddOp, Variable: "100"},
 					},
 					Classification: skill.Spell,
 				},
