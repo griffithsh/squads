@@ -34,6 +34,7 @@ const (
 	roadwaySpritesZ = 50
 	pathwaySpritesZ = 60
 	houseSpritesZ   = 80
+	uiSpritesZ      = 1000
 )
 
 // Manager holds state and provides methods to control that state for an embark
@@ -258,6 +259,30 @@ func (em *Manager) rollHouses(villageW, villageH int) {
 
 			// Add entity and components for the new feature.
 			em.addFeatureEntity(feat, m, n, 100)
+
+			e := em.mgr.NewEntity()
+			x, y := em.field.Ktow(geom.Key{M: m, N: n})
+			em.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: x, Y: y,
+				},
+				Layer: uiSpritesZ,
+			})
+			em.mgr.AddComponent(e, &ui.Interactive{
+				W: 32, H: 24,
+				Trigger: func(float64, float64) {
+					fmt.Printf("show villager: %d\n", e)
+				},
+			})
+
+			em.mgr.AddComponent(e, &game.Sprite{
+				Texture: "embark-tiles.png",
+
+				X: 0, Y: 244,
+				W: 16, H: 12,
+			})
+			em.mgr.AddComponent(e, game.NewHoverAnimation())
+
 		}(feat)
 	}
 }
@@ -611,6 +636,28 @@ func (em *Manager) addMulliganHouse(villageW, villageH int) {
 	}
 
 	em.addFeatureEntity(feat, m, n, houseSpritesZ)
+	e := em.mgr.NewEntity()
+	x, y := em.field.Ktow(geom.Key{M: m, N: n})
+	em.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: x, Y: y,
+		},
+		Layer: uiSpritesZ,
+	})
+	em.mgr.AddComponent(e, &ui.Interactive{
+		W: 32, H: 24,
+		Trigger: func(float64, float64) {
+			fmt.Println("mulligan!")
+		},
+	})
+
+	em.mgr.AddComponent(e, &game.Sprite{
+		Texture: "embark-tiles.png",
+
+		X: 16, Y: 244,
+		W: 16, H: 12,
+	})
+	em.mgr.AddComponent(e, game.NewHoverAnimation())
 }
 
 // Begin an embark Manager, setting up Entities required to display and interact
