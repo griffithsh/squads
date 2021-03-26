@@ -37,6 +37,13 @@ const (
 	uiSpritesZ      = 1000
 )
 
+var embarkPoints = []geom.Key{{M: 0, N: 1}, {M: -1, N: 0}, {M: -2, N: 0}, {M: 1, N: 0}, {M: 2, N: 0}}
+
+type housePosition struct {
+	x, y           float64
+	villagerEntity ecs.Entity
+}
+
 // Manager holds state and provides methods to control that state for an embark
 // screen. This screen allows the player to configure the Characters they will
 // start their run with.
@@ -47,10 +54,7 @@ type Manager struct {
 
 	screenW, screenH int
 
-	// prepared lists Characters who are about to embark.
-	prepared []ecs.Entity
-	// villagers lists Characters who could be selected for embarking.
-	villagers []ecs.Entity
+	houses []*housePosition
 
 	taken    map[geom.Key]hexType
 	field    *geom.Field
@@ -195,7 +199,7 @@ func (em *Manager) addFeatureEntity(feat Feature, m, n, layer int) {
 func (em *Manager) rollHouses(villageW, villageH int) {
 	// adds blocked and initial pathway values to taken
 	// stores a Feature and a key to place it at - map[geom.Key]Feature
-	for i := 0; i < 5; i++ {
+	for i := 0; i < 7; i++ {
 		feat := houseFeatures[rand.Intn(len(houseFeatures))]
 		func(feat Feature) {
 			speculations := []geom.Key{
@@ -260,29 +264,12 @@ func (em *Manager) rollHouses(villageW, villageH int) {
 			// Add entity and components for the new feature.
 			em.addFeatureEntity(feat, m, n, 100)
 
-			e := em.mgr.NewEntity()
+			// Save the location of this house for later ...
 			x, y := em.field.Ktow(geom.Key{M: m, N: n})
-			em.mgr.AddComponent(e, &game.Position{
-				Center: game.Center{
-					X: x, Y: y,
-				},
-				Layer: uiSpritesZ,
+			em.houses = append(em.houses, &housePosition{
+				x: x,
+				y: y,
 			})
-			em.mgr.AddComponent(e, &ui.Interactive{
-				W: 32, H: 24,
-				Trigger: func(float64, float64) {
-					fmt.Printf("show villager: %d\n", e)
-				},
-			})
-
-			em.mgr.AddComponent(e, &game.Sprite{
-				Texture: "embark-tiles.png",
-
-				X: 0, Y: 244,
-				W: 16, H: 12,
-			})
-			em.mgr.AddComponent(e, game.NewHoverAnimation())
-
 		}(feat)
 	}
 }
@@ -572,7 +559,7 @@ func (em *Manager) addFaeGate() {
 		key = key.Adjacent()[dir]
 		em.taken[key] = blocked
 	}
-	for _, k := range []geom.Key{geom.Key{M: 0, N: 1}, geom.Key{M: -1, N: 0}, geom.Key{M: -2, N: 0}, geom.Key{M: 1, N: 0}, geom.Key{M: 2, N: 0}} {
+	for _, k := range embarkPoints {
 		em.taken[k] = roadway
 	}
 	em.addFeatureEntity(faeGateFeature, m, n, houseSpritesZ)
@@ -663,8 +650,6 @@ func (em *Manager) addMulliganHouse(villageW, villageH int) {
 // Begin an embark Manager, setting up Entities required to display and interact
 // with the embark screen.
 func (em *Manager) Begin() {
-	// em.rollVillagers()
-	// em.repaint()
 
 	const villageW = 48
 	const villageH = 36
@@ -675,13 +660,13 @@ func (em *Manager) Begin() {
 	em.rollHouses(villageW, villageH)
 	em.rollRoadway(villageW, villageH)
 	em.addPathways()
-
 	em.rollFlavor(villageW, villageH)
-
-	// # Add other features
 	em.addMulliganHouse(villageW, villageH)
+	em.rollVillagers(5)
 
-	// # Add background tiles.
+	em.repaint()
+
+	// Add background tiles.
 	// expand taken keys.
 	for i := 0; i < 6; i++ {
 		toAdd := []geom.Key{}
@@ -878,121 +863,209 @@ func (em *Manager) handleWindowSizeChanged(e event.Typer) {
 	em.screenW, em.screenH = wsc.NewW, wsc.NewH
 }
 
+// repaint synchronises the embarkation status of the villagers. It should be
+// called after a change is made to who will embark.
+func (em *Manager) repaint() {
+	// Remove any villager location indicators.
+	// Recreate them all ...
+
+	for _, e := range em.mgr.Tagged("embark-villager-buttons") {
+		em.mgr.DestroyEntity(e)
+	}
+
+	for _, house := range em.houses {
+		if house.villagerEntity == 0 {
+			continue
+		}
+
+		e := em.mgr.NewEntity()
+		em.mgr.Tag(e, "embark")
+		em.mgr.Tag(e, "embark-villager-buttons")
+
+		embarking := em.mgr.Component(house.villagerEntity, "Embarking").(*Embarking)
+		if embarking.Value {
+			// Draw this villager near the gate.
+		} else {
+			// Draw this villager at their house.
+			em.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: house.x, Y: house.y,
+				},
+				Layer: uiSpritesZ,
+			})
+			em.mgr.AddComponent(e, &ui.Interactive{
+				W: 32, H: 24,
+				Trigger: func(villager ecs.Entity) func(float64, float64) {
+					return func(float64, float64) {
+						// FIXME: instead of immediately embarking this
+						// villager, pop a modal to focus on this villager, and
+						// show embark and cancel buttons.
+						embarking := em.mgr.Component(villager, "Embarking").(*Embarking)
+						embarking.Value = true
+
+						// char := em.mgr.Component(villager, "Character").(*game.Character)
+						// equip, _ := em.mgr.Component(villager, "Equipment").(*game.Equipment)
+						// em.paintChar(char, equip, 100, 200, nil)
+
+						em.repaint()
+					}
+				}(house.villagerEntity),
+			})
+
+			em.mgr.AddComponent(e, &game.Sprite{
+				Texture: "embark-tiles.png",
+
+				X: 0, Y: 244,
+				W: 16, H: 12,
+			})
+			em.mgr.AddComponent(e, game.NewHoverAnimation())
+		}
+	}
+
+	/*
+		Houses may have a villager, villagers may be flagged for embarkation.
+		Houses have an x/y.
+		Ready spots have an x/y too!
+
+		When we repaint, we iterate through every house, if a villager is
+		present it is either drawn at the house or the embark zone near the
+		gate. Each would have an Interactive that pops a modal that focuses
+		on the villager.
+
+		We must destroy every entity that visually represents a villager, but
+		not the entities that *are* the villagers.
+	*/
+
+	// TODO:
+	// Then, if any villager is popped/focused/etc, we need to paint a modal window ...
+
+	// Else if no-one is popped, then check how many are embarked. If > 0, show an embark/go! button.
+}
+
 // repaint synchronises the renderable Components to the Characters in
 // em.prepared and em.villagers. It should be called after a change is made to
 // who will embark.
-func (em *Manager) repaint() {
-	// Destroy all existing Entities used to render this Character.
-	for _, e := range em.mgr.Tagged("embark-characters") {
-		em.mgr.DestroyEntity(e)
+// func (em *Manager) repaint() {
+// 	// Destroy all existing Entities used to render this Character.
+// 	for _, e := range em.mgr.Tagged("embark-characters") {
+// 		em.mgr.DestroyEntity(e)
+// 	}
+
+// 	for _, e := range em.mgr.Tagged("embark-hud") {
+// 		em.mgr.DestroyEntity(e)
+// 	}
+
+// 	lMargin := 64.0
+// 	tMargin := 16.0
+// 	const sheetW float64 = 148 // sheetW is the width of each character sheet
+// 	for i, villager := range em.villagers {
+// 		char := em.mgr.Component(villager, "Character").(*game.Character)
+// 		equip, _ := em.mgr.Component(villager, "Equipment").(*game.Equipment)
+
+// 		handlePrepare := func(i int, villager ecs.Entity) func(x, y float64) {
+// 			return func(x, y float64) {
+// 				em.villagers = append(em.villagers[:i], em.villagers[i+1:]...)
+// 				em.prepared = append(em.prepared, villager)
+// 				em.repaint()
+// 			}
+// 		}
+// 		em.paintChar(char, equip, float64(i)*sheetW+lMargin, tMargin, handlePrepare(i, villager))
+// 	}
+
+// 	for i, villager := range em.prepared {
+// 		char := em.mgr.Component(villager, "Character").(*game.Character)
+// 		equip, _ := em.mgr.Component(villager, "Equipment").(*game.Equipment)
+// 		em.paintChar(char, equip, float64(i)*sheetW+lMargin, tMargin+200, nil)
+// 	}
+
+// 	if len(em.prepared) > 0 {
+// 		// You can embark!
+// 		var e ecs.Entity
+
+// 		e = ui.ButtonBackground(em.mgr, 30, 15, float64(em.screenW)/2-10, float64(em.screenH)-67, 100, true)
+// 		em.mgr.Tag(e, "embark")
+// 		em.mgr.Tag(e, "embark-hud")
+
+// 		e = em.mgr.NewEntity()
+// 		em.mgr.Tag(e, "embark")
+// 		em.mgr.Tag(e, "embark-hud")
+
+// 		em.mgr.AddComponent(e, &game.Font{
+// 			Text: "Go",
+// 		})
+
+// 		em.mgr.AddComponent(e, &game.Position{
+// 			Center: game.Center{
+// 				X: float64(em.screenW) / 2,
+// 				Y: float64(em.screenH) - 64,
+// 			},
+// 			Layer:    100,
+// 			Absolute: true,
+// 		})
+// 		em.mgr.AddComponent(e, &ui.Interactive{
+// 			W: 48, H: 48,
+// 			Trigger: func(x, y float64) {
+// 				em.bus.Publish(&SquadSelected{})
+
+// 				e := em.mgr.NewEntity()
+// 				em.mgr.Tag(e, "player")
+// 				em.mgr.AddComponent(e, &game.Squad{})
+// 				squad := em.mgr.Component(e, "Squad").(*game.Squad)
+// 				players := game.NewTeam()
+// 				apps := em.archive.PedestalAppearances(false)
+// 				players.PedestalAppearance = apps[rand.Intn(len(apps))]
+// 				em.mgr.AddComponent(e, players)
+
+// 				// Add prepared villagers to the team and squad
+// 				for _, e := range em.prepared {
+// 					em.mgr.AddComponent(e, players)
+// 					squad.Members = append(squad.Members, e)
+// 					em.mgr.RemoveTag(e, "embark")
+// 				}
+
+// 				e = em.mgr.NewEntity()
+// 				em.mgr.AddComponent(e, &game.DiagonalMatrixWipe{
+// 					W: em.screenW, H: em.screenH,
+// 					Obscuring: true,
+// 					OnComplete: func() {
+// 						em.bus.Publish(&Embarked{})
+// 					},
+// 				})
+// 			},
+// 		})
+// 	}
+// }
+
+// rollVillagers removes any rolled Characters in this village and rolls new ones.
+func (em *Manager) rollVillagers(num int) {
+	if num > len(em.houses) {
+		panic(fmt.Sprintf("insufficient houses(%d) for %d villagers", len(em.houses), num))
 	}
 
-	for _, e := range em.mgr.Tagged("embark-hud") {
-		em.mgr.DestroyEntity(e)
-	}
-
-	lMargin := 64.0
-	tMargin := 16.0
-	const sheetW float64 = 148 // sheetW is the width of each character sheet
-	for i, villager := range em.villagers {
-		char := em.mgr.Component(villager, "Character").(*game.Character)
-		equip, _ := em.mgr.Component(villager, "Equipment").(*game.Equipment)
-
-		handlePrepare := func(i int, villager ecs.Entity) func(x, y float64) {
-			return func(x, y float64) {
-				em.villagers = append(em.villagers[:i], em.villagers[i+1:]...)
-				em.prepared = append(em.prepared, villager)
-				em.repaint()
-			}
+	for _, house := range em.houses {
+		if house.villagerEntity == 0 {
+			continue
 		}
-		em.paintChar(char, equip, float64(i)*sheetW+lMargin, tMargin, handlePrepare(i, villager))
+		em.mgr.DestroyEntity(house.villagerEntity)
+		house.villagerEntity = 0
 	}
-
-	for i, villager := range em.prepared {
-		char := em.mgr.Component(villager, "Character").(*game.Character)
-		equip, _ := em.mgr.Component(villager, "Equipment").(*game.Equipment)
-		em.paintChar(char, equip, float64(i)*sheetW+lMargin, tMargin+200, nil)
-	}
-
-	if len(em.prepared) > 0 {
-		// You can embark!
-		var e ecs.Entity
-
-		e = ui.ButtonBackground(em.mgr, 30, 15, float64(em.screenW)/2-10, float64(em.screenH)-67, 100, true)
-		em.mgr.Tag(e, "embark")
-		em.mgr.Tag(e, "embark-hud")
-
-		e = em.mgr.NewEntity()
-		em.mgr.Tag(e, "embark")
-		em.mgr.Tag(e, "embark-hud")
-
-		em.mgr.AddComponent(e, &game.Font{
-			Text: "Go",
-		})
-
-		em.mgr.AddComponent(e, &game.Position{
-			Center: game.Center{
-				X: float64(em.screenW) / 2,
-				Y: float64(em.screenH) - 64,
-			},
-			Layer:    100,
-			Absolute: true,
-		})
-		em.mgr.AddComponent(e, &ui.Interactive{
-			W: 48, H: 48,
-			Trigger: func(x, y float64) {
-				em.bus.Publish(&SquadSelected{})
-
-				e := em.mgr.NewEntity()
-				em.mgr.Tag(e, "player")
-				em.mgr.AddComponent(e, &game.Squad{})
-				squad := em.mgr.Component(e, "Squad").(*game.Squad)
-				players := game.NewTeam()
-				apps := em.archive.PedestalAppearances(false)
-				players.PedestalAppearance = apps[rand.Intn(len(apps))]
-				em.mgr.AddComponent(e, players)
-
-				// Add prepared villagers to the team and squad
-				for _, e := range em.prepared {
-					em.mgr.AddComponent(e, players)
-					squad.Members = append(squad.Members, e)
-					em.mgr.RemoveTag(e, "embark")
-				}
-
-				e = em.mgr.NewEntity()
-				em.mgr.AddComponent(e, &game.DiagonalMatrixWipe{
-					W: em.screenW, H: em.screenH,
-					Obscuring: true,
-					OnComplete: func() {
-						em.bus.Publish(&Embarked{})
-					},
-				})
-			},
-		})
-	}
-}
-
-// rollVillagers removes any Characters in em.villagers, and generates new ones.
-func (em *Manager) rollVillagers() {
-	for _, e := range em.villagers {
-		em.mgr.DestroyEntity(e)
-	}
-
-	// Empty villagers slice while preserving capacity.
-	em.villagers = em.villagers[:0]
 
 	g := newGenerator(em.archive)
-	for i := 0; i < 5; i++ {
+	for i := 0; i < num; i++ {
 		e := em.mgr.NewEntity()
 		em.mgr.Tag(e, "embark")
 		em.mgr.AddComponent(e, g.generateChar())
 		em.mgr.AddComponent(e, &game.Equipment{
 			Weapon: g.generateWeapon(),
 		})
-		em.villagers = append(em.villagers, e)
+
+		em.mgr.AddComponent(e, &Embarking{false})
+
+		em.houses[i].villagerEntity = e
 	}
 }
 
+// paintChar used to create a panel for a character. It is deprecated.
 func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left float64, top float64, handlePrepare func(x, y float64)) {
 	container := em.mgr.NewEntity()
 	em.mgr.Tag(container, "embark")
@@ -1002,7 +1075,7 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 	var e ecs.Entity
 
 	// Panel
-	e = ui.Panel(em.mgr, 144, 200, left-8, top-8, 90, false)
+	e = ui.Panel(em.mgr, 144, 200, left-8, top-8, 90, true)
 	em.mgr.Dependency(container, e)
 
 	// Name
@@ -1011,12 +1084,14 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 	em.mgr.AddComponent(e, &game.Font{
 		Text: char.Name,
 	})
+	em.mgr.AddComponent(e, &game.Scale{X: 2.0, Y: 2.0})
 	em.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
 			X: left,
 			Y: top,
 		},
-		Layer: 100,
+		Absolute: true,
+		Layer:    100,
 	})
 
 	// Icon (BG, portrait, then frame)
@@ -1027,16 +1102,18 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 	e = em.mgr.NewEntity()
 	em.mgr.Dependency(container, e)
 	em.mgr.AddComponent(e, &game.Position{
-		Center: center,
-		Layer:  99,
+		Center:   center,
+		Absolute: true,
+		Layer:    99,
 	})
 	em.mgr.AddComponent(e, &game.PortraitBGBig[char.PortraitBG])
 
 	e = em.mgr.NewEntity()
 	em.mgr.Dependency(container, e)
 	em.mgr.AddComponent(e, &game.Position{
-		Center: center,
-		Layer:  100,
+		Center:   center,
+		Absolute: true,
+		Layer:    100,
 	})
 	app := em.archive.Appearance(char.Profession, char.Sex, char.Hair, char.Skin)
 	spr := app.BigIcon()
@@ -1045,8 +1122,9 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 	e = em.mgr.NewEntity()
 	em.mgr.Dependency(container, e)
 	em.mgr.AddComponent(e, &game.Position{
-		Center: center,
-		Layer:  101,
+		Center:   center,
+		Absolute: true,
+		Layer:    101,
 	})
 	em.mgr.AddComponent(e, &game.PortraitFrameBig[char.PortraitFrame])
 
@@ -1062,7 +1140,8 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 			X: left,
 			Y: top + 12,
 		},
-		Layer: 100,
+		Absolute: true,
+		Layer:    100,
 	})
 
 	// Level
@@ -1077,7 +1156,8 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 			X: left,
 			Y: top + 12 + 8,
 		},
-		Layer: 100,
+		Absolute: true,
+		Layer:    100,
 	})
 
 	// Sex
@@ -1092,7 +1172,8 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 			X: left,
 			Y: top + 12 + 16,
 		},
-		Layer: 100,
+		Absolute: true,
+		Layer:    100,
 	})
 
 	// Prep
@@ -1107,7 +1188,8 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 			X: left,
 			Y: top + 12 + 24,
 		},
-		Layer: 100,
+		Absolute: true,
+		Layer:    100,
 	})
 
 	// Action Points
@@ -1122,7 +1204,8 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 			X: left,
 			Y: top + 12 + 32,
 		},
-		Layer: 100,
+		Absolute: true,
+		Layer:    100,
 	})
 
 	// Str per level
@@ -1137,7 +1220,8 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 			X: left,
 			Y: top + 12 + 40,
 		},
-		Layer: 100,
+		Absolute: true,
+		Layer:    100,
 	})
 
 	// Agi per level
@@ -1152,7 +1236,8 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 			X: left,
 			Y: top + 12 + 48,
 		},
-		Layer: 100,
+		Absolute: true,
+		Layer:    100,
 	})
 
 	// Int per level
@@ -1167,7 +1252,8 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 			X: left,
 			Y: top + 12 + 56,
 		},
-		Layer: 100,
+		Absolute: true,
+		Layer:    100,
 	})
 
 	// Vit per level
@@ -1182,7 +1268,8 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 			X: left,
 			Y: top + 12 + 64,
 		},
-		Layer: 100,
+		Absolute: true,
+		Layer:    100,
 	})
 
 	// Masteries
@@ -1205,7 +1292,8 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 				X: left,
 				Y: top + 88 + float64(used)*8,
 			},
-			Layer: 100,
+			Absolute: true,
+			Layer:    100,
 		})
 
 		used++
@@ -1230,7 +1318,8 @@ func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left f
 			X: left + 3,
 			Y: top + 173,
 		},
-		Layer: 100,
+		Absolute: true,
+		Layer:    100,
 	})
 
 	e = em.mgr.NewEntity()
