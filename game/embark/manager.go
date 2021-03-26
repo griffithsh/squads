@@ -624,6 +624,8 @@ func (em *Manager) addMulliganHouse(villageW, villageH int) {
 
 	em.addFeatureEntity(feat, m, n, houseSpritesZ)
 	e := em.mgr.NewEntity()
+	em.mgr.Tag(e, "embark")
+	em.mgr.Tag(e, "embark-villager-buttons")
 	x, y := em.field.Ktow(geom.Key{M: m, N: n})
 	em.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
@@ -870,6 +872,7 @@ func (em *Manager) repaint() {
 		em.mgr.DestroyEntity(e)
 	}
 
+	takenEmbarkPoints := 0
 	for _, house := range em.houses {
 		if house.villagerEntity == 0 {
 			continue
@@ -882,6 +885,38 @@ func (em *Manager) repaint() {
 		embarking := em.mgr.Component(house.villagerEntity, "Embarking").(*Embarking)
 		if embarking.Value {
 			// Draw this villager near the gate...
+			x, y := em.field.Ktow(embarkPoints[takenEmbarkPoints])
+			takenEmbarkPoints++
+			em.mgr.AddComponent(e, &game.Position{
+				Center: game.Center{
+					X: x, Y: y,
+				},
+				Layer: uiSpritesZ,
+			})
+			em.mgr.AddComponent(e, &game.Sprite{
+				Texture: "embark-tiles.png",
+
+				X: 0, Y: 244,
+				W: 16, H: 12,
+			})
+			em.mgr.AddComponent(e, &ui.Interactive{
+				W: 32, H: 24,
+				Trigger: func(villager ecs.Entity) func(float64, float64) {
+					return func(float64, float64) {
+						// FIXME: instead of immediately disembarking this
+						// villager, pop a modal to focus on this villager, and
+						// show disembark and cancel buttons.
+						embarking := em.mgr.Component(villager, "Embarking").(*Embarking)
+						embarking.Value = false
+
+						// char := em.mgr.Component(villager, "Character").(*game.Character)
+						// equip, _ := em.mgr.Component(villager, "Equipment").(*game.Equipment)
+						// em.paintChar(char, equip, 100, 200, nil)
+
+						em.repaint()
+					}
+				}(house.villagerEntity),
+			})
 		} else {
 			// Draw this villager at their house.
 			em.mgr.AddComponent(e, &game.Position{
@@ -937,6 +972,65 @@ func (em *Manager) repaint() {
 	// Then, if any villager is popped/focused/etc, we need to paint a modal window ...
 
 	// Else if no-one is popped, then check how many are embarked. If > 0, show an embark/go! button.
+	if takenEmbarkPoints > 0 {
+		e := ui.ButtonBackground(em.mgr, 96, 30, float64(em.screenW)/2-48, float64(em.screenH)-52, uiSpritesZ+10, true)
+		em.mgr.Tag(e, "embark")
+		em.mgr.Tag(e, "embark-villager-buttons")
+
+		e = em.mgr.NewEntity()
+		em.mgr.Tag(e, "embark")
+		em.mgr.Tag(e, "embark-villager-buttons")
+		em.mgr.AddComponent(e, &game.Font{
+			Text: "Embark!",
+			Size: "normal",
+		})
+		em.mgr.AddComponent(e, &game.Position{
+			Center: game.Center{
+				X: float64(em.screenW)/2 - 18, Y: float64(em.screenH) - 42,
+			},
+			Layer:    uiSpritesZ + 20,
+			Absolute: true,
+		})
+		em.mgr.AddComponent(e, &ui.Interactive{
+			W: 96, H: 30,
+			Trigger: func(float64, float64) {
+				em.bus.Publish(&SquadSelected{})
+
+				e := em.mgr.NewEntity()
+				em.mgr.Tag(e, "player")
+				em.mgr.AddComponent(e, &game.Squad{})
+				squad := em.mgr.Component(e, "Squad").(*game.Squad)
+				players := game.NewTeam()
+				apps := em.archive.PedestalAppearances(false)
+				players.PedestalAppearance = apps[rand.Intn(len(apps))]
+				em.mgr.AddComponent(e, players)
+
+				// Add prepared villagers to the team and squad
+				for _, house := range em.houses {
+					if house.villagerEntity == 0 {
+						continue
+					}
+					e := house.villagerEntity
+					embarking := em.mgr.Component(e, "Embarking").(*Embarking)
+					if !embarking.Value {
+						continue
+					}
+					em.mgr.AddComponent(e, players)
+					squad.Members = append(squad.Members, e)
+					em.mgr.RemoveTag(e, "embark")
+				}
+
+				e = em.mgr.NewEntity()
+				em.mgr.AddComponent(e, &game.DiagonalMatrixWipe{
+					W: em.screenW, H: em.screenH,
+					Obscuring: true,
+					OnComplete: func() {
+						em.bus.Publish(&Embarked{})
+					},
+				})
+			},
+		})
+	}
 }
 
 // repaint synchronises the renderable Components to the Characters in
