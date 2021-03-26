@@ -866,9 +866,6 @@ func (em *Manager) handleWindowSizeChanged(e event.Typer) {
 // repaint synchronises the embarkation status of the villagers. It should be
 // called after a change is made to who will embark.
 func (em *Manager) repaint() {
-	// Remove any villager location indicators.
-	// Recreate them all ...
-
 	for _, e := range em.mgr.Tagged("embark-villager-buttons") {
 		em.mgr.DestroyEntity(e)
 	}
@@ -884,7 +881,7 @@ func (em *Manager) repaint() {
 
 		embarking := em.mgr.Component(house.villagerEntity, "Embarking").(*Embarking)
 		if embarking.Value {
-			// Draw this villager near the gate.
+			// Draw this villager near the gate...
 		} else {
 			// Draw this villager at their house.
 			em.mgr.AddComponent(e, &game.Position{
