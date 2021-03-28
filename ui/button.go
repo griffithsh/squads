@@ -5,6 +5,33 @@ import (
 	"github.com/griffithsh/squads/game"
 )
 
+// Button creates a button
+func Button(mgr *ecs.World, w, h int, l, t float64, layer int, absolute bool, text string, interact func(float64, float64)) ecs.Entity {
+	ebg := ButtonBackground(mgr, w, h, l, t, layer, absolute)
+	e := mgr.NewEntity()
+	mgr.Dependency(ebg, e)
+
+	mgr.AddComponent(e, &game.Font{
+		Text: text,
+		Size: "normal",
+	})
+	mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: l + float64(w/2),
+			Y: t + float64(h/2),
+		},
+		Layer:    layer + 1,
+		Absolute: absolute,
+	})
+	mgr.AddComponent(e, &Interactive{
+		W:       float64(w),
+		H:       float64(h),
+		Trigger: interact,
+	})
+
+	return ebg
+}
+
 // ButtonBackground constructs a new background for a button. It visual only and contains no interaction.
 func ButtonBackground(mgr *ecs.World, w, h int, l, t float64, layer int, absolute bool) ecs.Entity {
 	const tileDimension int = 3

@@ -903,16 +903,7 @@ func (em *Manager) repaint() {
 				W: 32, H: 24,
 				Trigger: func(villager ecs.Entity) func(float64, float64) {
 					return func(float64, float64) {
-						// FIXME: instead of immediately disembarking this
-						// villager, pop a modal to focus on this villager, and
-						// show disembark and cancel buttons.
-						embarking := em.mgr.Component(villager, "Embarking").(*Embarking)
-						embarking.Value = false
-
-						// char := em.mgr.Component(villager, "Character").(*game.Character)
-						// equip, _ := em.mgr.Component(villager, "Equipment").(*game.Equipment)
-						// em.paintChar(char, equip, 100, 200, nil)
-
+						em.mgr.Tag(villager, "embark-focus-villager")
 						em.repaint()
 					}
 				}(house.villagerEntity),
@@ -929,16 +920,7 @@ func (em *Manager) repaint() {
 				W: 32, H: 24,
 				Trigger: func(villager ecs.Entity) func(float64, float64) {
 					return func(float64, float64) {
-						// FIXME: instead of immediately embarking this
-						// villager, pop a modal to focus on this villager, and
-						// show embark and cancel buttons.
-						embarking := em.mgr.Component(villager, "Embarking").(*Embarking)
-						embarking.Value = true
-
-						// char := em.mgr.Component(villager, "Character").(*game.Character)
-						// equip, _ := em.mgr.Component(villager, "Equipment").(*game.Equipment)
-						// em.paintChar(char, equip, 100, 200, nil)
-
+						em.mgr.Tag(villager, "embark-focus-villager")
 						em.repaint()
 					}
 				}(house.villagerEntity),
@@ -968,11 +950,44 @@ func (em *Manager) repaint() {
 		not the entities that *are* the villagers.
 	*/
 
-	// TODO:
 	// Then, if any villager is popped/focused/etc, we need to paint a modal window ...
+	if villager := em.mgr.AnyTagged("embark-focus-villager"); villager != 0 {
+		container := em.mgr.NewEntity()
+		em.mgr.Tag(container, "embark")
+		em.mgr.Tag(container, "embark-focus-panel")
 
-	// Else if no-one is popped, then check how many are embarked. If > 0, show an embark/go! button.
-	if takenEmbarkPoints > 0 {
+		embarking := em.mgr.Component(villager, (&Embarking{}).Type()).(*Embarking)
+		if embarking.Value {
+			// if this villager is embarked, we need a disembark button ...
+			e := ui.Button(em.mgr, 90, 30, float64(em.screenW)/2-145, float64(em.screenH)-52, uiSpritesZ+10, true, "Disembark", func(float64, float64) {
+				em.mgr.RemoveTag(villager, "embark-focus-villager")
+				em.mgr.DestroyEntity(container)
+				embarking.Value = false
+				em.repaint()
+			})
+			em.mgr.Dependency(container, e)
+
+		} else {
+			// ... otherwise, we need an embark button ...
+			e := ui.Button(em.mgr, 90, 30, float64(em.screenW)/2-145, float64(em.screenH)-52, uiSpritesZ+10, true, "Embark", func(float64, float64) {
+				em.mgr.RemoveTag(villager, "embark-focus-villager")
+				em.mgr.DestroyEntity(container)
+				embarking.Value = true
+				em.repaint()
+			})
+			em.mgr.Dependency(container, e)
+
+		}
+		// ... and either way, we need a cancel button.
+		e := ui.Button(em.mgr, 90, 30, float64(em.screenW)/2-45, float64(em.screenH)-52, uiSpritesZ+10, true, "Cancel", func(float64, float64) {
+			em.mgr.RemoveTag(villager, "embark-focus-villager")
+			em.mgr.DestroyEntity(container)
+			em.repaint()
+		})
+		em.mgr.Dependency(container, e)
+
+	} else if takenEmbarkPoints > 0 {
+		// Else if no-one is popped, then check how many are embarked. If > 0, show an embark/go! button.
 		e := ui.ButtonBackground(em.mgr, 96, 30, float64(em.screenW)/2-48, float64(em.screenH)-52, uiSpritesZ+10, true)
 		em.mgr.Tag(e, "embark")
 		em.mgr.Tag(e, "embark-villager-buttons")
@@ -981,7 +996,7 @@ func (em *Manager) repaint() {
 		em.mgr.Tag(e, "embark")
 		em.mgr.Tag(e, "embark-villager-buttons")
 		em.mgr.AddComponent(e, &game.Font{
-			Text: "Embark!",
+			Text: "Start!",
 			Size: "normal",
 		})
 		em.mgr.AddComponent(e, &game.Position{
