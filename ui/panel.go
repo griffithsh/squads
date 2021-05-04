@@ -5,7 +5,7 @@ import (
 	"github.com/griffithsh/squads/game"
 )
 
-// Panel constructs a new UI panel.
+// Panel constructs a new UI panel. DEPRECATED! Use a UI Component instead.
 func Panel(mgr *ecs.World, w, h int, l, t float64, layer int, absolute bool) ecs.Entity {
 	const tileDimension int = 4
 	// If w or h are not a multiple of tileDimension or less than 3 *

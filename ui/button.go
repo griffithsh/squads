@@ -5,7 +5,7 @@ import (
 	"github.com/griffithsh/squads/game"
 )
 
-// Button creates a button
+// Button creates a button. DEPRECATED! Use a UI Component instead.
 func Button(mgr *ecs.World, w, h int, l, t float64, layer int, absolute bool, text string, interact func(float64, float64)) ecs.Entity {
 	ebg := ButtonBackground(mgr, w, h, l, t, layer, absolute)
 	e := mgr.NewEntity()
