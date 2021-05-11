@@ -7,7 +7,7 @@ import (
 
 // UI is a Component that represents a UI. The stutter is unfortunate ...
 type UI struct {
-	doc *Element
+	Doc *Element
 
 	Data map[string]func()
 }
@@ -25,7 +25,7 @@ func NewUI(r io.Reader) *UI {
 		panic(fmt.Sprintf("parse UI template: %v", err))
 	}
 	return &UI{
-		doc:  el,
+		Doc:  el,
 		Data: map[string]func(){},
 	}
 }

@@ -1,0 +1,31 @@
+<UI>
+    <Panel width="200" height="340">
+        <Column twelfths="7">
+            <Text value="Frederick" />
+            <Text value="Villager" size="small" />
+            <Text value="LVL: 1" size="small" />
+            <Text value="SEX: Female" size="small" />
+        </Column>
+        <Column twelfths="5" align="right">
+            <Image texture="dejected-f-villager.png" width="52" height="52" x="-1" y="8" />
+        </Column>
+        <Row>
+            <Text value="PREP: 999" size="small" />
+            <Text value="AP: 120" size="small" />
+            <Text value="STR/LVL: 1.23" size="small" />
+            <Text value="AGI/LVL: 2.01" size="small" />
+            <Text value="INT/LVL: 1.73" size="small" />
+            <Text value="VIT/LVL: 1.34" size="small" />
+            <Text value="Masteries" />
+            <Text value="Craftsmanship Mastery: 1" size="small" />
+            <Text value="Fire Mastery: 1" size="small" />
+            <Text value="Earth Mastery: 1" size="small" />
+        </Row>
+        <Column twelfths="6">
+            <Button label="Cancel" width="80"/>
+        </Column>
+        <Column twelfths="6" align="right">
+            <Button label="Prepare" width="80"/>
+        </Column>
+    </Panel>
+</UI>

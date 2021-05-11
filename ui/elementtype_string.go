@@ -8,17 +8,18 @@ func _() {
 	// An "invalid array index" compiler error signifies that the constant values have changed.
 	// Re-run the stringer command to generate them again.
 	var x [1]struct{}
-	_ = x[PanelElement-0]
-	_ = x[RowElement-1]
-	_ = x[ColumnElement-2]
-	_ = x[TextElement-3]
-	_ = x[ButtonElement-4]
-	_ = x[ImageElement-5]
+	_ = x[UIElement-0]
+	_ = x[PanelElement-1]
+	_ = x[RowElement-2]
+	_ = x[ColumnElement-3]
+	_ = x[TextElement-4]
+	_ = x[ButtonElement-5]
+	_ = x[ImageElement-6]
 }
 
-const _ElementType_name = "PanelElementRowElementColumnElementTextElementButtonElementImageElement"
+const _ElementType_name = "UIElementPanelElementRowElementColumnElementTextElementButtonElementImageElement"
 
-var _ElementType_index = [...]uint8{0, 12, 22, 35, 46, 59, 71}
+var _ElementType_index = [...]uint8{0, 9, 21, 31, 44, 55, 68, 80}
 
 func (i ElementType) String() string {
 	if i < 0 || i >= ElementType(len(_ElementType_index)-1) {

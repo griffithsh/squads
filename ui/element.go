@@ -1,16 +1,19 @@
 package ui
 
 import (
+	"bytes"
 	"encoding/xml"
 	"fmt"
 	"io"
+	"strconv"
 )
 
 //go:generate stringer -type=ElementType
 type ElementType int
 
 const (
-	PanelElement ElementType = iota
+	UIElement ElementType = iota
+	PanelElement
 	RowElement
 	ColumnElement
 	TextElement
@@ -18,9 +21,96 @@ const (
 	ImageElement
 )
 
+type AttributeMap map[string]string
+
+func (m AttributeMap) Width() int {
+	str, ok := m["width"]
+	if !ok {
+		// then auto?
+		return 0
+	}
+
+	w, err := strconv.Atoi(str)
+	if err != nil {
+		// invalid value?
+		return 0
+	}
+	return w
+}
+func (m AttributeMap) Height() int {
+	str, ok := m["height"]
+	if !ok {
+		// then auto?
+		return 0
+	}
+
+	h, err := strconv.Atoi(str)
+	if err != nil {
+		// invalid value?
+		return 0
+	}
+	return h
+}
+
+func (m AttributeMap) Align() string {
+	v := m["align"]
+	switch v {
+	case "left":
+		fallthrough
+	case "right":
+		fallthrough
+	case "center":
+		return v
+
+	default:
+		return "left"
+	}
+}
+
+func (m AttributeMap) Valign() string {
+	v := m["valign"]
+	switch v {
+	case "top":
+		fallthrough
+	case "bottom":
+		fallthrough
+	case "middle":
+		return v
+
+	default:
+		return "top"
+	}
+}
+
+func (m AttributeMap) FontSize() TextSize {
+	switch m["size"] {
+	default:
+		fallthrough
+	case "normal":
+		return TextSizeNormal
+	case "small":
+		return TextSizeSmall
+	}
+}
+
+func (m AttributeMap) FontLayout() TextLayout {
+	switch m["layout"] {
+	default:
+		fallthrough
+	case "left":
+		return TextLayoutLeft
+	case "right":
+		return TextLayoutRight
+	case "justify":
+		return TextLayoutJustify
+	case "center":
+		return TextLayoutCenter
+	}
+}
+
 type Element struct {
 	Type       ElementType
-	Attributes map[string]interface{}
+	Attributes AttributeMap
 
 	Children []*Element
 }
@@ -34,7 +124,10 @@ func parse(r io.Reader) (*Element, error) {
 	start, ok := token.(xml.StartElement)
 	if !ok {
 		return nil, fmt.Errorf("first token not xml.StartElement: %T", token)
+	} else if getType(start) != UIElement {
+		return nil, fmt.Errorf("first element not <UI />: %s", getType(start))
 	}
+
 	kids, err := getContents(dec)
 	if err != nil {
 		return nil, fmt.Errorf("getContents: %v", err)
@@ -44,14 +137,31 @@ func parse(r io.Reader) (*Element, error) {
 		Attributes: getAttributes(start),
 		Children:   kids,
 	}
-	if token, err = dec.Token(); token != nil || err != io.EOF {
-		return nil, fmt.Errorf("unexpected second top-level element: %v, should be io.EOF, got %v", token, err)
+
+	// Consume any leftovers after the first top-level element.
+	for {
+		token, err := dec.Token()
+		if token == nil && err == io.EOF {
+			break
+		}
+
+		switch t := token.(type) {
+		case xml.CharData:
+			trailing := string(bytes.Trim(t, " \r\n\t"))
+			if trailing != "" {
+				return nil, fmt.Errorf("trailing characters after closing element: %s", trailing)
+			}
+		case xml.StartElement:
+			return nil, fmt.Errorf("unexpected second top-level element: %T", t)
+		}
 	}
 	return &e, nil
 }
 
 func getType(start xml.StartElement) ElementType {
 	switch start.Name.Local {
+	case "UI":
+		return UIElement
 	case "Panel":
 		return PanelElement
 	case "Row":
@@ -69,24 +179,33 @@ func getType(start xml.StartElement) ElementType {
 	}
 }
 
-func getAttributes(start xml.StartElement) map[string]interface{} {
-	result := map[string]interface{}{}
+func getAttributes(start xml.StartElement) map[string]string {
+	result := map[string]string{}
 	for _, attr := range start.Attr {
 		result[attr.Name.Local] = attr.Value
 	}
 	return result
 }
 
+// permittedAttributes defines which attributes are allowed on a given element
+// type. What's an XML schema anyway?
+// First Element must be a "UI" element.
+// The only permitted children of a UI are Row or Column elements.
+// A Panel has a width and a height attribute which must change based on scale
+// the panel's L-T-R-B coordinates are determined by the alignment and padding of its parent,
+// the scale
+
 var permittedAttributes = map[ElementType][]string{
-	PanelElement:  {"width"},
+	UIElement:     {},
+	PanelElement:  {"width", "height"},
 	RowElement:    {},
-	ColumnElement: {"twelths"},
-	TextElement:   {"value"},
-	ButtonElement: {"onclick", "label"},
+	ColumnElement: {"twelfths", "align"},
+	TextElement:   {"value", "size", "layout", "color"},
+	ButtonElement: {"onclick", "label", "width"},
 	ImageElement:  {"texture", "width", "height", "x", "y"},
 }
 
-func validateAttributesForType(t ElementType, attrs map[string]interface{}) error {
+func validateAttributesForType(t ElementType, attrs map[string]string) error {
 	permitted := permittedAttributes[t]
 	for attr := range attrs {
 		for _, yes := range permitted {

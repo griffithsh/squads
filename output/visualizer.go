@@ -5,11 +5,13 @@ import (
 	"image"
 	"image/color"
 	"math/rand"
+	"os"
 	"sort"
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/res"
+	"github.com/griffithsh/squads/ui"
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
@@ -346,6 +348,19 @@ func (r *Visualizer) Render(screen *ebiten.Image, mgr *ecs.World, focusX, focusY
 		if err != nil {
 			return err
 		}
+	}
+
+	// FIXME: UIs are components and can be found via normal ECS lookups.
+	scale := 3.0
+	uv := newUIVisualizer(r.picForTexture)
+	data := map[string]func(){}
+	f, err := os.Open("output/demo.ui.xml")
+	if err != nil {
+		return err
+	}
+	nui := ui.NewUI(f)
+	if err := uv.Render(r.uiCanvas, nui.Doc, data, scale); err != nil {
+		return err
 	}
 
 	screen.Clear()
