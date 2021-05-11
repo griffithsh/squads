@@ -351,7 +351,7 @@ func (r *Visualizer) Render(screen *ebiten.Image, mgr *ecs.World, focusX, focusY
 	}
 
 	// FIXME: UIs are components and can be found via normal ECS lookups.
-	scale := 3.0
+	scale := 2.0
 	uv := newUIVisualizer(r.picForTexture)
 	data := map[string]func(){}
 	f, err := os.Open("output/demo.ui.xml")

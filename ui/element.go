@@ -200,7 +200,7 @@ var permittedAttributes = map[ElementType][]string{
 	PanelElement:  {"width", "height"},
 	RowElement:    {},
 	ColumnElement: {"twelfths", "align"},
-	TextElement:   {"value", "size", "layout", "color"},
+	TextElement:   {"value", "size", "layout", "color", "width"},
 	ButtonElement: {"onclick", "label", "width"},
 	ImageElement:  {"texture", "width", "height", "x", "y"},
 }

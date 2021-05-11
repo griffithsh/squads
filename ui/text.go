@@ -1,10 +1,21 @@
 package ui
 
 const (
-	letterSpacing = 1
-	lineSpacing   = 2 // FIXME: It's 2 for normal and 1 for small.
-	spaceWidth    = 4
+	LetterSpacing     = 1
+	SpaceWidth        = 4
+	normalLineSpacing = 2
+	smallLineSpacing  = 1
 )
+
+func LineSpacing(l TextSize) int {
+	switch l {
+	case TextSizeNormal:
+		return normalLineSpacing
+	case TextSizeSmall:
+		return smallLineSpacing
+	}
+	return 0
+}
 
 type TextSize int
 
@@ -25,6 +36,23 @@ const (
 type Word struct {
 	Characters []Character
 }
+type Line []Word
+
+// Width of a Line is the sum of the widths of it's Words plus
+// SpaceWidth times the number of Words minus one.
+func (l Line) Width() int {
+	if len(l) == 0 {
+		return 0
+	}
+
+	width := 0
+	for _, word := range l {
+		width += word.Width()
+	}
+	width += (len(l) - 1) * SpaceWidth
+
+	return width
+}
 
 type Character struct {
 	Raw                 rune
@@ -33,8 +61,8 @@ type Character struct {
 
 // Text is a metadata enriched version of a standard string, that has not been laid out.
 type Text struct {
-	Value             []Word
-	Size              TextSize
+	Lines []Line
+	// Size              TextSize
 	BitmapFontTexture string
 }
 
@@ -44,13 +72,26 @@ func NewText(value string, size TextSize) *Text {
 		switchRune = switchRuneSmall
 	}
 
-	result := Text{}
+	result := Text{
+		Lines: []Line{
+			[]Word{
+				{},
+			},
+		},
+		// Size:              size,
+		BitmapFontTexture: "font.png",
+	}
 	for _, r := range value {
 		switch r {
 		case ' ':
 			// new word
+			last := len(result.Lines) - 1
+			result.Lines[last] = append(result.Lines[last], Word{})
 		case '\n':
-			// new word
+			// new line
+			result.Lines = append(result.Lines, Line{
+				Word{},
+			})
 		default:
 			w, h, x, y := switchRune(r)
 			char := Character{
@@ -60,28 +101,37 @@ func NewText(value string, size TextSize) *Text {
 				X:      x,
 				Y:      y,
 			}
-			result.Value = append(result.Value, Word{
-				Characters: []Character{char},
-			})
+			lastLine := len(result.Lines) - 1
+			lastWord := len(result.Lines[lastLine]) - 1
+			result.Lines[lastLine][lastWord].Characters = append(result.Lines[lastLine][lastWord].Characters, char)
 		}
 	}
+
+	// Remove empty line and words.
+	// If there is one line and one word and the length of chars is 0, then empty Lines.
+	if len(result.Lines) == 1 && len(result.Lines[0]) == 1 && len(result.Lines[0][0].Characters) == 0 {
+		result.Lines = []Line{}
+	}
+
 	return &result
 }
 
-func (t *Text) Width() int {
-	if len(t.Value) == 0 {
-		return 0
-	}
+// func (t *Text) Width() int {
+// 	if len(t.Value) == 0 {
+// 		return 0
+// 	}
 
-	width := 0
-	for _, w := range t.Value {
-		width += w.Width()
-	}
-	width += (len(t.Value) - 1) * letterSpacing
+// 	width := 0
+// 	for _, w := range t.Value {
+// 		width += w.Width()
+// 	}
+// 	width += (len(t.Value) - 1) * letterSpacing
 
-	return width
-}
+// 	return width
+// }
 
+// Width of a Word is the sum of the widths of it's characters plus
+// LetterSpacing times the number of characters minus one.
 func (w *Word) Width() int {
 	if len(w.Characters) == 0 {
 		return 0
@@ -91,7 +141,7 @@ func (w *Word) Width() int {
 	for _, c := range w.Characters {
 		width += c.Width
 	}
-	width += (len(w.Characters) - 1) * spaceWidth
+	width += (len(w.Characters) - 1) * LetterSpacing
 
 	return width
 }

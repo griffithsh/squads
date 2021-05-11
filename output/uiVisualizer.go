@@ -32,6 +32,7 @@ func (uv *uiVisualizer) Render(screen *ebiten.Image, doc *ui.Element, data map[s
 	boundaries := image.Rect(0, 0, 1024, 768)
 
 	_, err := uv.drawChildren(screen, doc.Children, boundaries, "center", "middle", scale)
+
 	return err
 }
 
@@ -122,12 +123,19 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			}
 
 		case ui.TextElement:
-			label := child.Attributes["label"]
-			h, err := uv.drawText(screen, label, child.Attributes.FontSize(), bounds, child.Attributes.FontLayout(), scale)
+			label := child.Attributes["value"]
+			sz := child.Attributes.FontSize()
+			layout := child.Attributes.FontLayout()
+
+			txtBounds := bounds
+			if child.Attributes["width"] != "" {
+				txtBounds.Max.X = txtBounds.Min.X + child.Attributes.Width()
+			}
+			h, err := uv.drawText(screen, label, sz, txtBounds, layout, scale)
 			if err != nil {
 				return bounds, err
 			}
-			bounds.Min.Y += h
+			bounds.Min.Y += int(float64(h) * scale)
 
 		case ui.ButtonElement:
 			const buttonHeight = 15
@@ -158,6 +166,7 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			bounds.Min.Y += buttonHeight
 
 		case ui.ImageElement:
+			// TODO: bigtime!
 		}
 	}
 	return bounds, nil
@@ -301,29 +310,84 @@ func (uv *uiVisualizer) drawButton(screen *ebiten.Image, active bool, r image.Re
 	return nil
 }
 
-func (uv *uiVisualizer) drawText(screen *ebiten.Image, value string, size ui.TextSize, bounds image.Rectangle, align ui.TextLayout, scale float64) (height int, err error) {
-	// figure out how wide the characters for "value" will be in the passed scale.
-	width := bounds.Dx()
+func split(lines []ui.Line, width int) []ui.Line {
+	splitLines := []ui.Line{}
 
-	text := ui.NewText(value, size)
-	for _, word := range text.Value {
-		if width != word.Width() {
-			// ...?
-			// TODO something
+	for _, line := range lines {
+		// If this line will fit within bounds, then it doesnt need splitting.
+		if line.Width() <= width {
+			splitLines = append(splitLines, line)
+			continue
 		}
 
+		// Go through the line, cutting it into pieces that will fit.
+		running := ui.Line{}
+		for _, word := range line {
+			// What if this word alone exceeds bounds?
+			// FIXME:
+
+			if running.Width()+ui.LetterSpacing+word.Width() > width {
+				splitLines = append(splitLines, running)
+				running = running[:0]
+			}
+			running = append(running, word)
+		}
+		splitLines = append(splitLines, running)
 	}
 
-	// different strategies based on width and word breaks...
-	switch align {
-	case ui.TextLayoutLeft:
-		// break intelligently
-	case ui.TextLayoutRight:
-		// break intelligently
-	case ui.TextLayoutCenter:
-		// break intelligently, divide space equally on each side
-	case ui.TextLayoutJustify:
-		// break
+	return splitLines
+}
+
+func (uv *uiVisualizer) drawText(screen *ebiten.Image, value string, size ui.TextSize, bounds image.Rectangle, align ui.TextLayout, scale float64) (height int, err error) {
+	text := ui.NewText(value, size)
+
+	// We know our bounds now, so we can split long lines.
+	splitLines := split(text.Lines, bounds.Dx())
+
+	img, err := uv.picForTexture(text.BitmapFontTexture)
+	if err != nil {
+		return 0, fmt.Errorf("picForTexture: %v", err)
 	}
-	return 0, nil
+
+	// height is a return value.
+	height = 0
+
+	x := float64(bounds.Min.X)
+	y := float64(bounds.Min.Y)
+	for _, line := range splitLines {
+		tallest := 0
+		// different strategies based on width and word breaks...
+		switch align {
+		case ui.TextLayoutLeft:
+			// flow from bounds.Min.X
+		case ui.TextLayoutRight:
+			// flow from bounds.Max.X - line.Width()
+		case ui.TextLayoutCenter:
+			// flow from ...?
+		case ui.TextLayoutJustify:
+			// flow from left, but divide extra space between words...
+		}
+
+		// FIXME: Clean up and share this implementation across layout styles.
+		for _, word := range line {
+			for _, char := range word.Characters {
+				if char.Height > tallest {
+					tallest = char.Height
+				}
+				img := img.SubImage(image.Rect(char.X, char.Y, char.X+char.Width, char.Y+char.Height)).(*ebiten.Image)
+				op := ebiten.DrawImageOptions{}
+				op.GeoM.Scale(scale, scale)
+				op.GeoM.Translate(x, y)
+				screen.DrawImage(img, &op)
+				x += float64(char.Width+ui.LetterSpacing) * scale
+			}
+		}
+		height += int(float64(tallest) * scale)
+		y += float64(tallest+ui.LineSpacing(size)) * scale
+	}
+
+	if len(splitLines) > 0 {
+		height += int(float64(ui.LineSpacing(size)*(len(splitLines)-1)) * scale)
+	}
+	return height, nil
 }
