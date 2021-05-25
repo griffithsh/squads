@@ -68,6 +68,7 @@ func (uv *uiVisualizer) Render(screen *ebiten.Image, doc *ui.Element, data map[s
 
 // drawChildren returns the remainder of the bounds, unused by the drawn children.
 func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Element, bounds image.Rectangle, align, valign string, scale float64) (image.Rectangle, error) {
+	maxColHeight := 0
 	for _, child := range children {
 		var err error
 		switch child.Type {
@@ -100,14 +101,22 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 				X: panelBounds.Min.X + w,
 				Y: panelBounds.Min.Y + h,
 			}
+
 			if err = uv.drawPanel(screen, panelBounds, scale); err != nil {
 				return bounds, err
 			}
+
+			padding := int(float64(child.Attributes.Padding()) * scale)
+			panelBounds.Min.X += padding
+			panelBounds.Min.Y += padding
+			panelBounds.Max.X -= padding
+			panelBounds.Max.Y -= padding
 			if bounds, err = uv.drawChildren(screen, child.Children, panelBounds, child.Attributes.Align(), child.Attributes.Valign(), scale); err != nil {
 				return bounds, err
 			}
 
 		case ui.RowElement:
+			// I keep coming back to RowElement and wondering what its purpose was...?
 			bounds, err = uv.drawChildren(screen, child.Children, bounds, child.Attributes.Align(), child.Attributes.Valign(), scale)
 			if err != nil {
 				return bounds, err
@@ -117,9 +126,25 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			// I think we need to know about siblings to do this correctly?
 			// I don't think we can stomp bounds here?  Only the last Column of
 			// adjacent siblings is block level.
-			bounds, err = uv.drawChildren(screen, child.Children, bounds, child.Attributes.Align(), child.Attributes.Valign(), scale)
+			colBounds := bounds
+			colBounds.Min.X += bounds.Dx() * child.Attributes.TwelfthsOffset() / 12
+			w := bounds.Dx() * child.Attributes.Twelfths() / 12
+			colBounds.Max.X = colBounds.Min.X + w
+			takenBounds, err := uv.drawChildren(screen, child.Children, colBounds, child.Attributes.Align(), child.Attributes.Valign(), scale)
 			if err != nil {
 				return bounds, err
+			}
+			colHeight := takenBounds.Min.Y - bounds.Min.Y
+			if colHeight > maxColHeight {
+				maxColHeight = colHeight
+			}
+
+			// If the twelfths and the twelfths-offset total the full width of a
+			// set of columns, then we know that this is the final column of a
+			// group.
+			if child.Attributes.Twelfths()+child.Attributes.TwelfthsOffset() == 12 {
+				bounds.Min.Y += maxColHeight
+				maxColHeight = 0
 			}
 
 		case ui.TextElement:
@@ -135,12 +160,14 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			if err != nil {
 				return bounds, err
 			}
-			bounds.Min.Y += int(float64(h) * scale)
+			bounds.Min.Y += h
 
 		case ui.ButtonElement:
-			const buttonHeight = 15
+			buttonHeight := int(15 * scale)
 			label := child.Attributes["label"]
 			width := child.Attributes.Width()
+			// Does the parent align left, right, or centre? Are we valigning
+			// it? Calculate buttonDimensions from that.
 			l := bounds.Min.X
 			switch align {
 			case "right":
@@ -158,10 +185,13 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			default: // top
 			}
 			buttonDimensions := image.Rect(l, t, l+width, t+buttonHeight)
-			// does the parent align left, right, or centre? Are we valigning it? Calculate a bounds from that.
 			if err = uv.drawButton(screen, false, buttonDimensions, scale); err != nil {
 				return bounds, err
 			}
+
+			// Push the text down a bit so it's vertically centered.
+			buttonDimensions.Min.Y += int(scale * 2)
+
 			uv.drawText(screen, label, ui.TextSizeNormal, buttonDimensions, ui.TextLayoutCenter, scale)
 			bounds.Min.Y += buttonHeight
 
@@ -310,67 +340,45 @@ func (uv *uiVisualizer) drawButton(screen *ebiten.Image, active bool, r image.Re
 	return nil
 }
 
-func split(lines []ui.Line, width int) []ui.Line {
-	splitLines := []ui.Line{}
-
-	for _, line := range lines {
-		// If this line will fit within bounds, then it doesnt need splitting.
-		if line.Width() <= width {
-			splitLines = append(splitLines, line)
-			continue
-		}
-
-		// Go through the line, cutting it into pieces that will fit.
-		running := ui.Line{}
-		for _, word := range line {
-			// What if this word alone exceeds bounds?
-			// FIXME:
-
-			if running.Width()+ui.LetterSpacing+word.Width() > width {
-				splitLines = append(splitLines, running)
-				running = running[:0]
-			}
-			running = append(running, word)
-		}
-		splitLines = append(splitLines, running)
-	}
-
-	return splitLines
-}
-
 func (uv *uiVisualizer) drawText(screen *ebiten.Image, value string, size ui.TextSize, bounds image.Rectangle, align ui.TextLayout, scale float64) (height int, err error) {
 	text := ui.NewText(value, size)
 
+	// Spacer around each text instance.
+	spacer := int(1 * scale)
+
 	// We know our bounds now, so we can split long lines.
-	splitLines := split(text.Lines, bounds.Dx())
+	width := int(float64(bounds.Dx()) / scale)
+	splitLines := ui.SplitLines(text.Lines, width)
 
 	img, err := uv.picForTexture(text.BitmapFontTexture)
 	if err != nil {
 		return 0, fmt.Errorf("picForTexture: %v", err)
 	}
 
-	// height is a return value.
-	height = 0
-
-	x := float64(bounds.Min.X)
-	y := float64(bounds.Min.Y)
-	for _, line := range splitLines {
-		tallest := 0
-		// different strategies based on width and word breaks...
-		switch align {
-		case ui.TextLayoutLeft:
-			// flow from bounds.Min.X
-		case ui.TextLayoutRight:
-			// flow from bounds.Max.X - line.Width()
-		case ui.TextLayoutCenter:
-			// flow from ...?
-		case ui.TextLayoutJustify:
-			// flow from left, but divide extra space between words...
+	y := float64(bounds.Min.Y + spacer)
+	for i, line := range splitLines {
+		x := float64(bounds.Min.X)
+		if i != 0 {
+			// If not the first line, add a line spacer.
+			y += float64(ui.LineSpacing(size)) * scale
 		}
 
-		// FIXME: Clean up and share this implementation across layout styles.
+		// Different strategies based on width and word breaks...
+		switch align {
+		case ui.TextLayoutRight:
+			x = float64(bounds.Max.X) - float64(line.Width())*scale
+		case ui.TextLayoutCenter:
+			x += float64(bounds.Dx()/2) - float64(line.Width()/2)*scale
+		}
+
+		tallest := 0
+		wordSpace := ui.SpaceWidth * scale
+		if align == ui.TextLayoutJustify && len(line) > 1 {
+			extra := float64((float64(bounds.Dx()) - float64(line.Width())*scale) / float64(len(line)-1))
+			wordSpace += extra
+		}
 		for _, word := range line {
-			for _, char := range word.Characters {
+			for i, char := range word.Characters {
 				if char.Height > tallest {
 					tallest = char.Height
 				}
@@ -379,15 +387,18 @@ func (uv *uiVisualizer) drawText(screen *ebiten.Image, value string, size ui.Tex
 				op.GeoM.Scale(scale, scale)
 				op.GeoM.Translate(x, y)
 				screen.DrawImage(img, &op)
-				x += float64(char.Width+ui.LetterSpacing) * scale
+				x += float64(char.Width) * scale
+
+				// Add spacing between letters for every letter except the last one.
+				if i != len(word.Characters)-1 {
+					x += float64(ui.LetterSpacing) * scale
+				}
 			}
+			x += wordSpace
 		}
-		height += int(float64(tallest) * scale)
-		y += float64(tallest+ui.LineSpacing(size)) * scale
+
+		y += float64(tallest) * scale
 	}
 
-	if len(splitLines) > 0 {
-		height += int(float64(ui.LineSpacing(size)*(len(splitLines)-1)) * scale)
-	}
-	return height, nil
+	return spacer + int(y) - bounds.Min.Y, nil
 }

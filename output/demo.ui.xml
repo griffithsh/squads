@@ -1,7 +1,7 @@
 <UI>
-    <Panel width="200" height="340">
+    <Panel width="400" height="720" padding="6">
         <Column twelfths="7">
-            <Text value="Frederick" />
+            <Text value="Gagajon" layout="justify"/>
             <Text value="Villager" size="small" />
             <Text value="LVL: 1" size="small" />
             <Text value="SEX: Female" size="small" />
@@ -11,21 +11,23 @@
         </Column>
         <Row>
             <Text value="PREP: 999" size="small" />
-            <Text value="AP: 120" size="small" />
+            <Text value="AP: 120" size="small" layout="justify"/>
             <Text value="STR/LVL: 1.23" size="small" />
             <Text value="AGI/LVL: 2.01" size="small" />
             <Text value="INT/LVL: 1.73" size="small" />
             <Text value="VIT/LVL: 1.34" size="small" />
             <Text value="Masteries" />
-            <Text value="Craftsmanship Mastery: 1" size="small" />
+            <Text value="Craftsmanship Mastery: 1" size="small" layout="justify"/>
             <Text value="Fire Mastery: 1" size="small" />
             <Text value="Earth Mastery: 1" size="small" />
+            <Text value="First second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth." size="small" layout="justify"/>
+            <Text value="This feels like an awkwardness when we have a really long value. But the alternative is to deal with the children of Text elements, which was IIRC more complicated." size="small" layout="justify" />
         </Row>
-        <Column twelfths="6">
-            <Button label="Cancel" width="80"/>
+        <Column>
+            <Button label="Cancel" width="90"/>
         </Column>
-        <Column twelfths="6" align="right">
-            <Button label="Prepare" width="80"/>
+        <Column align="right">
+            <Button label="Prepare" width="100"/>
         </Column>
     </Panel>
 </UI>

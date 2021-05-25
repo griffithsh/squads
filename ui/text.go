@@ -1,5 +1,7 @@
 package ui
 
+import "strings"
+
 const (
 	LetterSpacing     = 1
 	SpaceWidth        = 4
@@ -36,6 +38,15 @@ const (
 type Word struct {
 	Characters []Character
 }
+
+func (w Word) String() string {
+	result := ""
+	for _, c := range w.Characters {
+		result += string(c.Raw)
+	}
+	return result
+}
+
 type Line []Word
 
 // Width of a Line is the sum of the widths of it's Words plus
@@ -52,6 +63,45 @@ func (l Line) Width() int {
 	width += (len(l) - 1) * SpaceWidth
 
 	return width
+}
+
+func (l Line) String() string {
+	var result []string
+	for _, word := range l {
+		result = append(result, word.String())
+	}
+	return strings.Join(result, " ")
+}
+
+func SplitLines(lines []Line, width int) []Line {
+	splitLines := []Line{}
+
+	for _, line := range lines {
+		// If this line will fit within bounds, then it doesnt need splitting.
+		if line.Width() <= width {
+			splitLines = append(splitLines, line)
+			continue
+		}
+
+		// Go through the line, cutting it into pieces that will fit.
+		running := Line{}
+		for _, word := range line {
+			// FIXME: What if this word alone exceeds bounds? Should the word be
+			// truncated or split in some way?
+			runningWidth := running.Width()
+			if runningWidth > 0 {
+				runningWidth += SpaceWidth
+			}
+			if runningWidth+word.Width() > width {
+				splitLines = append(splitLines, running)
+				running = Line{}
+			}
+			running = append(running, word)
+		}
+		splitLines = append(splitLines, running)
+	}
+
+	return splitLines
 }
 
 type Character struct {

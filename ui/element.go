@@ -52,6 +52,48 @@ func (m AttributeMap) Height() int {
 	return h
 }
 
+func (m AttributeMap) Padding() int {
+	str, ok := m["padding"]
+	if !ok {
+		return 0
+	}
+
+	padding, err := strconv.Atoi(str)
+	if err != nil {
+		// invalid value?
+		return 0
+	}
+	return padding
+}
+
+func (m AttributeMap) Twelfths() int {
+	str, ok := m["twelfths"]
+	if !ok {
+		return 0
+	}
+
+	twelfths, err := strconv.Atoi(str)
+	if err != nil {
+		// invalid value?
+		return 0
+	}
+	return twelfths
+}
+
+func (m AttributeMap) TwelfthsOffset() int {
+	str, ok := m["twelfths-offset"]
+	if !ok {
+		return 0
+	}
+
+	off, err := strconv.Atoi(str)
+	if err != nil {
+		// invalid value?
+		return 0
+	}
+	return off
+}
+
 func (m AttributeMap) Align() string {
 	v := m["align"]
 	switch v {
@@ -155,7 +197,68 @@ func parse(r io.Reader) (*Element, error) {
 			return nil, fmt.Errorf("unexpected second top-level element: %T", t)
 		}
 	}
+
+	// Normalise Column twelfths and inject twelfth-offsets ...
+	var recurse func([]*Element)
+	recurse = func(elements []*Element) {
+		collected := []*Element{}
+
+		for _, el := range elements {
+			if el.Type == ColumnElement {
+				collected = append(collected, el)
+			} else if len(collected) > 0 {
+				normaliseTwelfths(collected)
+				collected = collected[:0]
+			}
+			recurse(el.Children)
+		}
+		if len(collected) > 0 {
+			normaliseTwelfths(collected)
+		}
+	}
+	recurse(e.Children)
+
 	return &e, nil
+}
+
+func normaliseTwelfths(cols []*Element) {
+	// first figure out the exact twelfth values for each element
+	unspecified := []*Element{}
+	unclaimed := 12
+	for _, el := range cols {
+		twelfths := el.Attributes.Twelfths()
+		if twelfths == 0 {
+			unspecified = append(unspecified, el)
+		}
+		unclaimed -= twelfths
+	}
+
+	origUnclaimed := unclaimed
+	for i, el := range unspecified {
+		twelfths := 0
+		if i == 0 {
+			// Add modulo to the first column - it's as good as anywhere.
+			twelfths += origUnclaimed % len(unspecified)
+		}
+
+		// now assign an equal division of the remainder
+		twelfths += origUnclaimed / len(unspecified)
+
+		unclaimed -= twelfths
+		el.Attributes["twelfths"] = strconv.Itoa(twelfths)
+	}
+
+	if unclaimed != 0 {
+		// panic!
+		panic(fmt.Sprintf("unclaimed nonzero: %d", unclaimed))
+	}
+
+	// then figure out the start-offsets
+	for _, el := range cols {
+		twelfth := el.Attributes.Twelfths()
+		el.Attributes["twelfths-offset"] = strconv.Itoa(unclaimed)
+		unclaimed += twelfth
+	}
 }
 
 func getType(start xml.StartElement) ElementType {
@@ -190,15 +293,14 @@ func getAttributes(start xml.StartElement) map[string]string {
 // permittedAttributes defines which attributes are allowed on a given element
 // type. What's an XML schema anyway?
 // First Element must be a "UI" element.
-// The only permitted children of a UI are Row or Column elements.
 // A Panel has a width and a height attribute which must change based on scale
 // the panel's L-T-R-B coordinates are determined by the alignment and padding of its parent,
 // the scale
 
 var permittedAttributes = map[ElementType][]string{
 	UIElement:     {},
-	PanelElement:  {"width", "height"},
-	RowElement:    {},
+	PanelElement:  {"width", "height", "padding"},
+	RowElement:    {"align"},
 	ColumnElement: {"twelfths", "align"},
 	TextElement:   {"value", "size", "layout", "color", "width"},
 	ButtonElement: {"onclick", "label", "width"},
