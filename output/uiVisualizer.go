@@ -196,7 +196,22 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			bounds.Min.Y += buttonHeight
 
 		case ui.ImageElement:
-			// TODO: bigtime!
+			texture := child.Attributes["texture"]
+			img, err := uv.picForTexture(texture)
+			if err != nil {
+				return bounds, fmt.Errorf("picForTexture: %v", err)
+			}
+			width := child.Attributes.Width()
+			height := child.Attributes.Height()
+			x := child.Attributes.X()
+			y := child.Attributes.Y()
+			img = img.SubImage(image.Rect(x, y, x+width, y+height)).(*ebiten.Image)
+			op := ebiten.DrawImageOptions{}
+			op.GeoM.Scale(scale, scale)
+			op.GeoM.Translate(float64(bounds.Min.X), float64(bounds.Min.Y))
+			screen.DrawImage(img, &op)
+
+			bounds.Min.Y += int(float64(height) * scale)
 		}
 	}
 	return bounds, nil

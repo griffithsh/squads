@@ -52,6 +52,36 @@ func (m AttributeMap) Height() int {
 	return h
 }
 
+func (m AttributeMap) X() int {
+	str, ok := m["x"]
+	if !ok {
+		// then auto?
+		return 0
+	}
+
+	x, err := strconv.Atoi(str)
+	if err != nil {
+		// invalid value?
+		return 0
+	}
+	return x
+}
+
+func (m AttributeMap) Y() int {
+	str, ok := m["y"]
+	if !ok {
+		// then auto?
+		return 0
+	}
+
+	y, err := strconv.Atoi(str)
+	if err != nil {
+		// invalid value?
+		return 0
+	}
+	return y
+}
+
 func (m AttributeMap) Padding() int {
 	str, ok := m["padding"]
 	if !ok {

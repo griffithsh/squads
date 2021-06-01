@@ -7,21 +7,19 @@
             <Text value="SEX: Female" size="small" />
         </Column>
         <Column twelfths="5" align="right">
-            <Image texture="dejected-f-villager.png" width="52" height="52" x="-1" y="8" />
+            <Image texture="character-appearance/dejected-f-villager.variations.png" width="52" height="52" x="0" y="0" />
         </Column>
         <Row>
             <Text value="PREP: 999" size="small" />
-            <Text value="AP: 120" size="small" layout="justify"/>
+            <Text value="AP: 120" size="small" />
             <Text value="STR/LVL: 1.23" size="small" />
             <Text value="AGI/LVL: 2.01" size="small" />
             <Text value="INT/LVL: 1.73" size="small" />
             <Text value="VIT/LVL: 1.34" size="small" />
             <Text value="Masteries" />
-            <Text value="Craftsmanship Mastery: 1" size="small" layout="justify"/>
+            <Text value="Craftsmanship Mastery: 1" size="small" />
             <Text value="Fire Mastery: 1" size="small" />
             <Text value="Earth Mastery: 1" size="small" />
-            <Text value="First second third fourth fifth sixth seventh eighth ninth tenth eleventh twelfth." size="small" layout="justify"/>
-            <Text value="This feels like an awkwardness when we have a really long value. But the alternative is to deal with the children of Text elements, which was IIRC more complicated." size="small" layout="justify" />
         </Row>
         <Column>
             <Button label="Cancel" width="90"/>
