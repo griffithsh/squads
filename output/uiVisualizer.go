@@ -1,8 +1,10 @@
 package output
 
 import (
+	"bytes"
 	"fmt"
 	"image"
+	"text/template"
 
 	"github.com/griffithsh/squads/ui"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -19,7 +21,7 @@ func newUIVisualizer(picForTexture func(filename string) (*ebiten.Image, error))
 	return &uv
 }
 
-func (uv *uiVisualizer) Render(screen *ebiten.Image, doc *ui.Element, data map[string]func(), scale float64) error {
+func (uv *uiVisualizer) Render(screen *ebiten.Image, doc *ui.Element, data map[string]interface{}, scale float64) error {
 	// FIXME: remove this random code that's only here to test stuff.
 	// if err := uv.drawPanel(screen, image.Rect(62, 64, 962, 704), scale); err != nil {
 	// 	return fmt.Errorf("drawPanel: %v", err)
@@ -31,7 +33,7 @@ func (uv *uiVisualizer) Render(screen *ebiten.Image, doc *ui.Element, data map[s
 	// FIXME: figure out the boundaries for the children.
 	boundaries := image.Rect(0, 0, 1024, 768)
 
-	_, err := uv.drawChildren(screen, doc.Children, boundaries, "center", "middle", scale)
+	_, err := uv.drawChildren(screen, doc.Children, data, boundaries, "center", "middle", scale)
 
 	return err
 }
@@ -67,7 +69,7 @@ func (uv *uiVisualizer) Render(screen *ebiten.Image, doc *ui.Element, data map[s
 // }
 
 // drawChildren returns the remainder of the bounds, unused by the drawn children.
-func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Element, bounds image.Rectangle, align, valign string, scale float64) (image.Rectangle, error) {
+func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Element, data map[string]interface{}, bounds image.Rectangle, align, valign string, scale float64) (image.Rectangle, error) {
 	maxColHeight := 0
 	for _, child := range children {
 		var err error
@@ -111,13 +113,13 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			panelBounds.Min.Y += padding
 			panelBounds.Max.X -= padding
 			panelBounds.Max.Y -= padding
-			if bounds, err = uv.drawChildren(screen, child.Children, panelBounds, child.Attributes.Align(), child.Attributes.Valign(), scale); err != nil {
+			if bounds, err = uv.drawChildren(screen, child.Children, data, panelBounds, child.Attributes.Align(), child.Attributes.Valign(), scale); err != nil {
 				return bounds, err
 			}
 
 		case ui.RowElement:
 			// I keep coming back to RowElement and wondering what its purpose was...?
-			bounds, err = uv.drawChildren(screen, child.Children, bounds, child.Attributes.Align(), child.Attributes.Valign(), scale)
+			bounds, err = uv.drawChildren(screen, child.Children, data, bounds, child.Attributes.Align(), child.Attributes.Valign(), scale)
 			if err != nil {
 				return bounds, err
 			}
@@ -130,7 +132,7 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			colBounds.Min.X += bounds.Dx() * child.Attributes.TwelfthsOffset() / 12
 			w := bounds.Dx() * child.Attributes.Twelfths() / 12
 			colBounds.Max.X = colBounds.Min.X + w
-			takenBounds, err := uv.drawChildren(screen, child.Children, colBounds, child.Attributes.Align(), child.Attributes.Valign(), scale)
+			takenBounds, err := uv.drawChildren(screen, child.Children, data, colBounds, child.Attributes.Align(), child.Attributes.Valign(), scale)
 			if err != nil {
 				return bounds, err
 			}
@@ -151,12 +153,16 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			label := child.Attributes["value"]
 			sz := child.Attributes.FontSize()
 			layout := child.Attributes.FontLayout()
+			buf := bytes.NewBuffer([]byte{})
+			if err := template.Must(template.New("text").Parse(label)).Execute(buf, data); err != nil {
+				return bounds, fmt.Errorf("execute: %v, template: %q", err, label)
+			}
 
 			txtBounds := bounds
 			if child.Attributes["width"] != "" {
 				txtBounds.Max.X = txtBounds.Min.X + child.Attributes.Width()
 			}
-			h, err := uv.drawText(screen, label, sz, txtBounds, layout, scale)
+			h, err := uv.drawText(screen, buf.String(), sz, txtBounds, layout, scale)
 			if err != nil {
 				return bounds, err
 			}

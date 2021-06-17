@@ -353,7 +353,23 @@ func (r *Visualizer) Render(screen *ebiten.Image, mgr *ecs.World, focusX, focusY
 	// FIXME: UIs are components and can be found via normal ECS lookups.
 	scale := 2.0
 	uv := newUIVisualizer(r.picForTexture)
-	data := map[string]func(){}
+	data := map[string]interface{}{
+		"name":       "Agripose",
+		"profession": "Villager",
+		"lvl":        "1",
+		"sex":        "Female",
+		"prep":       702,
+		"ap":         112,
+		"strlvl":     8.41,
+		"agilvl":     0.17,
+		"intlvl":     1.11,
+		"vitlvl":     1.87,
+		"masteries": []string{
+			"Ranged Combat: 1\n",
+			"Fire: 2\n",
+			"Dark: 2\n",
+		},
+	}
 	f, err := os.Open("output/demo.ui.xml")
 	if err != nil {
 		return err
