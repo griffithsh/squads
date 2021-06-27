@@ -21,7 +21,7 @@ func newUIVisualizer(picForTexture func(filename string) (*ebiten.Image, error))
 	return &uv
 }
 
-func (uv *uiVisualizer) Render(screen *ebiten.Image, doc *ui.Element, data map[string]interface{}, scale float64) error {
+func (uv *uiVisualizer) Render(screen *ebiten.Image, doc *ui.Element, data interface{}, scale float64) error {
 	// FIXME: remove this random code that's only here to test stuff.
 	// if err := uv.drawPanel(screen, image.Rect(62, 64, 962, 704), scale); err != nil {
 	// 	return fmt.Errorf("drawPanel: %v", err)
@@ -69,7 +69,7 @@ func (uv *uiVisualizer) Render(screen *ebiten.Image, doc *ui.Element, data map[s
 // }
 
 // drawChildren returns the remainder of the bounds, unused by the drawn children.
-func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Element, data map[string]interface{}, bounds image.Rectangle, align, valign string, scale float64) (image.Rectangle, error) {
+func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Element, data interface{}, bounds image.Rectangle, align, valign string, scale float64) (image.Rectangle, error) {
 	maxColHeight := 0
 	for _, child := range children {
 		var err error
