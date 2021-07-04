@@ -14,6 +14,7 @@ type ElementType int
 const (
 	UIElement ElementType = iota
 	PanelElement
+	PaddingElement
 	RowElement
 	ColumnElement
 	TextElement
@@ -83,7 +84,7 @@ func (m AttributeMap) Y() int {
 }
 
 func (m AttributeMap) Padding() int {
-	str, ok := m["padding"]
+	str, ok := m["all"]
 	if !ok {
 		return 0
 	}
@@ -297,6 +298,8 @@ func getType(start xml.StartElement) ElementType {
 		return UIElement
 	case "Panel":
 		return PanelElement
+	case "Padding":
+		return PaddingElement
 	case "Row":
 		return RowElement
 	case "Column":
@@ -328,13 +331,14 @@ func getAttributes(start xml.StartElement) map[string]string {
 // the scale
 
 var permittedAttributes = map[ElementType][]string{
-	UIElement:     {},
-	PanelElement:  {"width", "height", "padding"},
-	RowElement:    {"align"},
-	ColumnElement: {"twelfths", "align"},
-	TextElement:   {"value", "size", "layout", "color", "width"},
-	ButtonElement: {"onclick", "label", "width"},
-	ImageElement:  {"texture", "width", "height", "x", "y"},
+	UIElement:      {},
+	PanelElement:   {"width", "height"},
+	PaddingElement: {"all"},
+	RowElement:     {"align"},
+	ColumnElement:  {"twelfths", "align"},
+	TextElement:    {"value", "size", "layout", "color", "width"},
+	ButtonElement:  {"onclick", "label", "width"},
+	ImageElement:   {"texture", "width", "height", "x", "y"},
 }
 
 func validateAttributesForType(t ElementType, attrs map[string]string) error {

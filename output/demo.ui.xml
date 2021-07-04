@@ -1,29 +1,31 @@
 <UI>
-    <Panel width="400" height="720" padding="6">
-        <Column twelfths="7">
-            <Text value="{{ .Name }}" layout="justify"/>
-            <Text value="{{ .Profession }}" size="small" />
-            <Text value="LVL: {{ .Lvl }}" size="small" />
-            <Text value="SEX: {{ .Sex }}" size="small" />
-        </Column>
-        <Column twelfths="5" align="right">
-            <Image texture="character-appearance/dejected-f-villager.variations.png" width="52" height="52" x="0" y="0" />
-        </Column>
-        <Row>
-            <Text value="PREP: {{ .Prep }}" size="small" />
-            <Text value="AP: {{ .AP }}" size="small" />
-            <Text value="STR/LVL: {{ .Strlvl }}" size="small" />
-            <Text value="AGI/LVL: {{ .Agilvl }}" size="small" />
-            <Text value="INT/LVL: {{ .Intlvl }}" size="small" />
-            <Text value="VIT/LVL: {{ .Vitlvl }}" size="small" />
-            <Text value="Masteries" />
-            <Text value="{{ range .Masteries }}{{.}}{{ end }}" size="small" />
-        </Row>
-        <Column>
-            <Button label="Cancel" width="90"/>
-        </Column>
-        <Column align="right">
-            <Button label="Prepare" width="100"/>
-        </Column>
+    <Panel width="400" height="720">
+        <Padding all="6">
+            <Column twelfths="7">
+                <Text value="{{ .Name }}" layout="justify"/>
+                <Text value="{{ .Profession }}" size="small" />
+                <Text value="LVL: {{ .Lvl }}" size="small" />
+                <Text value="SEX: {{ .Sex }}" size="small" />
+            </Column>
+            <Column twelfths="5" align="right">
+                <Image texture="character-appearance/dejected-f-villager.variations.png" width="52" height="52" x="0" y="0" />
+            </Column>
+            <Row>
+                <Text value="PREP: {{ .Prep }}" size="small" />
+                <Text value="AP: {{ .AP }}" size="small" />
+                <Text value="STR/LVL: {{ .Strlvl }}" size="small" />
+                <Text value="AGI/LVL: {{ .Agilvl }}" size="small" />
+                <Text value="INT/LVL: {{ .Intlvl }}" size="small" />
+                <Text value="VIT/LVL: {{ .Vitlvl }}" size="small" />
+                <Text value="Masteries" />
+                <Text value="{{ range .Masteries }}{{.}}{{ end }}" size="small" />
+            </Row>
+            <Column>
+                <Button label="Cancel" width="90" onclick="HandleCancel"/>
+            </Column>
+            <Column align="right">
+                <Button label="Prepare" width="100" onclick="HandlePrepare"/>
+            </Column>
+        </Padding>
     </Panel>
 </UI>
