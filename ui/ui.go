@@ -2,14 +2,18 @@ package ui
 
 import (
 	"fmt"
+	"image"
 	"io"
+
+	"github.com/griffithsh/squads/ecs"
+	"github.com/griffithsh/squads/event"
 )
 
 // UI is a Component that represents a UI. The stutter is unfortunate ...
 type UI struct {
 	Doc *Element
 
-	Data map[string]func()
+	Data interface{}
 }
 
 // Type of this Component.

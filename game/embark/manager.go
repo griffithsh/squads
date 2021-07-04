@@ -6,6 +6,7 @@ import (
 	"hash/fnv"
 	"math"
 	"math/rand"
+	"os"
 	"sort"
 
 	"github.com/griffithsh/squads/graph"
@@ -70,6 +71,7 @@ func NewManager(mgr *ecs.World, bus *event.Bus, archive Archive) *Manager {
 		taken:   map[geom.Key]hexType{},
 		field:   geom.NewField(10, 5, 12),
 	}
+
 	costs := func(gv1 graph.Vertex, gv2 graph.Vertex) float64 {
 		k1 := gv1.(geom.Key)
 		k2 := gv2.(geom.Key)
@@ -652,6 +654,44 @@ func (em *Manager) addMulliganHouse(villageW, villageH int) {
 // Begin an embark Manager, setting up Entities required to display and interact
 // with the embark screen.
 func (em *Manager) Begin() {
+	// FIXME: Remove this hard-coded data for a UI testing.
+	f, err := os.Open("output/demo.ui.xml")
+	if err != nil {
+		panic(fmt.Sprintf("%v", err))
+	}
+	nui := ui.NewUI(f)
+	nui.Data = struct {
+		Name          string
+		Profession    string
+		Lvl           int
+		Sex           string
+		Prep          int
+		AP            int
+		Strlvl        float64
+		Agilvl        float64
+		Intlvl        float64
+		Vitlvl        float64
+		Masteries     []string
+		HandleCancel  func()
+		HandlePrepare func()
+	}{
+		"Vencian",
+		"Villager",
+		1,
+		"Female",
+		688,
+		113,
+		3.04,
+		1.18,
+		1.89,
+		1.22,
+		[]string{"Light: 2\n", "Earth: 1\n"},
+		func() { fmt.Println("Cancel!") },
+		func() { fmt.Println("Prepare!") },
+	}
+	e := em.mgr.NewEntity()
+	em.mgr.Tag(e, "embark")
+	em.mgr.AddComponent(e, nui)
 
 	const villageW = 48
 	const villageH = 36

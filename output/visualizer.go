@@ -5,7 +5,6 @@ import (
 	"image"
 	"image/color"
 	"math/rand"
-	"os"
 	"sort"
 
 	"github.com/griffithsh/squads/ecs"
@@ -26,6 +25,8 @@ type Visualizer struct {
 	// randFloats are used to define whether a tile of an Entity with an Alpha
 	// component should be shown or not.
 	randFloats []float64
+
+	uv *uiVisualizer
 }
 
 // ImageProvider is the contract that the Visualizer needs to retrieve images to
@@ -45,12 +46,14 @@ func NewVisualizer(images ImageProvider) *Visualizer {
 		pre[i] = rand.Float64()
 	}
 
-	return &Visualizer{
+	v := Visualizer{
 		textures:      map[string]*ebiten.Image{},
 		imageProvider: images,
 		worldCanvas:   ebiten.NewImage(1, 1),
 		randFloats:    pre,
 	}
+	v.uv = newUIVisualizer(v.picForTexture)
+	return &v
 }
 
 type entity struct {
@@ -350,41 +353,13 @@ func (r *Visualizer) Render(screen *ebiten.Image, mgr *ecs.World, focusX, focusY
 		}
 	}
 
-	// FIXME: UIs are components and can be found via normal ECS lookups.
-	scale := 2.0
-	uv := newUIVisualizer(r.picForTexture)
-	data := struct {
-		Name       string
-		Profession string
-		Lvl        int
-		Sex        string
-		Prep       int
-		AP         int
-		Strlvl     float64
-		Agilvl     float64
-		Intlvl     float64
-		Vitlvl     float64
-		Masteries  []string
-	}{
-		"Vencian",
-		"Villager",
-		1,
-		"Female",
-		688,
-		113,
-		3.04,
-		1.18,
-		1.89,
-		1.22,
-		[]string{"Light: 2\n", "Earth: 1\n"},
-	}
-	f, err := os.Open("output/demo.ui.xml")
-	if err != nil {
-		return err
-	}
-	nui := ui.NewUI(f)
-	if err := uv.Render(r.uiCanvas, nui.Doc, data, scale); err != nil {
-		return err
+	scale := 2.0 // FIXME: should this be tied to zoom? Or separate?
+
+	for _, e := range mgr.Get([]string{"UI"}) {
+		uic := mgr.Component(e, "UI").(*ui.UI)
+		if err := r.uv.Render(r.uiCanvas, uic, scale); err != nil {
+			return err
+		}
 	}
 
 	screen.Clear()

@@ -21,52 +21,13 @@ func newUIVisualizer(picForTexture func(filename string) (*ebiten.Image, error))
 	return &uv
 }
 
-func (uv *uiVisualizer) Render(screen *ebiten.Image, doc *ui.Element, data interface{}, scale float64) error {
-	// FIXME: remove this random code that's only here to test stuff.
-	// if err := uv.drawPanel(screen, image.Rect(62, 64, 962, 704), scale); err != nil {
-	// 	return fmt.Errorf("drawPanel: %v", err)
-	// }
-	// if err := uv.drawButton(screen, true, image.Rect(70, 72, 190, 102), scale); err != nil {
-	// 	return fmt.Errorf("drawButton: %v", err)
-	// }
+func (uv *uiVisualizer) Render(screen *ebiten.Image, uic *ui.UI, scale float64) error {
+	boundaries := image.Rect(0, 0, screen.Bounds().Max.X, screen.Bounds().Max.Y)
 
-	// FIXME: figure out the boundaries for the children.
-	boundaries := image.Rect(0, 0, 1024, 768)
-
-	_, err := uv.drawChildren(screen, doc.Children, data, boundaries, "center", "middle", scale)
+	_, err := uv.drawChildren(screen, uic.Doc.Children, uic.Data, boundaries, "center", "middle", scale)
 
 	return err
 }
-
-// there's clearly an entry point, and then something that can recurse through child elements ...
-// But does there need to be a "new" that captures some of the basics?
-
-// func (uv *uiVisualizer) draw(screen *ebiten.Image, src *ui.UI, position *game.Position, scale *game.Scale) error {
-// 	// TODO
-// 	// ui.Data
-// 	xScale, yScale := 1.0, 1.0
-// 	if scale != nil {
-// 		xScale = scale.X
-// 		yScale = scale.Y
-// 	}
-// 	w, err := strconv.Atoi(src.Doc.Attributes["width"])
-// 	if err != nil {
-// 		return fmt.Errorf("parse document width: %v", err)
-// 	}
-// 	p, ok := src.Doc.Attributes["padding"]
-// 	if !ok {
-// 		p = "0"
-// 	}
-// 	padding, err := strconv.Atoi(p)
-// 	if err != nil {
-// 		return fmt.Errorf("parse document padding: %v", err)
-// 	}
-// 	childWidth := w - (padding * 2)
-// 	if src.Doc.Type == ui.PanelElement {
-
-// 	}
-// 	return nil
-// }
 
 // drawChildren returns the remainder of the bounds, unused by the drawn children.
 func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Element, data interface{}, bounds image.Rectangle, align, valign string, scale float64) (image.Rectangle, error) {
