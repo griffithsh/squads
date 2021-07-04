@@ -49,7 +49,7 @@ func (f *Feature) StartOfPathFor(origin geom.Key) geom.Key {
 }
 
 var houseFeatures = []Feature{
-	Feature{
+	{
 		Sprite: game.Sprite{
 			Texture: "embark-tiles.png",
 
@@ -60,7 +60,7 @@ var houseFeatures = []Feature{
 		Coverage:    []geom.DirectionType{geom.N, geom.SW, geom.N},
 		PathConnect: []geom.DirectionType{geom.NE},
 	},
-	Feature{
+	{
 		Sprite: game.Sprite{
 			Texture: "embark-tiles.png",
 
@@ -72,7 +72,7 @@ var houseFeatures = []Feature{
 		Coverage:    []geom.DirectionType{geom.NW, geom.NE, geom.NW},
 		PathConnect: []geom.DirectionType{geom.NW, geom.SW},
 	},
-	Feature{
+	{
 		Sprite: game.Sprite{
 			Texture: "embark-tiles.png",
 
@@ -84,7 +84,7 @@ var houseFeatures = []Feature{
 		Coverage:    []geom.DirectionType{geom.NE, geom.NW, geom.NE},
 		PathConnect: []geom.DirectionType{geom.NE, geom.SE},
 	},
-	Feature{
+	{
 		Sprite: game.Sprite{
 			Texture: "embark-tiles.png",
 
