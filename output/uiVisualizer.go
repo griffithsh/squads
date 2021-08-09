@@ -136,7 +136,7 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			bounds.Min.Y += h
 
 		case ui.ButtonElement:
-			buttonHeight := int(15 * scale)
+			buttonHeight := int(ui.ButtonHeight * scale)
 			label := child.Attributes["label"]
 			width := child.Attributes.Width()
 			// Does the parent align left, right, or centre? Are we valigning
@@ -332,7 +332,7 @@ func (uv *uiVisualizer) drawText(screen *ebiten.Image, value string, size ui.Tex
 	text := ui.NewText(value, size)
 
 	// Spacer around each text instance.
-	spacer := int(1 * scale)
+	spacer := int(ui.TextPadding * scale)
 
 	// We know our bounds now, so we can split long lines.
 	width := int(float64(bounds.Dx()) / scale)

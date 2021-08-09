@@ -5,6 +5,8 @@ import "strings"
 const (
 	LetterSpacing     = 1
 	SpaceWidth        = 4
+	TextPadding       = 1
+	ButtonHeight      = 15
 	normalLineSpacing = 2
 	smallLineSpacing  = 1
 )

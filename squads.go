@@ -33,6 +33,7 @@ type squads struct {
 	fades        *game.FadeSystem
 	wipes        *game.SceneWipeSystem
 	interactives *ui.InteractiveSystem
+	uiSystem     *ui.UISystem
 
 	embark    *embark.Manager
 	overworld *overworld.Manager
@@ -81,6 +82,7 @@ func newSquads(w, h int) (*squads, error) {
 		fades:        &game.FadeSystem{},
 		wipes:        game.NewSceneWipeSystem(),
 		interactives: ui.NewInteractiveSystem(mgr, bus),
+		uiSystem:     ui.NewUISystem(mgr, bus),
 	}
 	bus.Subscribe(game.CombatConcluded{}.Type(), func(et event.Typer) {
 		s.combat.End()
