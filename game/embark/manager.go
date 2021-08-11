@@ -654,45 +654,6 @@ func (em *Manager) addMulliganHouse(villageW, villageH int) {
 // Begin an embark Manager, setting up Entities required to display and interact
 // with the embark screen.
 func (em *Manager) Begin() {
-	// FIXME: Remove this hard-coded data for a UI testing.
-	f, err := os.Open("output/demo.ui.xml")
-	if err != nil {
-		panic(fmt.Sprintf("%v", err))
-	}
-	nui := ui.NewUI(f)
-	nui.Data = struct {
-		Name          string
-		Profession    string
-		Lvl           int
-		Sex           string
-		Prep          int
-		AP            int
-		Strlvl        float64
-		Agilvl        float64
-		Intlvl        float64
-		Vitlvl        float64
-		Masteries     []string
-		HandleCancel  func()
-		HandlePrepare func()
-	}{
-		"Vencian",
-		"Villager",
-		1,
-		"Female",
-		688,
-		113,
-		3.04,
-		1.18,
-		1.89,
-		1.22,
-		[]string{"Light: 2\n", "Earth: 1\n"},
-		func() { fmt.Println("Cancel!") },
-		func() { fmt.Println("Prepare!") },
-	}
-	e := em.mgr.NewEntity()
-	em.mgr.Tag(e, "embark")
-	em.mgr.AddComponent(e, nui)
-
 	const villageW = 48
 	const villageH = 36
 	em.taken = map[geom.Key]hexType{}
@@ -992,40 +953,35 @@ func (em *Manager) repaint() {
 
 	// Then, if any villager is popped/focused/etc, we need to paint a modal window ...
 	if villager := em.mgr.AnyTagged("embark-focus-villager"); villager != 0 {
-		container := em.mgr.NewEntity()
-		em.mgr.Tag(container, "embark")
-		em.mgr.Tag(container, "embark-focus-panel")
-
-		embarking := em.mgr.Component(villager, (&Embarking{}).Type()).(*Embarking)
-		if embarking.Value {
-			// if this villager is embarked, we need a disembark button ...
-			e := ui.Button(em.mgr, 90, 30, float64(em.screenW)/2-145, float64(em.screenH)-52, uiSpritesZ+10, true, "Disembark", func(float64, float64) {
-				em.mgr.RemoveTag(villager, "embark-focus-villager")
-				em.mgr.DestroyEntity(container)
-				embarking.Value = false
-				em.repaint()
-			})
-			em.mgr.Dependency(container, e)
-
-		} else {
-			// ... otherwise, we need an embark button ...
-			e := ui.Button(em.mgr, 90, 30, float64(em.screenW)/2-145, float64(em.screenH)-52, uiSpritesZ+10, true, "Embark", func(float64, float64) {
-				em.mgr.RemoveTag(villager, "embark-focus-villager")
-				em.mgr.DestroyEntity(container)
-				embarking.Value = true
-				em.repaint()
-			})
-			em.mgr.Dependency(container, e)
-
+		f, err := os.Open("output/demo.ui.xml")
+		if err != nil {
+			panic(fmt.Sprintf("%v", err))
 		}
-		// ... and either way, we need a cancel button.
-		e := ui.Button(em.mgr, 90, 30, float64(em.screenW)/2-45, float64(em.screenH)-52, uiSpritesZ+10, true, "Cancel", func(float64, float64) {
-			em.mgr.RemoveTag(villager, "embark-focus-villager")
-			em.mgr.DestroyEntity(container)
-			em.repaint()
-		})
-		em.mgr.Dependency(container, e)
+		e := em.mgr.NewEntity()
+		em.mgr.Tag(e, "embark")
+		nui := ui.NewUI(f)
+		char := em.mgr.Component(villager, "Character").(*game.Character)
+		equip := em.mgr.Component(villager, "Equipment").(*game.Equipment)
+		prof := em.archive.Profession(char.Profession)
+		app := em.archive.Appearance(char.Profession, char.Sex, char.Hair, char.Skin)
 
+		data := AsCharacterSheetData(char, equip, prof, app)
+		data.HandleCancel = func() {
+			// Cancel - destroy the UI.
+			em.mgr.RemoveTag(villager, "embark-focus-villager")
+			em.mgr.DestroyEntity(e)
+			em.repaint()
+		}
+		data.HandlePrepare = func() {
+			// Prepare - toggle embarking status and destroy the UI.
+			embarking := em.mgr.Component(villager, (&Embarking{}).Type()).(*Embarking)
+			em.mgr.RemoveTag(villager, "embark-focus-villager")
+			em.mgr.DestroyEntity(e)
+			embarking.Value = !embarking.Value
+			em.repaint()
+		}
+		nui.Data = data
+		em.mgr.AddComponent(e, nui)
 	} else if takenEmbarkPoints > 0 {
 		// Else if no-one is popped, then check how many are embarked. If > 0, show an embark/go! button.
 		e := ui.ButtonBackground(em.mgr, 96, 30, float64(em.screenW)/2-48, float64(em.screenH)-52, uiSpritesZ+10, true)

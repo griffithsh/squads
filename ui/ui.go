@@ -214,13 +214,16 @@ func (uis *UISystem) Handle(ev *Interact) {
 						if err := dynamic.Call(child.Attributes["onclick"], data); err != nil {
 							panic(fmt.Sprintf("dynamic call: %v", err))
 						}
-						// somehow escape this recursion?
+						// FIXME: somehow escape this recursion?
 					}
 
 					bounds.Min.Y += buttonHeight
 
 				case ImageElement:
-					height := child.Attributes.Height()
+					height, err := ResolveInt(child.Attributes["height"], data)
+					if err != nil {
+						return bounds, fmt.Errorf("resolve int: %v, template: %q", err, child.Attributes["height"])
+					}
 					bounds.Min.Y += int(float64(height) * scale)
 				}
 			}

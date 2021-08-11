@@ -169,15 +169,30 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			bounds.Min.Y += buttonHeight
 
 		case ui.ImageElement:
-			texture := child.Attributes["texture"]
+			texture, err := ui.Resolve(child.Attributes["texture"], data)
+			if err != nil {
+				return bounds, fmt.Errorf("resolve texture: %v", err)
+			}
 			img, err := uv.picForTexture(texture)
 			if err != nil {
 				return bounds, fmt.Errorf("picForTexture: %v", err)
 			}
-			width := child.Attributes.Width()
-			height := child.Attributes.Height()
-			x := child.Attributes.X()
-			y := child.Attributes.Y()
+			width, err := ui.ResolveInt(child.Attributes["width"], data)
+			if err != nil {
+				return bounds, fmt.Errorf("resolve width: %v", err)
+			}
+			height, err := ui.ResolveInt(child.Attributes["height"], data)
+			if err != nil {
+				return bounds, fmt.Errorf("resolve height: %v", err)
+			}
+			x, err := ui.ResolveInt(child.Attributes["x"], data)
+			if err != nil {
+				return bounds, fmt.Errorf("resolve x: %v", err)
+			}
+			y, err := ui.ResolveInt(child.Attributes["y"], data)
+			if err != nil {
+				return bounds, fmt.Errorf("resolve y: %v", err)
+			}
 			img = img.SubImage(image.Rect(x, y, x+width, y+height)).(*ebiten.Image)
 			op := ebiten.DrawImageOptions{}
 			op.GeoM.Scale(scale, scale)
