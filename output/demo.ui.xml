@@ -8,7 +8,9 @@
                 <Text value="SEX: {{ .Sex }}" size="small" />
             </Column>
             <Column twelfths="5" align="right">
-                <Image texture="{{ .Portrait }}" width="52" height="52" x="{{ .PortraitX }}" y="{{ .PortraitY }}" />
+                <Image texture="{{ .Background }}" width="52" height="52" x="{{ .BackgroundX }}" y="{{ .BackgroundY }}" intangible="true"/>
+                <Image texture="{{ .Portrait }}" width="52" height="52" x="{{ .PortraitX }}" y="{{ .PortraitY }}" intangible="true"/>
+                <Image texture="{{ .OverlayFrame }}" width="52" height="52" x="{{ .OverlayFrameX }}" y="{{ .OverlayFrameY }}" />
             </Column>
             <Row>
                 <Text value="PREP: {{ .Prep }}" size="small" />

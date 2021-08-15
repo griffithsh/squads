@@ -181,6 +181,14 @@ func (m AttributeMap) FontLayout() TextLayout {
 	}
 }
 
+func (m AttributeMap) Intangible() bool {
+	str, ok := m["intangible"]
+	if !ok {
+		return false
+	}
+	return str == "true"
+}
+
 type Element struct {
 	Type       ElementType
 	Attributes AttributeMap
@@ -338,7 +346,7 @@ var permittedAttributes = map[ElementType][]string{
 	ColumnElement:  {"twelfths", "align"},
 	TextElement:    {"value", "size", "layout", "color", "width"},
 	ButtonElement:  {"onclick", "label", "width"},
-	ImageElement:   {"texture", "width", "height", "x", "y"},
+	ImageElement:   {"texture", "width", "height", "x", "y", "intangible"},
 }
 
 func validateAttributesForType(t ElementType, attrs map[string]string) error {

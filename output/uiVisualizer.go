@@ -202,7 +202,9 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			op.GeoM.Translate(float64(bounds.Min.X), float64(bounds.Min.Y))
 			screen.DrawImage(img, &op)
 
-			bounds.Min.Y += int(float64(height) * scale)
+			if !child.Attributes.Intangible() {
+				bounds.Min.Y += int(float64(height) * scale)
+			}
 		}
 	}
 	return bounds, nil
