@@ -137,7 +137,10 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 
 		case ui.ButtonElement:
 			buttonHeight := int(ui.ButtonHeight * scale)
-			label := child.Attributes["label"]
+			label, err := ui.Resolve(child.Attributes["label"], data)
+			if err != nil {
+				return bounds, fmt.Errorf("resolve button label: %v", err)
+			}
 			width := child.Attributes.Width()
 			// Does the parent align left, right, or centre? Are we valigning
 			// it? Calculate buttonDimensions from that.

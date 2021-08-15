@@ -8,22 +8,23 @@ import (
 )
 
 type CharacterSheetData struct {
-	Name          string
-	Profession    string
-	Lvl           int
-	Sex           string
-	Portrait      string
-	PortraitX     int
-	PortraitY     int
-	Prep          int
-	AP            int
-	Strlvl        string
-	Agilvl        string
-	Intlvl        string
-	Vitlvl        string
-	Masteries     []string
-	HandleCancel  func()
-	HandlePrepare func()
+	Name         string
+	Profession   string
+	Lvl          int
+	Sex          string
+	Portrait     string
+	PortraitX    int
+	PortraitY    int
+	Prep         int
+	AP           int
+	Strlvl       string
+	Agilvl       string
+	Intlvl       string
+	Vitlvl       string
+	Masteries    []string
+	HandleCancel func()
+	HandleAction func()
+	ActionButton string
 }
 
 func AsCharacterSheetData(char *game.Character, equip *game.Equipment, prof *game.ProfessionDetails, app *game.Appearance) CharacterSheetData {

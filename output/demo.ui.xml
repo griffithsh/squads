@@ -24,7 +24,7 @@
                 <Button label="Cancel" width="90" onclick="HandleCancel"/>
             </Column>
             <Column align="right">
-                <Button label="Prepare" width="100" onclick="HandlePrepare"/>
+                <Button label="{{ .ActionButton }}" width="100" onclick="HandleAction"/>
             </Column>
         </Padding>
     </Panel>

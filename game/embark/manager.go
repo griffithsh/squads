@@ -972,9 +972,13 @@ func (em *Manager) repaint() {
 			em.mgr.DestroyEntity(e)
 			em.repaint()
 		}
-		data.HandlePrepare = func() {
-			// Prepare - toggle embarking status and destroy the UI.
-			embarking := em.mgr.Component(villager, (&Embarking{}).Type()).(*Embarking)
+		embarking := em.mgr.Component(villager, (&Embarking{}).Type()).(*Embarking)
+		data.ActionButton = "Prepare"
+		if embarking.Value {
+			data.ActionButton = "Return"
+		}
+		data.HandleAction = func() {
+			// Prepare or unprepare - toggle embarking status and destroy the UI.
 			em.mgr.RemoveTag(villager, "embark-focus-villager")
 			em.mgr.DestroyEntity(e)
 			embarking.Value = !embarking.Value
