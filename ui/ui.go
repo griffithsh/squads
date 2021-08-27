@@ -140,13 +140,6 @@ func (uis *UISystem) Handle(ev *Interact) {
 						return bounds, err
 					}
 
-				case RowElement:
-					// I keep coming back to RowElement and wondering what its purpose was...?
-					bounds, err = f(child.Children, data, bounds, child.Attributes.Align(), child.Attributes.Valign(), scale)
-					if err != nil {
-						return bounds, err
-					}
-
 				case ColumnElement:
 					// I think we need to know about siblings to do this correctly?
 					// I don't think we can stomp bounds here?  Only the last Column of

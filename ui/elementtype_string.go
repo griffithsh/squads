@@ -11,16 +11,15 @@ func _() {
 	_ = x[UIElement-0]
 	_ = x[PanelElement-1]
 	_ = x[PaddingElement-2]
-	_ = x[RowElement-3]
-	_ = x[ColumnElement-4]
-	_ = x[TextElement-5]
-	_ = x[ButtonElement-6]
-	_ = x[ImageElement-7]
+	_ = x[ColumnElement-3]
+	_ = x[TextElement-4]
+	_ = x[ButtonElement-5]
+	_ = x[ImageElement-6]
 }
 
-const _ElementType_name = "UIElementPanelElementPaddingElementRowElementColumnElementTextElementButtonElementImageElement"
+const _ElementType_name = "UIElementPanelElementPaddingElementColumnElementTextElementButtonElementImageElement"
 
-var _ElementType_index = [...]uint8{0, 9, 21, 35, 45, 58, 69, 82, 94}
+var _ElementType_index = [...]uint8{0, 9, 21, 35, 48, 59, 72, 84}
 
 func (i ElementType) String() string {
 	if i < 0 || i >= ElementType(len(_ElementType_index)-1) {

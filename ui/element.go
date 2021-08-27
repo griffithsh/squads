@@ -15,7 +15,6 @@ const (
 	UIElement ElementType = iota
 	PanelElement
 	PaddingElement
-	RowElement
 	ColumnElement
 	TextElement
 	ButtonElement
@@ -308,8 +307,6 @@ func getType(start xml.StartElement) ElementType {
 		return PanelElement
 	case "Padding":
 		return PaddingElement
-	case "Row":
-		return RowElement
 	case "Column":
 		return ColumnElement
 	case "Text":
@@ -342,7 +339,6 @@ var permittedAttributes = map[ElementType][]string{
 	UIElement:      {},
 	PanelElement:   {"width", "height"},
 	PaddingElement: {"all"},
-	RowElement:     {"align"},
 	ColumnElement:  {"twelfths", "align"},
 	TextElement:    {"value", "size", "layout", "color", "width"},
 	ButtonElement:  {"onclick", "label", "width"},
