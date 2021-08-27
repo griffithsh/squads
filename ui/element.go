@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"text/template"
 )
 
 //go:generate stringer -type=ElementType
@@ -94,6 +95,18 @@ func (m AttributeMap) Padding() int {
 		return 0
 	}
 	return padding
+}
+func (m AttributeMap) LeftPadding() int {
+	return m.Padding()
+}
+func (m AttributeMap) RightPadding() int {
+	return m.Padding()
+}
+func (m AttributeMap) TopPadding() int {
+	return m.Padding()
+}
+func (m AttributeMap) BottomPadding() int {
+	return m.Padding()
 }
 
 func (m AttributeMap) Twelfths() int {
@@ -193,6 +206,100 @@ type Element struct {
 	Attributes AttributeMap
 
 	Children []*Element
+}
+
+func (el *Element) DimensionsWith(data interface{}, maxWidth int, scale float64) (w, h int, err error) {
+	switch el.Type {
+	case PanelElement:
+		width, err := ResolveInt(el.Attributes["width"], data)
+		if err != nil {
+			width = maxWidth
+		}
+		height, err := ResolveInt(el.Attributes["height"], data)
+		height = mult(height, scale)
+		if err != nil {
+			// Since there was no height configured for this, let's sum the
+			// children's heights.
+			height = 0
+			for _, child := range el.Children {
+				_, h, err := child.DimensionsWith(data, maxWidth, scale)
+				if err != nil {
+					return 0, 0, fmt.Errorf("dimensions of %s: %v", el.Type, err)
+				}
+				height += h
+			}
+		}
+		return mult(width, scale), height, nil
+
+	case PaddingElement:
+		width, err := ResolveInt(el.Attributes["width"], data)
+		if err != nil {
+			width = maxWidth
+		}
+		height, err := ResolveInt(el.Attributes["height"], data)
+		height = mult(height, scale)
+		if err != nil {
+			// Since there was no height configured for this, let's sum the
+			// children's heights with the vertical padding values.
+			height = mult(el.Attributes.TopPadding()+el.Attributes.BottomPadding(), scale)
+			for _, child := range el.Children {
+				_, h, err := child.DimensionsWith(data, maxWidth, scale)
+				if err != nil {
+					return 0, 0, fmt.Errorf("dimensions of %s: %v", el.Type, err)
+				}
+				height += h
+			}
+		}
+		return mult(width, scale), height, nil
+	case ColumnElement:
+		width := mult(maxWidth, 1.0/12) * el.Attributes.Twelfths()
+		height := 0
+		for _, child := range el.Children {
+			_, h, err := child.DimensionsWith(data, maxWidth, scale)
+			if err != nil {
+				return 0, 0, fmt.Errorf("dimensions of %s: %v", el.Type, err)
+			}
+			height += h
+		}
+		return mult(width, scale), height, nil
+
+	case TextElement:
+		label := el.Attributes["value"]
+		sz := el.Attributes.FontSize()
+		layout := el.Attributes.FontLayout()
+		buf := bytes.NewBuffer([]byte{})
+		if err := template.Must(template.New("text").Parse(label)).Execute(buf, data); err != nil {
+			return 0, 0, fmt.Errorf("execute: %v, template: %q", err, label)
+		}
+		width := maxWidth
+		height := 0
+		if el.Attributes["width"] != "" {
+			width, _ = ResolveInt(el.Attributes["width"], data)
+		}
+		height = heightOfText2(buf.String(), sz, width, layout)
+		return mult(width, scale), mult(height, scale), nil
+
+	case ButtonElement:
+		width, err := ResolveInt(el.Attributes["width"], data)
+		if err != nil {
+			// FIXME: It might be worth calculating an appropriate width for the
+			// button given its text label instead of relying on a default.
+			width = DefaultButtonWidth
+		}
+		return mult(width, scale), int(ButtonHeight * scale), nil
+
+	case ImageElement:
+		width, err := ResolveInt(el.Attributes["width"], data)
+		if err != nil {
+			return 0, 0, fmt.Errorf("ResolveInt width: %v", err)
+		}
+		height, err := ResolveInt(el.Attributes["height"], data)
+		if err != nil {
+			return 0, 0, fmt.Errorf("ResolveInt height: %v", err)
+		}
+		return mult(width, scale), mult(height, scale), nil
+	}
+	panic(fmt.Sprintf("unhandled element type: %q", el.Type))
 }
 
 func parse(r io.Reader) (*Element, error) {

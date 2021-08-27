@@ -182,7 +182,7 @@ func (uis *UISystem) Handle(ev *Interact) {
 
 				case ButtonElement:
 					buttonHeight := int(ButtonHeight * scale)
-					width := child.Attributes.Width()
+					width, _, _ := child.DimensionsWith(data, bounds.Dx(), scale)
 					l := bounds.Min.X
 					switch align {
 					case "right":
@@ -233,6 +233,7 @@ func (uis *UISystem) Handle(ev *Interact) {
 	}
 }
 
+// heightOfText FIXME: should not accept scale, should accept a maxWidth int instead of a bounds Rectangle
 func heightOfText(value string, size TextSize, bounds image.Rectangle, align TextLayout, scale float64) (height int) {
 	text := NewText(value, size)
 
@@ -284,4 +285,38 @@ func heightOfText(value string, size TextSize, bounds image.Rectangle, align Tex
 	}
 
 	return spacer + int(y) - bounds.Min.Y
+}
+
+// heightOfText2 calculates how many unscaled pixels high a given text should
+// be. It replaces (the deprecated) heightOfText.
+func heightOfText2(value string, size TextSize, maxWidth int, align TextLayout) (height int) {
+	text := NewText(value, size)
+
+	// Spacer around each text instance.
+	spacer := TextPadding
+
+	// We know our max width, so we can split long lines.
+	width := maxWidth
+	splitLines := SplitLines(text.Lines, width)
+
+	y := spacer
+	for i, line := range splitLines {
+		if i != 0 {
+			// If not the first line, add a line spacer.
+			y += LineSpacing(size)
+		}
+
+		tallest := 0
+		for _, word := range line {
+			for _, char := range word.Characters {
+				if char.Height > tallest {
+					tallest = char.Height
+				}
+			}
+		}
+
+		y += tallest
+	}
+
+	return spacer + y
 }

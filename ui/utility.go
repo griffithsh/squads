@@ -28,3 +28,7 @@ func ResolveInt(text string, data interface{}) (int, error) {
 
 	return strconv.Atoi(str)
 }
+
+func mult(num int, scale float64) int {
+	return int(float64(num) * scale)
+}
