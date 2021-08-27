@@ -988,63 +988,51 @@ func (em *Manager) repaint() {
 		em.mgr.AddComponent(e, nui)
 	} else if takenEmbarkPoints > 0 {
 		// Else if no-one is popped, then check how many are embarked. If > 0, show an embark/go! button.
-		e := ui.ButtonBackground(em.mgr, 96, 30, float64(em.screenW)/2-48, float64(em.screenH)-52, uiSpritesZ+10, true)
+		e := em.mgr.NewEntity()
 		em.mgr.Tag(e, "embark")
 		em.mgr.Tag(e, "embark-villager-buttons")
+		f, err := os.Open("output/embark-start.xml")
+		if err != nil {
+			panic(fmt.Sprintf("%v", err))
+		}
+		uic := ui.NewUI(f)
+		uic.Data = struct{ HandleStart func() }{func() {
+			em.bus.Publish(&SquadSelected{})
 
-		e = em.mgr.NewEntity()
-		em.mgr.Tag(e, "embark")
-		em.mgr.Tag(e, "embark-villager-buttons")
-		em.mgr.AddComponent(e, &game.Font{
-			Text: "Start!",
-			Size: "normal",
-		})
-		em.mgr.AddComponent(e, &game.Position{
-			Center: game.Center{
-				X: float64(em.screenW)/2 - 18, Y: float64(em.screenH) - 42,
-			},
-			Layer:    uiSpritesZ + 20,
-			Absolute: true,
-		})
-		em.mgr.AddComponent(e, &ui.Interactive{
-			W: 96, H: 30,
-			Trigger: func(float64, float64) {
-				em.bus.Publish(&SquadSelected{})
+			e := em.mgr.NewEntity()
+			em.mgr.Tag(e, "player")
+			em.mgr.AddComponent(e, &game.Squad{})
+			squad := em.mgr.Component(e, "Squad").(*game.Squad)
+			players := game.NewTeam()
+			apps := em.archive.PedestalAppearances(false)
+			players.PedestalAppearance = apps[rand.Intn(len(apps))]
+			em.mgr.AddComponent(e, players)
 
-				e := em.mgr.NewEntity()
-				em.mgr.Tag(e, "player")
-				em.mgr.AddComponent(e, &game.Squad{})
-				squad := em.mgr.Component(e, "Squad").(*game.Squad)
-				players := game.NewTeam()
-				apps := em.archive.PedestalAppearances(false)
-				players.PedestalAppearance = apps[rand.Intn(len(apps))]
-				em.mgr.AddComponent(e, players)
-
-				// Add prepared villagers to the team and squad
-				for _, house := range em.houses {
-					if house.villagerEntity == 0 {
-						continue
-					}
-					e := house.villagerEntity
-					embarking := em.mgr.Component(e, "Embarking").(*Embarking)
-					if !embarking.Value {
-						continue
-					}
-					em.mgr.AddComponent(e, players)
-					squad.Members = append(squad.Members, e)
-					em.mgr.RemoveTag(e, "embark")
+			// Add prepared villagers to the team and squad
+			for _, house := range em.houses {
+				if house.villagerEntity == 0 {
+					continue
 				}
+				e := house.villagerEntity
+				embarking := em.mgr.Component(e, "Embarking").(*Embarking)
+				if !embarking.Value {
+					continue
+				}
+				em.mgr.AddComponent(e, players)
+				squad.Members = append(squad.Members, e)
+				em.mgr.RemoveTag(e, "embark")
+			}
 
-				e = em.mgr.NewEntity()
-				em.mgr.AddComponent(e, &game.DiagonalMatrixWipe{
-					W: em.screenW, H: em.screenH,
-					Obscuring: true,
-					OnComplete: func() {
-						em.bus.Publish(&Embarked{})
-					},
-				})
-			},
-		})
+			e = em.mgr.NewEntity()
+			em.mgr.AddComponent(e, &game.DiagonalMatrixWipe{
+				W: em.screenW, H: em.screenH,
+				Obscuring: true,
+				OnComplete: func() {
+					em.bus.Publish(&Embarked{})
+				},
+			})
+		}}
+		em.mgr.AddComponent(e, uic)
 	}
 }
 
