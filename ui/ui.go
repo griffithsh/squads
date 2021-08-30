@@ -218,12 +218,13 @@ func (uis *UISystem) Handle(ev *Interact) {
 					bounds.Min.Y += h
 
 				case ImageElement:
-					height, err := ResolveInt(child.Attributes["height"], data)
-					if err != nil {
-						return bounds, fmt.Errorf("resolve int: %v, template: %q", err, child.Attributes["height"])
-					}
 					if !child.Attributes.Intangible() {
-						bounds.Min.Y += int(float64(height) * scale)
+						_, h, err := child.DimensionsWith(data, bounds.Dx(), scale)
+						if err != nil {
+							return bounds, fmt.Errorf("DimensionsWith: %v", err)
+						}
+						// NB this is descaled. why is this descaled?
+						bounds.Min.Y += h //int(float64(h) / scale)
 					}
 				}
 			}
