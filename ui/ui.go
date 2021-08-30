@@ -182,25 +182,28 @@ func (uis *UISystem) Handle(ev *Interact) {
 					bounds.Min.Y += heightOfText(buf.String(), sz, txtBounds, layout, scale)
 
 				case ButtonElement:
-					buttonHeight := int(ButtonHeight * scale)
-					width, _, _ := child.DimensionsWith(data, bounds.Dx(), scale)
+					// buttonHeight := int(ButtonHeight * scale)
+					w, h, err := child.DimensionsWith(data, bounds.Dx(), scale)
+					if err != nil {
+						return bounds, err
+					}
 					l := bounds.Min.X
 					switch align {
 					case "right":
-						l = bounds.Max.X - width
+						l = bounds.Max.X - w
 					case "center":
-						l = bounds.Min.X + (bounds.Max.X-bounds.Min.X)/2 - width/2
+						l = bounds.Min.X + (bounds.Max.X-bounds.Min.X)/2 - w/2
 					default: // left
 					}
 					t := bounds.Min.Y
 					switch valign {
 					case "bottom":
-						t = bounds.Max.Y - buttonHeight
+						t = bounds.Max.Y - h
 					case "middle":
-						t = bounds.Min.Y + (bounds.Max.Y-bounds.Min.Y)/2 - buttonHeight/2
+						t = bounds.Min.Y + (bounds.Max.Y-bounds.Min.Y)/2 - h/2
 					default: // top
 					}
-					buttonDimensions := image.Rect(l, t, l+width, t+buttonHeight)
+					buttonDimensions := image.Rect(l, t, l+w, t+h)
 
 					// Is this interaction within this buttonDimensions?
 					p := image.Point{int(ev.AbsoluteX), int(ev.AbsoluteY)}
@@ -212,7 +215,7 @@ func (uis *UISystem) Handle(ev *Interact) {
 						// the click has been consumed.
 					}
 
-					bounds.Min.Y += buttonHeight
+					bounds.Min.Y += h
 
 				case ImageElement:
 					height, err := ResolveInt(child.Attributes["height"], data)

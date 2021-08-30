@@ -130,31 +130,33 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			bounds.Min.Y += h
 
 		case ui.ButtonElement:
-			buttonHeight := int(ui.ButtonHeight * scale)
 			label, err := ui.Resolve(child.Attributes["label"], data)
 			if err != nil {
 				return bounds, fmt.Errorf("resolve button label: %v", err)
 			}
-			width := child.Attributes.Width()
+			w, h, err := child.DimensionsWith(data, bounds.Dx(), scale)
+			if err != nil {
+				return bounds, err
+			}
 			// Does the parent align left, right, or centre? Are we valigning
 			// it? Calculate buttonDimensions from that.
 			l := bounds.Min.X
 			switch align {
 			case "right":
-				l = bounds.Max.X - width
+				l = bounds.Max.X - w
 			case "center":
-				l = bounds.Min.X + (bounds.Max.X-bounds.Min.X)/2 - width/2
+				l = bounds.Min.X + (bounds.Max.X-bounds.Min.X)/2 - w/2
 			default: // left
 			}
 			t := bounds.Min.Y
 			switch valign {
 			case "bottom":
-				t = bounds.Max.Y - buttonHeight
+				t = bounds.Max.Y - h
 			case "middle":
-				t = bounds.Min.Y + (bounds.Max.Y-bounds.Min.Y)/2 - buttonHeight/2
+				t = bounds.Min.Y + (bounds.Max.Y-bounds.Min.Y)/2 - h/2
 			default: // top
 			}
-			buttonDimensions := image.Rect(l, t, l+width, t+buttonHeight)
+			buttonDimensions := image.Rect(l, t, l+w, t+h)
 			if err = uv.drawButton(screen, false, buttonDimensions, scale); err != nil {
 				return bounds, err
 			}
@@ -163,7 +165,7 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			buttonDimensions.Min.Y += int(scale * 2)
 
 			uv.drawText(screen, label, ui.TextSizeNormal, buttonDimensions, ui.TextLayoutCenter, scale)
-			bounds.Min.Y += buttonHeight
+			bounds.Min.Y += h
 
 		case ui.ImageElement:
 			texture, err := ui.Resolve(child.Attributes["texture"], data)

@@ -1,7 +1,7 @@
 <UI>
     <Panel width="270" height="90">
         <Padding all="15">
-            <Button label="Begin Journey" width="240" onclick="HandleStart"/>
+            <Button label="Begin Journey" width="84" onclick="HandleStart"/>
         </Padding>
     </Panel>
 </UI>

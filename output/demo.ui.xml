@@ -21,10 +21,10 @@
         <Text value="Masteries" />
         <Text value="{{ range .Masteries }}{{.}}{{ end }}" size="small" />
       <Column>
-        <Button label="Cancel" width="90" onclick="HandleCancel"/>
+        <Button label="Cancel" width="42" onclick="HandleCancel"/>
       </Column>
       <Column align="right">
-        <Button label="{{ .ActionButton }}" width="100" onclick="HandleAction"/>
+        <Button label="{{ .ActionButton }}" width="48" onclick="HandleAction"/>
       </Column>
     </Padding>
   </Panel>
