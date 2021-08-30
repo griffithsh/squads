@@ -76,12 +76,11 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			}
 
 		case ui.PaddingElement:
-			padding := int(float64(child.Attributes.Padding()) * scale)
 			paddedBounds := bounds
-			paddedBounds.Min.X += padding
-			paddedBounds.Max.X -= padding
-			paddedBounds.Min.Y += padding
-			paddedBounds.Max.Y -= padding
+			paddedBounds.Min.X += int(float64(child.Attributes.LeftPadding()) * scale)
+			paddedBounds.Max.X -= int(float64(child.Attributes.RightPadding()) * scale)
+			paddedBounds.Min.Y += int(float64(child.Attributes.TopPadding()) * scale)
+			paddedBounds.Max.Y -= int(float64(child.Attributes.BottomPadding()) * scale)
 			if bounds, err = uv.drawChildren(screen, child.Children, data, paddedBounds, child.Attributes.Align(), child.Attributes.Valign(), scale); err != nil {
 				return bounds, err
 			}
