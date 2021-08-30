@@ -36,8 +36,10 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 		var err error
 		switch child.Type {
 		case ui.PanelElement:
-			w := child.Attributes.Width()
-			h := child.Attributes.Height()
+			w, h, err := child.DimensionsWith(data, bounds.Dx(), scale)
+			if err != nil {
+				return bounds, err
+			}
 			panelBounds := image.Rectangle{}
 			switch align {
 			default:
