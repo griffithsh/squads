@@ -121,7 +121,14 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 
 			txtBounds := bounds
 			if child.Attributes["width"] != "" {
-				txtBounds.Max.X = txtBounds.Min.X + child.Attributes.Width()
+				w, _, err := child.DimensionsWith(data, txtBounds.Dx(), scale)
+				if err != nil {
+					return bounds, err
+				}
+				txtBounds.Max.X = txtBounds.Min.X + w
+				// Need to de-scale width here because we're passing in a
+				// prescaled value to drawText.
+				// w = int(float64(w) / scale)
 			}
 			h, err := uv.drawText(screen, buf.String(), sz, txtBounds, layout, scale)
 			if err != nil {
