@@ -1,11 +1,9 @@
 package ui
 
 import (
-	"bytes"
 	"fmt"
 	"image"
 	"io"
-	"text/template"
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
@@ -167,19 +165,11 @@ func (uis *UISystem) Handle(ev *Interact) {
 					}
 
 				case TextElement:
-					label := child.Attributes["value"]
-					sz := child.Attributes.FontSize()
-					layout := child.Attributes.FontLayout()
-					buf := bytes.NewBuffer([]byte{})
-					if err := template.Must(template.New("text").Parse(label)).Execute(buf, data); err != nil {
-						return bounds, fmt.Errorf("execute: %v, template: %q", err, label)
+					_, h, err := child.DimensionsWith(data, bounds.Dx(), scale)
+					if err != nil {
+						return bounds, fmt.Errorf("DimensionsWith: %v", err)
 					}
-
-					txtBounds := bounds
-					if child.Attributes["width"] != "" {
-						txtBounds.Max.X = txtBounds.Min.X + child.Attributes.Width()
-					}
-					bounds.Min.Y += heightOfText(buf.String(), sz, txtBounds, layout, scale)
+					bounds.Min.Y += h
 
 				case ButtonElement:
 					// buttonHeight := int(ButtonHeight * scale)
