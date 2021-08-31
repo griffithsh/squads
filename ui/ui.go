@@ -98,32 +98,9 @@ func (uis *UISystem) Handle(ev *Interact) {
 					if err != nil {
 						return bounds, err
 					}
-					panelBounds := image.Rectangle{}
-					switch align {
-					default:
-						fallthrough
-					case "left":
-						panelBounds.Min.X = bounds.Min.X
-					case "right":
-						panelBounds.Min.X = bounds.Max.X - w
-					case "center":
-						panelBounds.Min.X = bounds.Min.X + (bounds.Max.X-bounds.Min.X)/2 - w/2
-					}
-					switch valign {
-					default:
-						fallthrough
-					case "top":
-						panelBounds.Min.Y = bounds.Min.Y
-					case "bottom":
-						panelBounds.Min.Y = bounds.Max.Y - h
-					case "middle":
-						panelBounds.Min.Y = bounds.Min.Y + (bounds.Max.Y-bounds.Min.Y)/2 - h/2
-					}
+					x, y := AlignedXY(w, h, bounds, align, valign)
 
-					panelBounds.Max = image.Point{
-						X: panelBounds.Min.X + w,
-						Y: panelBounds.Min.Y + h,
-					}
+					panelBounds := image.Rect(x, y, x+w, y+h)
 
 					if bounds, err = f(child.Children, data, panelBounds, child.Attributes.Align(), child.Attributes.Valign(), scale); err != nil {
 						return bounds, err
