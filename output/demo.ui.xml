@@ -12,14 +12,14 @@
         <Image texture="{{ .Portrait }}" width="52" height="52" x="{{ .PortraitX }}" y="{{ .PortraitY }}" intangible="true"/>
         <Image texture="{{ .OverlayFrame }}" width="52" height="52" x="{{ .OverlayFrameX }}" y="{{ .OverlayFrameY }}" />
       </Column>
-        <Text value="PREP: {{ .Prep }}" size="small" />
-        <Text value="AP: {{ .AP }}" size="small" />
-        <Text value="STR/LVL: {{ .Strlvl }}" size="small" />
-        <Text value="AGI/LVL: {{ .Agilvl }}" size="small" />
-        <Text value="INT/LVL: {{ .Intlvl }}" size="small" />
-        <Text value="VIT/LVL: {{ .Vitlvl }}" size="small" />
-        <Text value="Masteries" />
-        <Text value="{{ range .Masteries }}{{.}}{{ end }}" size="small" />
+      <Text value="PREP: {{ .Prep }}" size="small" />
+      <Text value="AP: {{ .AP }}" size="small" />
+      <Text value="STR/LVL: {{ .Strlvl }}" size="small" />
+      <Text value="AGI/LVL: {{ .Agilvl }}" size="small" />
+      <Text value="INT/LVL: {{ .Intlvl }}" size="small" />
+      <Text value="VIT/LVL: {{ .Vitlvl }}" size="small" />
+      <Text value="Masteries" />
+      <Text value="{{ range .Masteries }}{{.}}{{ end }}" size="small" />
       <Column>
         <Button label="Cancel" width="42" onclick="HandleCancel"/>
       </Column>
