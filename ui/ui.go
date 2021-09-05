@@ -90,11 +90,11 @@ func (uis *UISystem) Handle(ev *Interact) {
 		var f func(children []*Element, data interface{}, bounds image.Rectangle, align, valign string, scale float64) (image.Rectangle, error)
 		f = func(children []*Element, data interface{}, bounds image.Rectangle, align, valign string, scale float64) (image.Rectangle, error) {
 			maxColHeight := 0
+			maxWidth := int(float64(bounds.Dx()) / scale)
 			for _, child := range children {
-				var err error
 				switch child.Type {
 				case PanelElement:
-					w, h, err := child.DimensionsWith(data, bounds.Dx(), scale)
+					w, h, err := child.DimensionsWith(data, maxWidth, scale)
 					if err != nil {
 						return bounds, err
 					}
@@ -107,7 +107,14 @@ func (uis *UISystem) Handle(ev *Interact) {
 					}
 
 				case PaddingElement:
-					paddedBounds := bounds
+					w, h, err := child.DimensionsWith(data, maxWidth, scale)
+					if err != nil {
+						return bounds, err
+					}
+					x, y := AlignedXY(w, h, bounds, align, valign)
+
+					paddedBounds := image.Rect(x, y, x+w, y+h)
+
 					paddedBounds.Min.X += int(float64(child.Attributes.LeftPadding()) * scale)
 					paddedBounds.Max.X -= int(float64(child.Attributes.RightPadding()) * scale)
 					paddedBounds.Min.Y += int(float64(child.Attributes.TopPadding()) * scale)
@@ -142,7 +149,7 @@ func (uis *UISystem) Handle(ev *Interact) {
 					}
 
 				case TextElement:
-					_, h, err := child.DimensionsWith(data, bounds.Dx(), scale)
+					_, h, err := child.DimensionsWith(data, maxWidth, scale)
 					if err != nil {
 						return bounds, fmt.Errorf("DimensionsWith: %v", err)
 					}
@@ -150,7 +157,7 @@ func (uis *UISystem) Handle(ev *Interact) {
 
 				case ButtonElement:
 					// buttonHeight := int(ButtonHeight * scale)
-					w, h, err := child.DimensionsWith(data, bounds.Dx(), scale)
+					w, h, err := child.DimensionsWith(data, maxWidth, scale)
 					if err != nil {
 						return bounds, err
 					}
@@ -186,7 +193,7 @@ func (uis *UISystem) Handle(ev *Interact) {
 
 				case ImageElement:
 					if !child.Attributes.Intangible() {
-						_, h, err := child.DimensionsWith(data, bounds.Dx(), scale)
+						_, h, err := child.DimensionsWith(data, maxWidth, scale)
 						if err != nil {
 							return bounds, fmt.Errorf("DimensionsWith: %v", err)
 						}

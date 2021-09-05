@@ -32,11 +32,11 @@ func (uv *uiVisualizer) Render(screen *ebiten.Image, uic *ui.UI, scale float64) 
 // drawChildren returns the remainder of the bounds, unused by the drawn children.
 func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Element, data interface{}, bounds image.Rectangle, align, valign string, scale float64) (image.Rectangle, error) {
 	maxColHeight := 0
+	maxWidth := int(float64(bounds.Dx()) / scale)
 	for _, child := range children {
-		var err error
 		switch child.Type {
 		case ui.PanelElement:
-			w, h, err := child.DimensionsWith(data, bounds.Dx(), scale)
+			w, h, err := child.DimensionsWith(data, maxWidth, scale)
 			if err != nil {
 				return bounds, err
 			}
@@ -52,7 +52,13 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			}
 
 		case ui.PaddingElement:
-			paddedBounds := bounds
+			w, h, err := child.DimensionsWith(data, maxWidth, scale)
+			if err != nil {
+				return bounds, err
+			}
+			x, y := ui.AlignedXY(w, h, bounds, align, valign)
+
+			paddedBounds := image.Rect(x, y, x+w, y+h)
 			paddedBounds.Min.X += int(float64(child.Attributes.LeftPadding()) * scale)
 			paddedBounds.Max.X -= int(float64(child.Attributes.RightPadding()) * scale)
 			paddedBounds.Min.Y += int(float64(child.Attributes.TopPadding()) * scale)
@@ -97,7 +103,7 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 
 			txtBounds := bounds
 			if child.Attributes["width"] != "" {
-				w, _, err := child.DimensionsWith(data, txtBounds.Dx(), scale)
+				w, _, err := child.DimensionsWith(data, maxWidth, scale)
 				if err != nil {
 					return bounds, err
 				}
@@ -117,7 +123,7 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			if err != nil {
 				return bounds, fmt.Errorf("resolve button label: %v", err)
 			}
-			w, h, err := child.DimensionsWith(data, bounds.Dx(), scale)
+			w, h, err := child.DimensionsWith(data, maxWidth, scale)
 			if err != nil {
 				return bounds, err
 			}
