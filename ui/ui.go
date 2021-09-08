@@ -87,14 +87,17 @@ func (uis *UISystem) Handle(ev *Interact) {
 
 		// uic.Doc.Type == ui.UIElement - first element must be UI!
 		// uic.Doc.Attributes == [] - none are allowed!
-		var f func(children []*Element, data interface{}, bounds image.Rectangle, align, valign string, scale float64) (image.Rectangle, error)
-		f = func(children []*Element, data interface{}, bounds image.Rectangle, align, valign string, scale float64) (image.Rectangle, error) {
+		uiScale := 2.0 // FIXME this needs to come from somewhere ...
+		interactPoint := image.Point{int(ev.AbsoluteX / uiScale), int(ev.AbsoluteY / uiScale)}
+
+		var f func(children []*Element, data interface{}, bounds image.Rectangle, align, valign string) (image.Rectangle, error)
+		f = func(children []*Element, data interface{}, bounds image.Rectangle, align, valign string) (image.Rectangle, error) {
 			maxColHeight := 0
-			maxWidth := int(float64(bounds.Dx()) / scale)
+			maxWidth := bounds.Dx()
 			for _, child := range children {
 				switch child.Type {
 				case PanelElement:
-					w, h, err := child.DimensionsWith(data, maxWidth, scale)
+					w, h, err := child.DimensionsWith(data, maxWidth)
 					if err != nil {
 						return bounds, err
 					}
@@ -102,12 +105,12 @@ func (uis *UISystem) Handle(ev *Interact) {
 
 					panelBounds := image.Rect(x, y, x+w, y+h)
 
-					if bounds, err = f(child.Children, data, panelBounds, child.Attributes.Align(), child.Attributes.Valign(), scale); err != nil {
+					if bounds, err = f(child.Children, data, panelBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
 						return bounds, err
 					}
 
 				case PaddingElement:
-					w, h, err := child.DimensionsWith(data, maxWidth, scale)
+					w, h, err := child.DimensionsWith(data, maxWidth)
 					if err != nil {
 						return bounds, err
 					}
@@ -115,11 +118,11 @@ func (uis *UISystem) Handle(ev *Interact) {
 
 					paddedBounds := image.Rect(x, y, x+w, y+h)
 
-					paddedBounds.Min.X += int(float64(child.Attributes.LeftPadding()) * scale)
-					paddedBounds.Max.X -= int(float64(child.Attributes.RightPadding()) * scale)
-					paddedBounds.Min.Y += int(float64(child.Attributes.TopPadding()) * scale)
-					paddedBounds.Max.Y -= int(float64(child.Attributes.BottomPadding()) * scale)
-					if bounds, err = f(child.Children, data, paddedBounds, child.Attributes.Align(), child.Attributes.Valign(), scale); err != nil {
+					paddedBounds.Min.X += child.Attributes.LeftPadding()
+					paddedBounds.Max.X -= child.Attributes.RightPadding()
+					paddedBounds.Min.Y += child.Attributes.TopPadding()
+					paddedBounds.Max.Y -= child.Attributes.BottomPadding()
+					if bounds, err = f(child.Children, data, paddedBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
 						return bounds, err
 					}
 
@@ -131,7 +134,7 @@ func (uis *UISystem) Handle(ev *Interact) {
 					colBounds.Min.X += bounds.Dx() * child.Attributes.TwelfthsOffset() / 12
 					w := bounds.Dx() * child.Attributes.Twelfths() / 12
 					colBounds.Max.X = colBounds.Min.X + w
-					takenBounds, err := f(child.Children, data, colBounds, child.Attributes.Align(), child.Attributes.Valign(), scale)
+					takenBounds, err := f(child.Children, data, colBounds, child.Attributes.Align(), child.Attributes.Valign())
 					if err != nil {
 						return bounds, err
 					}
@@ -149,7 +152,7 @@ func (uis *UISystem) Handle(ev *Interact) {
 					}
 
 				case TextElement:
-					_, h, err := child.DimensionsWith(data, maxWidth, scale)
+					_, h, err := child.DimensionsWith(data, maxWidth)
 					if err != nil {
 						return bounds, fmt.Errorf("DimensionsWith: %v", err)
 					}
@@ -157,7 +160,7 @@ func (uis *UISystem) Handle(ev *Interact) {
 
 				case ButtonElement:
 					// buttonHeight := int(ButtonHeight * scale)
-					w, h, err := child.DimensionsWith(data, maxWidth, scale)
+					w, h, err := child.DimensionsWith(data, maxWidth)
 					if err != nil {
 						return bounds, err
 					}
@@ -180,8 +183,7 @@ func (uis *UISystem) Handle(ev *Interact) {
 					buttonDimensions := image.Rect(l, t, l+w, t+h)
 
 					// Is this interaction within this buttonDimensions?
-					p := image.Point{int(ev.AbsoluteX), int(ev.AbsoluteY)}
-					if p.In(buttonDimensions) {
+					if interactPoint.In(buttonDimensions) {
 						if err := dynamic.Call(child.Attributes["onclick"], data); err != nil {
 							panic(fmt.Sprintf("dynamic call: %v", err))
 						}
@@ -193,7 +195,7 @@ func (uis *UISystem) Handle(ev *Interact) {
 
 				case ImageElement:
 					if !child.Attributes.Intangible() {
-						_, h, err := child.DimensionsWith(data, maxWidth, scale)
+						_, h, err := child.DimensionsWith(data, maxWidth)
 						if err != nil {
 							return bounds, fmt.Errorf("DimensionsWith: %v", err)
 						}
@@ -205,10 +207,9 @@ func (uis *UISystem) Handle(ev *Interact) {
 			return bounds, nil
 		}
 
-		bounds := image.Rect(0, 0, uis.screenW, uis.screenH)
-		scale := 2.0 // FIXME: this needs to be shared with the uiVisualiser!
+		bounds := image.Rect(0, 0, int(float64(uis.screenW)/uiScale), int(float64(uis.screenH)/uiScale))
 
-		f(uic.Doc.Children, uic.Data, bounds, "center", "middle", scale)
+		f(uic.Doc.Children, uic.Data, bounds, "center", "middle")
 	}
 }
 

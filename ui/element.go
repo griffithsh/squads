@@ -208,7 +208,7 @@ type Element struct {
 	Children []*Element
 }
 
-func (el *Element) DimensionsWith(data interface{}, maxWidth int, scale float64) (w, h int, err error) {
+func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err error) {
 	switch el.Type {
 	case PanelElement:
 		width, err := ResolveInt(el.Attributes["width"], data)
@@ -216,20 +216,19 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int, scale float64)
 			width = maxWidth
 		}
 		height, err := ResolveInt(el.Attributes["height"], data)
-		height = mult(height, scale)
 		if err != nil {
 			// Since there was no height configured for this, let's sum the
 			// children's heights.
 			height = 0
 			for _, child := range el.Children {
-				_, h, err := child.DimensionsWith(data, maxWidth, scale)
+				_, h, err := child.DimensionsWith(data, maxWidth)
 				if err != nil {
 					return 0, 0, fmt.Errorf("dimensions of %s: %v", el.Type, err)
 				}
 				height += h
 			}
 		}
-		return mult(width, scale), height, nil
+		return width, height, nil
 
 	case PaddingElement:
 		width, err := ResolveInt(el.Attributes["width"], data)
@@ -237,31 +236,30 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int, scale float64)
 			width = maxWidth
 		}
 		height, err := ResolveInt(el.Attributes["height"], data)
-		height = mult(height, scale)
 		if err != nil {
 			// Since there was no height configured for this, let's sum the
 			// children's heights with the vertical padding values.
-			height = mult(el.Attributes.TopPadding()+el.Attributes.BottomPadding(), scale)
+			height = el.Attributes.TopPadding() + el.Attributes.BottomPadding()
 			for _, child := range el.Children {
-				_, h, err := child.DimensionsWith(data, maxWidth, scale)
+				_, h, err := child.DimensionsWith(data, maxWidth)
 				if err != nil {
 					return 0, 0, fmt.Errorf("dimensions of %s: %v", el.Type, err)
 				}
 				height += h
 			}
 		}
-		return mult(width, scale), height, nil
+		return width, height, nil
 	case ColumnElement:
 		width := mult(maxWidth, 1.0/12) * el.Attributes.Twelfths()
 		height := 0
 		for _, child := range el.Children {
-			_, h, err := child.DimensionsWith(data, maxWidth, scale)
+			_, h, err := child.DimensionsWith(data, maxWidth)
 			if err != nil {
 				return 0, 0, fmt.Errorf("dimensions of %s: %v", el.Type, err)
 			}
 			height += h
 		}
-		return mult(width, scale), height, nil
+		return width, height, nil
 
 	case TextElement:
 		label := el.Attributes["value"]
@@ -277,7 +275,7 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int, scale float64)
 			width, _ = ResolveInt(el.Attributes["width"], data)
 		}
 		height = heightOfText2(buf.String(), sz, width, layout)
-		return mult(width, scale), mult(height, scale), nil
+		return width, height, nil
 
 	case ButtonElement:
 		width, err := ResolveInt(el.Attributes["width"], data)
@@ -286,7 +284,7 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int, scale float64)
 			// button given its text label instead of relying on a default.
 			width = DefaultButtonWidth
 		}
-		return mult(width, scale), int(ButtonHeight * scale), nil
+		return width, ButtonHeight, nil
 
 	case ImageElement:
 		width, err := ResolveInt(el.Attributes["width"], data)
@@ -297,7 +295,7 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int, scale float64)
 		if err != nil {
 			return 0, 0, fmt.Errorf("ResolveInt height: %v", err)
 		}
-		return mult(width, scale), mult(height, scale), nil
+		return width, height, nil
 	}
 	panic(fmt.Sprintf("unhandled element type: %q", el.Type))
 }

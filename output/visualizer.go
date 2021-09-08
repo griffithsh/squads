@@ -19,8 +19,9 @@ type Visualizer struct {
 	textures      map[string]*ebiten.Image
 	imageProvider ImageProvider
 
-	worldCanvas *ebiten.Image
-	uiCanvas    *ebiten.Image
+	worldCanvas    *ebiten.Image
+	absoluteCanvas *ebiten.Image
+	uiCanvas       *ebiten.Image
 
 	// randFloats are used to define whether a tile of an Entity with an Alpha
 	// component should be shown or not.
@@ -37,7 +38,7 @@ type ImageProvider interface {
 
 // NewVisualizer creates a new Visualizer.
 func NewVisualizer(images ImageProvider) *Visualizer {
-	// 4099 is the first prime number after 4096. Primae numbers have no
+	// 4099 is the first prime number after 4096. Prime numbers have no
 	// factors, so they won't repeat a pattern on power of two sized textures.
 	// 4096 is 64*64. 64 is 512/8. 512x512 is a reasonably large texture size,
 	// and 8 is the width/height of one of the tiles.
@@ -50,6 +51,7 @@ func NewVisualizer(images ImageProvider) *Visualizer {
 		textures:      map[string]*ebiten.Image{},
 		imageProvider: images,
 		worldCanvas:   ebiten.NewImage(1, 1),
+		uiCanvas:      ebiten.NewImage(1, 1),
 		randFloats:    pre,
 	}
 	v.uv = newUIVisualizer(v.picForTexture)
@@ -232,21 +234,29 @@ func (r *Visualizer) picForTexture(filename string) (*ebiten.Image, error) {
 
 // ensureCanvases makes sure the canvases used for offscreen rendering each
 // frame are the correct size based on the current screen dimensions and zoom.
-func (r *Visualizer) ensureCanvases(w, h, z float64) {
+// FIXME: this would work better with some sort of event subscription model I think?
+func (r *Visualizer) ensureCanvases(w, h, z, uiScale float64) {
 	b := r.worldCanvas.Bounds()
+	// Have bounds changed?
 	if b.Max.X-b.Min.X != int(w/z) || b.Max.Y-b.Min.Y != int(h/z) {
 		r.worldCanvas = ebiten.NewImage(int(w/z), int(h/z))
 
-		// NB: UI elements are not zoomed by z, which is the world zoom here.
-		r.uiCanvas = ebiten.NewImage(int(w), int(h))
+		// NB: Absolute elements are not zoomed by z, which is the world zoom here.
+		r.absoluteCanvas = ebiten.NewImage(int(w), int(h))
 	}
+
+	b = r.uiCanvas.Bounds()
+	if b.Max.X-b.Min.X != int(w/uiScale) || b.Max.Y-b.Min.Y != int(h/uiScale) {
+		r.uiCanvas = ebiten.NewImage(int(w/uiScale), int(h/uiScale))
+	}
+
 }
 
 // target returns the correct render target to use for this entity.
 func (r *Visualizer) target(e entity) *ebiten.Image {
 	result := r.worldCanvas
 	if e.p.Absolute {
-		result = r.uiCanvas
+		result = r.absoluteCanvas
 	}
 	return result
 }
@@ -339,11 +349,13 @@ func (r *Visualizer) renderEntity(e entity, focusX, focusY, zoom, screenW, scree
 // world we are focused, as well as how zoomed in we are, and the dimensions of
 // the screen.
 func (r *Visualizer) Render(screen *ebiten.Image, mgr *ecs.World, focusX, focusY, zoom, screenW, screenH float64) error {
-	r.ensureCanvases(screenW, screenH, zoom)
+	uiScale := 2.0 // FIXME: should this be tied to zoom? Or separate?
+	r.ensureCanvases(screenW, screenH, zoom, uiScale)
 
 	entities := r.getEntities(mgr)
 
 	r.worldCanvas.Fill(color.NRGBA{40, 34, 31, 0xff})
+	r.absoluteCanvas.Clear()
 	r.uiCanvas.Clear()
 
 	for _, e := range entities {
@@ -353,11 +365,9 @@ func (r *Visualizer) Render(screen *ebiten.Image, mgr *ecs.World, focusX, focusY
 		}
 	}
 
-	scale := 2.0 // FIXME: should this be tied to zoom? Or separate?
-
 	for _, e := range mgr.Get([]string{"UI"}) {
 		uic := mgr.Component(e, "UI").(*ui.UI)
-		if err := r.uv.Render(r.uiCanvas, uic, scale); err != nil {
+		if err := r.uv.Render(r.uiCanvas, uic); err != nil {
 			return err
 		}
 	}
@@ -369,6 +379,10 @@ func (r *Visualizer) Render(screen *ebiten.Image, mgr *ecs.World, focusX, focusY
 	screen.DrawImage(r.worldCanvas, &op)
 
 	op = ebiten.DrawImageOptions{}
+	screen.DrawImage(r.absoluteCanvas, &op)
+
+	op = ebiten.DrawImageOptions{}
+	op.GeoM.Scale(uiScale, uiScale)
 	screen.DrawImage(r.uiCanvas, &op)
 
 	return nil
