@@ -52,18 +52,20 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			}
 
 		case ui.PaddingElement:
-			w, h, err := child.DimensionsWith(data, maxWidth)
+			paddedBounds := bounds
+			paddedBounds.Min.X += child.Attributes.LeftPadding()
+			paddedBounds.Min.Y += child.Attributes.TopPadding()
+			paddedBounds.Max.X -= child.Attributes.RightPadding()
+			paddedBounds.Max.Y -= child.Attributes.BottomPadding()
+
+			w, h, err := child.DimensionsWith(data, paddedBounds.Dx())
 			if err != nil {
 				return bounds, err
 			}
-			x, y := ui.AlignedXY(w, h, bounds, align, valign)
+			x, y := ui.AlignedXY(w, h, paddedBounds, align, valign)
 
-			paddedBounds := image.Rect(x, y, x+w, y+h)
-			paddedBounds.Min.X += child.Attributes.LeftPadding()
-			paddedBounds.Max.X -= child.Attributes.RightPadding()
-			paddedBounds.Min.Y += child.Attributes.TopPadding()
-			paddedBounds.Max.Y -= child.Attributes.BottomPadding()
-			if bounds, err = uv.drawChildren(screen, child.Children, data, paddedBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
+			childrenBounds := image.Rect(x, y, x+w, y+h)
+			if bounds, err = uv.drawChildren(screen, child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
 				return bounds, err
 			}
 
