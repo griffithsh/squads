@@ -22,9 +22,7 @@ func newUIVisualizer(picForTexture func(filename string) (*ebiten.Image, error))
 }
 
 func (uv *uiVisualizer) Render(screen *ebiten.Image, uic *ui.UI) error {
-	boundaries := image.Rect(0, 0, screen.Bounds().Max.X, screen.Bounds().Max.Y)
-
-	_, err := uv.drawChildren(screen, uic.Doc.Children, uic.Data, boundaries, "center", "middle")
+	_, err := uv.drawChildren(screen, uic.Doc.Children, uic.Data, screen.Bounds(), "center", "middle")
 
 	return err
 }
@@ -110,9 +108,6 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 					return bounds, err
 				}
 				txtBounds.Max.X = txtBounds.Min.X + w
-				// Need to de-scale width here because we're passing in a
-				// prescaled value to drawText.
-				// w = int(float64(w) / scale)
 			}
 			h, err := uv.drawText(screen, buf.String(), sz, txtBounds, layout)
 			if err != nil {

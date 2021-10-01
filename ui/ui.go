@@ -86,7 +86,6 @@ func (uis *UISystem) Handle(ev *Interact) {
 		 * */
 
 		// uic.Doc.Type == ui.UIElement - first element must be UI!
-		// uic.Doc.Attributes == [] - none are allowed!
 		uiScale := 2.0 // FIXME this needs to come from somewhere ...
 		interactPoint := image.Point{int(ev.AbsoluteX / uiScale), int(ev.AbsoluteY / uiScale)}
 
@@ -214,7 +213,7 @@ func (uis *UISystem) Handle(ev *Interact) {
 	}
 }
 
-// heightOfText FIXME: should not accept scale, should accept a maxWidth int instead of a bounds Rectangle
+// heightOfText FIXME: delete this and rename heightOfText2 to be heightOfText.
 func heightOfText(value string, size TextSize, bounds image.Rectangle, align TextLayout, scale float64) (height int) {
 	text := NewText(value, size)
 

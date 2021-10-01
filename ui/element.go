@@ -259,6 +259,9 @@ type Element struct {
 	Children []*Element
 }
 
+// DimensionsWith calculates the dimensions of an Element with the given data
+// and available dimensions. Text elements vary in size due to the data that
+// could be inserted into them.
 func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err error) {
 	switch el.Type {
 	case PanelElement:
