@@ -83,30 +83,81 @@ func (m AttributeMap) Y() int {
 	return y
 }
 
-func (m AttributeMap) Padding() int {
-	str, ok := m["all"]
-	if !ok {
-		return 0
+func (m AttributeMap) LeftPadding() int {
+	if left, ok := m["left"]; ok {
+		if padding, err := strconv.Atoi(left); err == nil {
+			return padding
+		}
+	}
+	if horz, ok := m["horizontal"]; ok {
+		if padding, err := strconv.Atoi(horz); err == nil {
+			return padding
+		}
+	}
+	if all, ok := m["all"]; ok {
+		if padding, err := strconv.Atoi(all); err == nil {
+			return padding
+		}
 	}
 
-	padding, err := strconv.Atoi(str)
-	if err != nil {
-		// invalid value?
-		return 0
-	}
-	return padding
-}
-func (m AttributeMap) LeftPadding() int {
-	return m.Padding()
+	return 0
 }
 func (m AttributeMap) RightPadding() int {
-	return m.Padding()
+	if right, ok := m["right"]; ok {
+		if padding, err := strconv.Atoi(right); err == nil {
+			return padding
+		}
+	}
+	if horz, ok := m["horizontal"]; ok {
+		if padding, err := strconv.Atoi(horz); err == nil {
+			return padding
+		}
+	}
+	if all, ok := m["all"]; ok {
+		if padding, err := strconv.Atoi(all); err == nil {
+			return padding
+		}
+	}
+
+	return 0
 }
 func (m AttributeMap) TopPadding() int {
-	return m.Padding()
+	if top, ok := m["top"]; ok {
+		if padding, err := strconv.Atoi(top); err == nil {
+			return padding
+		}
+	}
+	if vert, ok := m["vertical"]; ok {
+		if padding, err := strconv.Atoi(vert); err == nil {
+			return padding
+		}
+	}
+	if all, ok := m["all"]; ok {
+		if padding, err := strconv.Atoi(all); err == nil {
+			return padding
+		}
+	}
+
+	return 0
 }
 func (m AttributeMap) BottomPadding() int {
-	return m.Padding()
+	if bottom, ok := m["bottom"]; ok {
+		if padding, err := strconv.Atoi(bottom); err == nil {
+			return padding
+		}
+	}
+	if vert, ok := m["vertical"]; ok {
+		if padding, err := strconv.Atoi(vert); err == nil {
+			return padding
+		}
+	}
+	if all, ok := m["all"]; ok {
+		if padding, err := strconv.Atoi(all); err == nil {
+			return padding
+		}
+	}
+
+	return 0
 }
 
 func (m AttributeMap) Twelfths() int {
@@ -443,7 +494,7 @@ func getAttributes(start xml.StartElement) map[string]string {
 var permittedAttributes = map[ElementType][]string{
 	UIElement:      {},
 	PanelElement:   {"width", "height"},
-	PaddingElement: {"all"},
+	PaddingElement: {"all", "vertical", "horizontal", "top", "bottom", "left", "right"},
 	ColumnElement:  {"twelfths", "align"},
 	TextElement:    {"value", "size", "layout", "color", "width"},
 	ButtonElement:  {"onclick", "label", "width"},
