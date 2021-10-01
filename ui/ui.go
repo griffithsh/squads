@@ -209,7 +209,7 @@ func (uis *UISystem) Handle(ev *Interact) {
 
 		bounds := image.Rect(0, 0, int(float64(uis.screenW)/uiScale), int(float64(uis.screenH)/uiScale))
 
-		f(uic.Doc.Children, uic.Data, bounds, "center", "middle")
+		f(uic.Doc.Children, uic.Data, bounds, uic.Doc.Attributes.Align(), uic.Doc.Attributes.Valign())
 	}
 }
 

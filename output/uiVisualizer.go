@@ -22,7 +22,7 @@ func newUIVisualizer(picForTexture func(filename string) (*ebiten.Image, error))
 }
 
 func (uv *uiVisualizer) Render(screen *ebiten.Image, uic *ui.UI) error {
-	_, err := uv.drawChildren(screen, uic.Doc.Children, uic.Data, screen.Bounds(), "center", "middle")
+	_, err := uv.drawChildren(screen, uic.Doc.Children, uic.Data, screen.Bounds(), uic.Doc.Attributes.Align(), uic.Doc.Attributes.Valign())
 
 	return err
 }

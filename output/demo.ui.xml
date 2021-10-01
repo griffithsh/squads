@@ -1,5 +1,5 @@
-<UI>
-  <Panel width="136" height="200">
+<UI align="center" valign="middle">
+  <Panel width="136" height="180">
     <Padding all="6">
       <Column twelfths="7">
         <Text value="{{ .Name }}" layout="justify"/>
