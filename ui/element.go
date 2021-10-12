@@ -267,7 +267,21 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err
 	case PanelElement:
 		width, err := ResolveInt(el.Attributes["width"], data)
 		if err != nil {
+			// Since there's no configured width, use the width of the widest child.
 			width = maxWidth
+			maxChild := 0
+			for _, child := range el.Children {
+				w, _, err := child.DimensionsWith(data, maxWidth)
+				if err != nil {
+					return 0, 0, fmt.Errorf("dimensions of %s: %v", child.Type, err)
+				}
+				if w > maxChild {
+					maxChild = w
+				}
+			}
+			if maxChild < width {
+				width = maxChild
+			}
 		}
 		height, err := ResolveInt(el.Attributes["height"], data)
 		if err != nil {
@@ -287,7 +301,21 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err
 	case PaddingElement:
 		width, err := ResolveInt(el.Attributes["width"], data)
 		if err != nil {
+			// Since there's no configured width, use the width of the widest child.
 			width = maxWidth
+			maxChild := 0
+			for _, child := range el.Children {
+				w, _, err := child.DimensionsWith(data, maxWidth)
+				if err != nil {
+					return 0, 0, fmt.Errorf("dimensions of %s: %v", child.Type, err)
+				}
+				if w > maxChild {
+					maxChild = w
+				}
+			}
+			if maxChild < width {
+				width = maxChild
+			}
 		}
 		height, err := ResolveInt(el.Attributes["height"], data)
 		if err != nil {
@@ -297,7 +325,7 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err
 			for _, child := range el.Children {
 				_, h, err := child.DimensionsWith(data, maxWidth)
 				if err != nil {
-					return 0, 0, fmt.Errorf("dimensions of %s: %v", el.Type, err)
+					return 0, 0, fmt.Errorf("dimensions of %s: %v", child.Type, err)
 				}
 				height += h
 			}

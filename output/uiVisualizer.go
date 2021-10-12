@@ -31,6 +31,7 @@ func (uv *uiVisualizer) Render(screen *ebiten.Image, uic *ui.UI) error {
 func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Element, data interface{}, bounds image.Rectangle, align, valign string) (image.Rectangle, error) {
 	maxColHeight := 0
 	maxWidth := bounds.Dx()
+	widestChild := 0
 	for _, child := range children {
 		switch child.Type {
 		case ui.PanelElement:
@@ -47,6 +48,9 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 
 			if bounds, err = uv.drawChildren(screen, child.Children, data, panelBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
 				return bounds, err
+			}
+			if widestChild < bounds.Dx() {
+				widestChild = bounds.Dx()
 			}
 
 		case ui.PaddingElement:
@@ -65,6 +69,9 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			childrenBounds := image.Rect(x, y, x+w, y+h)
 			if bounds, err = uv.drawChildren(screen, child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
 				return bounds, err
+			}
+			if widestChild < bounds.Dx() {
+				widestChild = bounds.Dx()
 			}
 
 		case ui.ColumnElement:
@@ -90,6 +97,7 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			if child.Attributes.Twelfths()+child.Attributes.TwelfthsOffset() == 12 {
 				bounds.Min.Y += maxColHeight
 				maxColHeight = 0
+				widestChild = bounds.Dx()
 			}
 
 		case ui.TextElement:
@@ -114,6 +122,9 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 				return bounds, err
 			}
 			bounds.Min.Y += h
+			if widestChild < txtBounds.Dx() {
+				widestChild = txtBounds.Dx()
+			}
 
 		case ui.ButtonElement:
 			label, err := ui.Resolve(child.Attributes["label"], data)
@@ -152,6 +163,9 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 
 			uv.drawText(screen, label, ui.TextSizeNormal, buttonDimensions, ui.TextLayoutCenter)
 			bounds.Min.Y += h
+			if widestChild < buttonDimensions.Dx() {
+				widestChild = buttonDimensions.Dx()
+			}
 
 		case ui.ImageElement:
 			texture, err := ui.Resolve(child.Attributes["texture"], data)
@@ -185,9 +199,13 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 
 			if !child.Attributes.Intangible() {
 				bounds.Min.Y += height
+				if widestChild < width {
+					widestChild = width
+				}
 			}
 		}
 	}
+	bounds.Max.X = bounds.Min.X + widestChild
 	return bounds, nil
 }
 
