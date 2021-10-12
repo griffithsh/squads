@@ -997,6 +997,7 @@ func (em *Manager) repaint() {
 		}
 		uic := ui.NewUI(f)
 		uic.Data = struct{ HandleStart func() }{func() {
+			uiEntity := e
 			em.bus.Publish(&SquadSelected{})
 
 			e := em.mgr.NewEntity()
@@ -1022,6 +1023,9 @@ func (em *Manager) repaint() {
 				squad.Members = append(squad.Members, e)
 				em.mgr.RemoveTag(e, "embark")
 			}
+
+			// Destroy the entity for the ui here.
+			em.mgr.DestroyEntity(uiEntity)
 
 			e = em.mgr.NewEntity()
 			em.mgr.AddComponent(e, &game.DiagonalMatrixWipe{
