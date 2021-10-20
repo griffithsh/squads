@@ -366,7 +366,7 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err
 		if el.Attributes["width"] != "" {
 			width, _ = ResolveInt(el.Attributes["width"], data)
 		}
-		height = heightOfText2(buf.String(), sz, width, layout)
+		height = heightOfText(buf.String(), sz, width, layout)
 		return width, height, nil
 
 	case ButtonElement:

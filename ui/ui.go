@@ -213,63 +213,8 @@ func (uis *UISystem) Handle(ev *Interact) {
 	}
 }
 
-// heightOfText FIXME: delete this and rename heightOfText2 to be heightOfText.
-func heightOfText(value string, size TextSize, bounds image.Rectangle, align TextLayout, scale float64) (height int) {
-	text := NewText(value, size)
-
-	// Spacer around each text instance.
-	spacer := int(TextPadding * scale)
-
-	// We know our bounds now, so we can split long lines.
-	width := int(float64(bounds.Dx()) / scale)
-	splitLines := SplitLines(text.Lines, width)
-
-	y := float64(bounds.Min.Y + spacer)
-	for i, line := range splitLines {
-		x := float64(bounds.Min.X)
-		if i != 0 {
-			// If not the first line, add a line spacer.
-			y += float64(LineSpacing(size)) * scale
-		}
-
-		// Different strategies based on width and word breaks...
-		switch align {
-		case TextLayoutRight:
-			x = float64(bounds.Max.X) - float64(line.Width())*scale
-		case TextLayoutCenter:
-			x += float64(bounds.Dx()/2) - float64(line.Width()/2)*scale
-		}
-
-		tallest := 0
-		wordSpace := SpaceWidth * scale
-		if align == TextLayoutJustify && len(line) > 1 {
-			extra := float64((float64(bounds.Dx()) - float64(line.Width())*scale) / float64(len(line)-1))
-			wordSpace += extra
-		}
-		for _, word := range line {
-			for i, char := range word.Characters {
-				if char.Height > tallest {
-					tallest = char.Height
-				}
-				x += float64(char.Width) * scale
-
-				// Add spacing between letters for every letter except the last one.
-				if i != len(word.Characters)-1 {
-					x += float64(LetterSpacing) * scale
-				}
-			}
-			x += wordSpace
-		}
-
-		y += float64(tallest) * scale
-	}
-
-	return spacer + int(y) - bounds.Min.Y
-}
-
-// heightOfText2 calculates how many unscaled pixels high a given text should
-// be. It replaces (the deprecated) heightOfText.
-func heightOfText2(value string, size TextSize, maxWidth int, align TextLayout) (height int) {
+// heightOfText calculates how many pixels high a given text should be.
+func heightOfText(value string, size TextSize, maxWidth int, align TextLayout) (height int) {
 	text := NewText(value, size)
 
 	// Spacer around each text instance.
