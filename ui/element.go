@@ -259,6 +259,28 @@ type Element struct {
 	Children []*Element
 }
 
+// widestChild of an element, taking into account that the widestChild might be
+// the maxWidth if there are any Columns.
+func (el *Element) widestChild(data interface{}, maxWidth int) (int, error) {
+	maxChild := 0
+	for _, child := range el.Children {
+		if child.Type == ColumnElement {
+			// We can riskily shortcut here so long as we can assume that a set
+			// of columns always take up 100% of the width.
+			return maxWidth, nil
+		}
+		w, _, err := child.DimensionsWith(data, maxWidth)
+		if err != nil {
+			return 0, fmt.Errorf("dimensions of %s: %v", child.Type, err)
+		}
+
+		if w > maxChild {
+			maxChild = w
+		}
+	}
+	return maxChild, nil
+}
+
 // DimensionsWith calculates the dimensions of an Element with the given data
 // and available dimensions. Text elements vary in size due to the data that
 // could be inserted into them.
@@ -269,15 +291,9 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err
 		if err != nil {
 			// Since there's no configured width, use the width of the widest child.
 			width = maxWidth
-			maxChild := 0
-			for _, child := range el.Children {
-				w, _, err := child.DimensionsWith(data, maxWidth)
-				if err != nil {
-					return 0, 0, fmt.Errorf("dimensions of %s: %v", child.Type, err)
-				}
-				if w > maxChild {
-					maxChild = w
-				}
+			maxChild, err := el.widestChild(data, maxWidth)
+			if err != nil {
+				return 0, 0, fmt.Errorf("widestChild of %s: %v", el.Type, err)
 			}
 			if maxChild < width {
 				width = maxChild
@@ -303,15 +319,9 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err
 		if err != nil {
 			// Since there's no configured width, use the width of the widest child.
 			width = maxWidth
-			maxChild := 0
-			for _, child := range el.Children {
-				w, _, err := child.DimensionsWith(data, maxWidth)
-				if err != nil {
-					return 0, 0, fmt.Errorf("dimensions of %s: %v", child.Type, err)
-				}
-				if w > maxChild {
-					maxChild = w
-				}
+			maxChild, err := el.widestChild(data, maxWidth)
+			if err != nil {
+				return 0, 0, fmt.Errorf("widestChild of %s: %v", el.Type, err)
 			}
 			if maxChild < width {
 				width = maxChild
