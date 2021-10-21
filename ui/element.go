@@ -6,6 +6,7 @@ import (
 	"fmt"
 	"io"
 	"strconv"
+	"strings"
 	"text/template"
 )
 
@@ -590,6 +591,21 @@ func getContents(dec *xml.Decoder) ([]*Element, error) {
 				Type:       elementType,
 				Attributes: attrs,
 				Children:   kids,
+			}
+			elements = append(elements, &e)
+
+		case xml.CharData:
+			raw := strings.TrimSpace(string(t))
+			if raw == "" {
+				break
+			}
+
+			e := Element{
+				Type: TextElement,
+				Attributes: map[string]string{
+					"value": raw,
+				},
+				Children: []*Element{},
 			}
 			elements = append(elements, &e)
 		}
