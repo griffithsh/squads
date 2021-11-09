@@ -42,8 +42,10 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 			x, y := ui.AlignedXY(w, h, bounds, align, valign)
 
 			panelBounds := image.Rect(x, y, x+w, y+h)
-			if err = uv.drawPanel(screen, panelBounds); err != nil {
-				return bounds, err
+			if invis := child.Attributes["outline"]; invis != "false" {
+				if err = uv.drawPanel(screen, panelBounds); err != nil {
+					return bounds, err
+				}
 			}
 
 			if bounds, err = uv.drawChildren(screen, child.Children, data, panelBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {

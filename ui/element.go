@@ -582,7 +582,7 @@ func getAttributes(start xml.StartElement) map[string]string {
 var permittedAttributes = map[ElementType][]string{
 	// UIElement may not have width or height; it always takes up 100% of the screen.
 	UIElement:      {"align", "valign"},
-	PanelElement:   {"width", "height"},
+	PanelElement:   {"width", "height", "valign", "align", "outline"},
 	PaddingElement: {"all", "vertical", "horizontal", "top", "bottom", "left", "right"},
 	ColumnElement:  {"twelfths", "align"},
 	TextElement:    {"value", "size", "layout", "color", "width"},
