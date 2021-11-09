@@ -575,6 +575,7 @@ func getAttributes(start xml.StartElement) map[string]string {
 // the scale
 
 var permittedAttributes = map[ElementType][]string{
+	// UIElement may not have width or height; it always takes up 100% of the screen.
 	UIElement:      {},
 	PanelElement:   {"width", "height"},
 	PaddingElement: {"all", "vertical", "horizontal", "top", "bottom", "left", "right"},
@@ -593,7 +594,7 @@ func validateAttributesForType(t ElementType, attrs map[string]string) error {
 				goto ok
 			}
 		}
-		return fmt.Errorf("invalid attribute %s for type %s", attr, t.String())
+		return fmt.Errorf("attribute %q is illegal on %s", attr, t.String())
 	ok:
 	}
 	return nil

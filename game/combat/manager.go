@@ -52,7 +52,6 @@ type Manager struct {
 	incrementAccumulator float64
 
 	x, y             int       // where the mouse last was in screen coordinates
-	wx, wy           float64   // where the mouse last was in world coordinates
 	screenW, screenH int       // most recent dimensions of the window
 	selectedHex      *geom.Key // most recent hex selected
 

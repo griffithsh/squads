@@ -73,7 +73,7 @@ type HUD struct {
 	dormant bool
 }
 
-// NewHUD construct a HUD.
+// NewHUD constructs a HUD.
 func NewHUD(mgr *ecs.World, bus *event.Bus, screenX int, screenY int, archive SkillArchive) *HUD {
 	hud := HUD{
 		mgr:             mgr,
