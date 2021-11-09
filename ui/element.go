@@ -445,13 +445,18 @@ func parse(r io.Reader) (*Element, error) {
 		return nil, fmt.Errorf("first element not <UI />: %s", getType(start))
 	}
 
+	attrs := getAttributes(start)
+	if err := validateAttributesForType(UIElement, attrs); err != nil {
+		return nil, fmt.Errorf("validate attributes: %v", err)
+	}
+
 	kids, err := getContents(dec)
 	if err != nil {
 		return nil, fmt.Errorf("getContents: %v", err)
 	}
 	e := Element{
 		Type:       getType(start),
-		Attributes: getAttributes(start),
+		Attributes: attrs,
 		Children:   kids,
 	}
 
@@ -576,7 +581,7 @@ func getAttributes(start xml.StartElement) map[string]string {
 
 var permittedAttributes = map[ElementType][]string{
 	// UIElement may not have width or height; it always takes up 100% of the screen.
-	UIElement:      {},
+	UIElement:      {"align", "valign"},
 	PanelElement:   {"width", "height"},
 	PaddingElement: {"all", "vertical", "horizontal", "top", "bottom", "left", "right"},
 	ColumnElement:  {"twelfths", "align"},
