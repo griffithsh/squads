@@ -202,6 +202,16 @@ func (uis *UISystem) Handle(ev *Interact) {
 						// NB this is descaled. why is this descaled?
 						bounds.Min.Y += h //int(float64(h) / scale)
 					}
+
+				case IfElement:
+					expr := child.Attributes["expr"]
+					if EvaluateIfExpression(expr, data) {
+						_, h, err := child.DimensionsWith(data, maxWidth)
+						if err != nil {
+							return bounds, fmt.Errorf("DimensionsWith: %v", err)
+						}
+						bounds.Min.Y += h
+					}
 				}
 			}
 			return bounds, nil

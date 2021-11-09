@@ -21,7 +21,16 @@ const (
 	TextElement
 	ButtonElement
 	ImageElement
+	IfElement
 )
+
+func EvaluateIfExpression(expr string, data interface{}) bool {
+	buf := bytes.NewBuffer([]byte{})
+	if err := template.Must(template.New("text").Parse(fmt.Sprintf("{{ if %s }}true{{ end}}", expr))).Execute(buf, data); err != nil {
+		panic(fmt.Errorf("execute: %v", err))
+	}
+	return buf.String() == "true"
+}
 
 type AttributeMap map[string]string
 
@@ -389,6 +398,36 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err
 			return 0, 0, fmt.Errorf("ResolveInt height: %v", err)
 		}
 		return width, height, nil
+	case IfElement:
+		if !EvaluateIfExpression(el.Attributes["expr"], data) {
+			return 0, 0, nil
+		}
+		width, err := ResolveInt(el.Attributes["width"], data)
+		if err != nil {
+			// Since there's no configured width, use the width of the widest child.
+			width = maxWidth
+			maxChild, err := el.widestChild(data, maxWidth)
+			if err != nil {
+				return 0, 0, fmt.Errorf("widestChild of %s: %v", el.Type, err)
+			}
+			if maxChild < width {
+				width = maxChild
+			}
+		}
+		height, err := ResolveInt(el.Attributes["height"], data)
+		if err != nil {
+			// Since there was no height configured for this, let's sum the
+			// children's heights.
+			height = 0
+			for _, child := range el.Children {
+				_, h, err := child.DimensionsWith(data, maxWidth)
+				if err != nil {
+					return 0, 0, fmt.Errorf("dimensions of %s: %v", el.Type, err)
+				}
+				height += h
+			}
+		}
+		return width, height, nil
 	}
 	panic(fmt.Sprintf("unhandled element type: %q", el.Type))
 }
@@ -513,6 +552,8 @@ func getType(start xml.StartElement) ElementType {
 		return ButtonElement
 	case "Image":
 		return ImageElement
+	case "If":
+		return IfElement
 	default:
 		panic(fmt.Sprintf("unknown element %v", start.Name))
 	}
@@ -541,6 +582,7 @@ var permittedAttributes = map[ElementType][]string{
 	TextElement:    {"value", "size", "layout", "color", "width"},
 	ButtonElement:  {"onclick", "label", "width"},
 	ImageElement:   {"texture", "width", "height", "x", "y", "intangible"},
+	IfElement:      {"expr"},
 }
 
 func validateAttributesForType(t ElementType, attrs map[string]string) error {

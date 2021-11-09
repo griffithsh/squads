@@ -203,6 +203,23 @@ func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Elemen
 					widestChild = width
 				}
 			}
+		case ui.IfElement:
+			expr := child.Attributes["expr"]
+			if ui.EvaluateIfExpression(expr, data) {
+				w, h, err := child.DimensionsWith(data, maxWidth)
+				if err != nil {
+					return bounds, err
+				}
+				x, y := ui.AlignedXY(w, h, bounds, align, valign)
+
+				childrenBounds := image.Rect(x, y, x+w, y+h)
+				if bounds, err = uv.drawChildren(screen, child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
+					return bounds, err
+				}
+				if widestChild < bounds.Dx() {
+					widestChild = bounds.Dx()
+				}
+			}
 		}
 	}
 	bounds.Max.X = bounds.Min.X + widestChild
