@@ -1,9 +1,12 @@
 package ui
 
 import (
+	"bytes"
 	"fmt"
 	"image"
 	"io"
+	"strconv"
+	"text/template"
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
@@ -11,11 +14,46 @@ import (
 	"github.com/griffithsh/squads/ui/dynamic"
 )
 
+type InteractiveRegion struct {
+	Bounds  image.Rectangle
+	Handler func()
+}
+
+type RenderInstruction interface {
+}
+
+type TextRenderInstruction struct {
+	Text   string
+	Size   TextSize
+	Bounds image.Rectangle
+	Layout TextLayout
+}
+type ImageRenderInstruction struct {
+	Texture  string
+	From     image.Rectangle
+	AtX, AtY float64
+}
+type PanelRenderInstruction struct {
+	Bounds image.Rectangle
+}
+type ButtonRenderInstruction struct {
+	Active bool
+	Bounds image.Rectangle
+	Label  string
+}
+
 // UI is a Component that represents a UI. The stutter is unfortunate ...
 type UI struct {
 	Doc *Element
 
 	Data interface{}
+
+	interactives       []InteractiveRegion
+	renderinstructions []RenderInstruction
+}
+
+func (c *UI) RenderInstructions() []RenderInstruction {
+	return c.renderinstructions
 }
 
 // Type of this Component.
@@ -73,154 +111,315 @@ func NewUISystem(mgr *ecs.World, bus *event.Bus) *UISystem {
 }
 
 func (uis *UISystem) Handle(ev *Interact) {
+	uiScale := 2.0 // FIXME this needs to come from somewhere ...
+	interactPoint := image.Point{int(ev.AbsoluteX / uiScale), int(ev.AbsoluteY / uiScale)}
 	for _, e := range uis.mgr.Get([]string{"UI"}) {
 		uic := uis.mgr.Component(e, "UI").(*UI)
-		// Figure out if the interaction we've got is positioned over a button
-		// element, and if so, trigger its handler. The first button we find is
-		// fine.
 
-		/* We have access to the entire UI component, so we can figure out
-		 * anything we need. The problem becomes how to share code that figures
-		 * out dimensions and positioning between this and the ui visualiser.
-		 * Can we start by just duplicating to help identify the common parts?
-		 * */
+		for _, interactive := range uic.interactives {
+			if interactPoint.In(interactive.Bounds) {
+				interactive.Handler()
+				return
+			}
+		}
+	}
+}
 
-		// uic.Doc.Type == ui.UIElement - first element must be UI!
-		uiScale := 2.0 // FIXME this needs to come from somewhere ...
-		interactPoint := image.Point{int(ev.AbsoluteX / uiScale), int(ev.AbsoluteY / uiScale)}
+// calculateChildren dispatches to either calculateColumnChildren or
+// calculateNonColumnChildren depending on if the first child is a ColumnElement
+// or not.
+func (sys *UISystem) calculateChildren(root *UI, children []*Element, data interface{}, bounds image.Rectangle, align, valign string) (image.Rectangle, error) {
 
-		var f func(children []*Element, data interface{}, bounds image.Rectangle, align, valign string) (image.Rectangle, error)
-		f = func(children []*Element, data interface{}, bounds image.Rectangle, align, valign string) (image.Rectangle, error) {
-			maxColHeight := 0
-			maxWidth := bounds.Dx()
-			for _, child := range children {
-				switch child.Type {
-				case PanelElement:
+	// If the first child is a column, make the big assumption that all children are columns.
+	if len(children) > 0 && children[0].Type == ColumnElement {
+		// Make a copy of data for every child.
+		datas := make([]interface{}, len(children))
+		for i := range datas {
+			datas[i] = data
+		}
+
+		return sys.calculateColumnChildren(root, children, datas, bounds)
+	}
+	return sys.calculateNonColumnChildren(root, children, data, bounds, align, valign)
+}
+
+func (sys *UISystem) calculateColumnChildren(root *UI, columns []*Element, datas []interface{}, bounds image.Rectangle) (image.Rectangle, error) {
+	if len(columns) != len(datas) {
+		return bounds, fmt.Errorf("mismatch between columns(%d) and datas(%d)\n", len(columns), len(datas))
+	}
+	maxColHeight := 0
+	twelfthOffset := 0
+	for i, column := range columns {
+		if column.Type != ColumnElement {
+			return bounds, fmt.Errorf("non-column type %T", column.Type)
+		}
+		colBounds := bounds
+		colBounds.Min.X += bounds.Dx() * twelfthOffset / 12
+		w := bounds.Dx() * column.Attributes.Twelfths() / 12
+		colBounds.Max.X = colBounds.Min.X + w
+		takenBounds, err := sys.calculateChildren(root, column.Children, datas[i], colBounds, column.Attributes.Align(), column.Attributes.Valign())
+		if err != nil {
+			return bounds, err
+		}
+		colHeight := takenBounds.Min.Y - bounds.Min.Y
+		if colHeight > maxColHeight {
+			maxColHeight = colHeight
+		}
+		twelfthOffset += column.Attributes.Twelfths()
+	}
+
+	// max column height
+	bounds.Min.Y += maxColHeight
+	return bounds, nil
+}
+
+func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, data interface{}, bounds image.Rectangle, align, valign string) (image.Rectangle, error) {
+	maxWidth := bounds.Dx()
+	widestChild := 0
+
+	for _, child := range children {
+		switch child.Type {
+		case PanelElement:
+			w, h, err := child.DimensionsWith(data, maxWidth)
+			if err != nil {
+				return bounds, err
+			}
+			x, y := AlignedXY(w, h, bounds, align, valign)
+
+			panelBounds := image.Rect(x, y, x+w, y+h)
+			if invis := child.Attributes["outline"]; invis != "false" {
+				root.renderinstructions = append(root.renderinstructions, PanelRenderInstruction{
+					Bounds: panelBounds,
+				})
+			}
+
+			if bounds, err = sys.calculateChildren(root, child.Children, data, panelBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
+				return bounds, err
+			}
+			if widestChild < bounds.Dx() {
+				widestChild = bounds.Dx()
+			}
+
+		case PaddingElement:
+			paddedBounds := bounds
+			paddedBounds.Min.X += child.Attributes.LeftPadding()
+			paddedBounds.Min.Y += child.Attributes.TopPadding()
+			paddedBounds.Max.X -= child.Attributes.RightPadding()
+			paddedBounds.Max.Y -= child.Attributes.BottomPadding()
+
+			w, h, err := child.DimensionsWith(data, paddedBounds.Dx())
+			if err != nil {
+				return bounds, err
+			}
+			x, y := AlignedXY(w, h, paddedBounds, align, valign)
+
+			childrenBounds := image.Rect(x, y, x+w, y+h)
+			if bounds, err = sys.calculateChildren(root, child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
+				return bounds, err
+			}
+			if widestChild < bounds.Dx() {
+				widestChild = bounds.Dx()
+			}
+
+		case TextElement:
+			label := child.Attributes["value"]
+			sz := child.Attributes.FontSize()
+			layout := child.Attributes.FontLayout()
+			buf := bytes.NewBuffer([]byte{})
+			if err := template.Must(template.New("text").Parse(label)).Execute(buf, data); err != nil {
+				return bounds, fmt.Errorf("execute: %v, template: %q", err, label)
+			}
+
+			txtBounds := bounds
+			maxTextWidth := maxWidth
+			if child.Attributes["width"] != "" {
+				maxTextWidth = child.Attributes.Width()
+			}
+			w, h, err := child.DimensionsWith(data, maxTextWidth)
+			if err != nil {
+				return bounds, err
+			}
+			txtBounds.Max.X = txtBounds.Min.X + w
+			root.renderinstructions = append(root.renderinstructions, TextRenderInstruction{
+				Text:   buf.String(),
+				Size:   sz,
+				Bounds: txtBounds,
+				Layout: layout,
+			})
+			bounds.Min.Y += h
+			if widestChild < txtBounds.Dx() {
+				widestChild = txtBounds.Dx()
+			}
+
+		case ButtonElement:
+			label, err := Resolve(child.Attributes["label"], data)
+			if err != nil {
+				return bounds, fmt.Errorf("resolve button label: %v", err)
+			}
+			w, h, err := child.DimensionsWith(data, maxWidth)
+			if err != nil {
+				return bounds, err
+			}
+			// Does the parent align left, right, or centre? Are we valigning
+			// it? Calculate buttonDimensions from that.
+			l := bounds.Min.X
+			switch align {
+			case "right":
+				l = bounds.Max.X - w
+			case "center":
+				l = bounds.Min.X + (bounds.Max.X-bounds.Min.X)/2 - w/2
+			default: // left
+			}
+			t := bounds.Min.Y
+			switch valign {
+			case "bottom":
+				t = bounds.Max.Y - h
+			case "middle":
+				t = bounds.Min.Y + (bounds.Max.Y-bounds.Min.Y)/2 - h/2
+			default: // top
+			}
+			buttonDimensions := image.Rect(l, t, l+w, t+h)
+			root.interactives = append(root.interactives, InteractiveRegion{
+				Bounds: buttonDimensions,
+				Handler: func() {
+					if err := dynamic.Call(child.Attributes["onclick"], data); err != nil {
+						panic(fmt.Sprintf("dynamic call: %v", err))
+					}
+				},
+			})
+			root.renderinstructions = append(root.renderinstructions, ButtonRenderInstruction{
+				Active: false,
+				Bounds: buttonDimensions,
+				Label:  label,
+			})
+			bounds.Min.Y += h
+			if widestChild < buttonDimensions.Dx() {
+				widestChild = buttonDimensions.Dx()
+			}
+
+		case ImageElement:
+			texture, err := Resolve(child.Attributes["texture"], data)
+			if err != nil {
+				return bounds, fmt.Errorf("resolve texture: %v", err)
+			}
+			width, err := ResolveInt(child.Attributes["width"], data)
+			if err != nil {
+				return bounds, fmt.Errorf("resolve width: %v", err)
+			}
+			height, err := ResolveInt(child.Attributes["height"], data)
+			if err != nil {
+				return bounds, fmt.Errorf("resolve height: %v", err)
+			}
+			x, err := ResolveInt(child.Attributes["x"], data)
+			if err != nil {
+				return bounds, fmt.Errorf("resolve x: %v", err)
+			}
+			y, err := ResolveInt(child.Attributes["y"], data)
+			if err != nil {
+				return bounds, fmt.Errorf("resolve y: %v", err)
+			}
+			root.renderinstructions = append(root.renderinstructions, ImageRenderInstruction{
+				Texture: texture,
+				From:    image.Rect(x, y, x+width, y+height),
+				AtX:     float64(bounds.Min.X),
+				AtY:     float64(bounds.Min.Y),
+			})
+
+			if !child.Attributes.Intangible() {
+				bounds.Min.Y += height
+				if widestChild < width {
+					widestChild = width
+				}
+			}
+		case IfElement:
+			expr := child.Attributes["expr"]
+			if EvaluateIfExpression(expr, data) {
+				w, h, err := child.DimensionsWith(data, maxWidth)
+				if err != nil {
+					return bounds, err
+				}
+				x, y := AlignedXY(w, h, bounds, align, valign)
+
+				childrenBounds := image.Rect(x, y, x+w, y+h)
+				if bounds, err = sys.calculateChildren(root, child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
+					return bounds, err
+				}
+				if widestChild < bounds.Dx() {
+					widestChild = bounds.Dx()
+				}
+			}
+		case ForElement:
+			// TODO
+			indexName := child.Attributes["index"]
+			strLength := child.Attributes["length"]
+			length, _ := strconv.Atoi(strLength)
+
+			for i := 0; i < length; i++ {
+				// {{ with $i := 0 }}
+				fmt.Sprintf("{{ with $%s := %d }}", indexName, i)
+
+				// ! Need to stack these so that all children can use the values when detemplating ...
+			}
+		case RangeElement:
+			field := child.Attributes["over"]
+			childDatas, err := dynamic.Ranger(field, data)
+			if err != nil {
+				return bounds, err
+			}
+			switch {
+			case len(child.Children) == 0:
+				// It's a no-op if there are no children!
+
+			case child.Children[0].Type == ColumnElement:
+				vchildren := make([]*Element, len(childDatas))
+				for i := 0; i < len(childDatas); i++ {
+					vchildren[i] = child.Children[0]
+				}
+				bounds, err := sys.calculateColumnChildren(root, vchildren, childDatas, bounds)
+				if err != nil {
+					return bounds, err
+				}
+
+			default: // Sibling context is irrelevant when not dealing with columns.
+				for _, item := range childDatas {
 					w, h, err := child.DimensionsWith(data, maxWidth)
 					if err != nil {
 						return bounds, err
 					}
 					x, y := AlignedXY(w, h, bounds, align, valign)
 
-					panelBounds := image.Rect(x, y, x+w, y+h)
-
-					if bounds, err = f(child.Children, data, panelBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
-						return bounds, err
-					}
-
-				case PaddingElement:
-					paddedBounds := bounds
-					paddedBounds.Min.X += child.Attributes.LeftPadding()
-					paddedBounds.Min.Y += child.Attributes.TopPadding()
-					paddedBounds.Max.X -= child.Attributes.RightPadding()
-					paddedBounds.Max.Y -= child.Attributes.BottomPadding()
-
-					w, h, err := child.DimensionsWith(data, paddedBounds.Dx())
-					if err != nil {
-						return bounds, err
-					}
-					x, y := AlignedXY(w, h, paddedBounds, align, valign)
-
 					childrenBounds := image.Rect(x, y, x+w, y+h)
-					if bounds, err = f(child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
+					if bounds, err = sys.calculateChildren(root, child.Children, item, childrenBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
 						return bounds, err
 					}
-
-				case ColumnElement:
-					// I think we need to know about siblings to do this correctly?
-					// I don't think we can stomp bounds here?  Only the last Column of
-					// adjacent siblings is block level.
-					colBounds := bounds
-					colBounds.Min.X += bounds.Dx() * child.Attributes.TwelfthsOffset() / 12
-					w := bounds.Dx() * child.Attributes.Twelfths() / 12
-					colBounds.Max.X = colBounds.Min.X + w
-					takenBounds, err := f(child.Children, data, colBounds, child.Attributes.Align(), child.Attributes.Valign())
-					if err != nil {
-						return bounds, err
-					}
-					colHeight := takenBounds.Min.Y - bounds.Min.Y
-					if colHeight > maxColHeight {
-						maxColHeight = colHeight
-					}
-
-					// If the twelfths and the twelfths-offset total the full width of a
-					// set of columns, then we know that this is the final column of a
-					// group.
-					if child.Attributes.Twelfths()+child.Attributes.TwelfthsOffset() == 12 {
-						bounds.Min.Y += maxColHeight
-						maxColHeight = 0
-					}
-
-				case TextElement:
-					_, h, err := child.DimensionsWith(data, maxWidth)
-					if err != nil {
-						return bounds, fmt.Errorf("DimensionsWith: %v", err)
-					}
-					bounds.Min.Y += h
-
-				case ButtonElement:
-					// buttonHeight := int(ButtonHeight * scale)
-					w, h, err := child.DimensionsWith(data, maxWidth)
-					if err != nil {
-						return bounds, err
-					}
-					l := bounds.Min.X
-					switch align {
-					case "right":
-						l = bounds.Max.X - w
-					case "center":
-						l = bounds.Min.X + (bounds.Max.X-bounds.Min.X)/2 - w/2
-					default: // left
-					}
-					t := bounds.Min.Y
-					switch valign {
-					case "bottom":
-						t = bounds.Max.Y - h
-					case "middle":
-						t = bounds.Min.Y + (bounds.Max.Y-bounds.Min.Y)/2 - h/2
-					default: // top
-					}
-					buttonDimensions := image.Rect(l, t, l+w, t+h)
-
-					// Is this interaction within this buttonDimensions?
-					if interactPoint.In(buttonDimensions) {
-						if err := dynamic.Call(child.Attributes["onclick"], data); err != nil {
-							panic(fmt.Sprintf("dynamic call: %v", err))
-						}
-						// FIXME: somehow escape this recursion, signalling that
-						// the click has been consumed.
-					}
-
-					bounds.Min.Y += h
-
-				case ImageElement:
-					if !child.Attributes.Intangible() {
-						_, h, err := child.DimensionsWith(data, maxWidth)
-						if err != nil {
-							return bounds, fmt.Errorf("DimensionsWith: %v", err)
-						}
-						// NB this is descaled. why is this descaled?
-						bounds.Min.Y += h //int(float64(h) / scale)
-					}
-
-				case IfElement:
-					expr := child.Attributes["expr"]
-					if EvaluateIfExpression(expr, data) {
-						_, h, err := child.DimensionsWith(data, maxWidth)
-						if err != nil {
-							return bounds, fmt.Errorf("DimensionsWith: %v", err)
-						}
-						bounds.Min.Y += h
+					if widestChild < bounds.Dx() {
+						widestChild = bounds.Dx()
 					}
 				}
+
 			}
-			return bounds, nil
+
 		}
-
-		bounds := image.Rect(0, 0, int(float64(uis.screenW)/uiScale), int(float64(uis.screenH)/uiScale))
-
-		f(uic.Doc.Children, uic.Data, bounds, uic.Doc.Attributes.Align(), uic.Doc.Attributes.Valign())
 	}
+	bounds.Max.X = bounds.Min.X + widestChild
+	return bounds, nil
+}
+
+func (sys *UISystem) Update() error {
+	uiScale := 2.0 // FIXME!
+	screen := image.Rect(0, 0, int(float64(sys.screenW)/uiScale), int(float64(sys.screenH)/uiScale))
+	for _, e := range sys.mgr.Get([]string{"UI"}) {
+		uic := sys.mgr.Component(e, "UI").(*UI)
+
+		uic.interactives = uic.interactives[:0]
+		uic.renderinstructions = uic.renderinstructions[:0]
+
+		_, err := sys.calculateChildren(uic, uic.Doc.Children, uic.Data, screen, uic.Doc.Attributes.Align(), uic.Doc.Attributes.Valign())
+		if err != nil {
+			return err
+		}
+	}
+	return nil
 }
 
 // heightOfText calculates how many pixels high a given text should be.

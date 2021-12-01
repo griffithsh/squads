@@ -1,0 +1,108 @@
+<UI>
+  <Padding all="4">
+    <Panel outline="false" width="624">
+      <Column twelfths="1">
+        <Panel outline="false" width="52">
+          <Image texture="{{ .Background }}" width="52" height="52" x="{{ .BackgroundX }}" y="{{ .BackgroundY }}" intangible="true"/>
+          <Image texture="{{ .Portrait }}" width="52" height="52" x="{{ .PortraitX }}" y="{{ .PortraitY }}" intangible="true"/>
+          <Image texture="{{ .OverlayFrame }}" width="52" height="52" x="{{ .OverlayFrameX }}" y="{{ .OverlayFrameY }}" />
+          <Text value="{{ .Name }}" />
+          <Padding>
+            <Column twelfths="3">
+              <Text value="HP:" size="small"/>
+              <Text value="EN:" size="small"/>
+              <Text value="AP:" size="small"/>
+              <Text value="PR:" size="small"/>
+            </Column>
+            <Column twelfths="9">
+              <Text value="{{ .Health }}/{{ .HealthMax }}" size="small" layout="right"/>
+              <Text value="{{ .Energy }}/{{ .EnergyMax }}" size="small" layout="right"/>
+              <Text value="{{ .Action }}/{{ .ActionMax }}" size="small" layout="right"/>
+              <Text value="{{ .Prep }}/{{ .PrepMax }}" size="small" layout="right"/>
+            </Column>
+          </Padding>
+          <Padding top="2">
+            <Column twelfths="6">
+              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
+            </Column>
+            <Column twelfths="6">
+              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
+            </Column>
+          </Padding>
+          <Padding top="2">
+            <Column twelfths="6">
+              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
+            </Column>
+            <Column twelfths="6">
+              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
+            </Column>
+          </Padding>
+          <Padding top="2">
+            <Column twelfths="6">
+              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
+            </Column>
+            <Column twelfths="6">
+              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
+            </Column>
+          </Padding>
+          <Padding top="2">
+            <Column twelfths="6">
+              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
+            </Column>
+            <Column twelfths="6">
+              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
+            </Column>
+          </Padding>
+          <Padding top="2">
+            <Column twelfths="6">
+              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
+            </Column>
+            <Column twelfths="6">
+              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
+            </Column>
+          </Padding>
+          <Padding top="2">
+            <Column twelfths="6">
+              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
+            </Column>
+            <Column twelfths="6">
+              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
+            </Column>
+          </Padding>
+          <Padding top="2">
+            <Column twelfths="6">
+              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
+            </Column>
+            <Column twelfths="6">
+              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
+            </Column>
+          </Padding>
+        </Panel>
+      </Column>
+      <Column twelfths="11">
+        <Padding left="4">
+          <Panel width="360" outline="false">
+            <Range over="TurnQueue">
+              <Column twelfths="1">
+                <If expr=".">
+                  <Image texture="{{ .Background }}" width="26" height="26" x="{{ .BackgroundX }}" y="{{ .BackgroundY }}" intangible="true"/>
+                  <Image texture="{{ .Portrait }}" width="26" height="26" x="{{ .PortraitX }}" y="{{ .PortraitY }}" intangible="true"/>
+                  <Image texture="{{ .OverlayFrame }}" width="26" height="26" x="{{ .OverlayFrameX }}" y="{{ .OverlayFrameY }}" />
+
+                  <Image texture="hud.png" width="26" height="6" x="0" y="24" intangible="true"/>
+                  <Image texture="hud.png" width="{{ .PrepPercent }}" height="6" x="0" y="30" />
+
+                  <Padding right="4">
+                    <Text value="{{ .Prep }}/" size="small" />
+                    <Text value="{{ .PrepMax }}" size="small" layout="right"/>
+                  </Padding>
+                </If>
+              </Column>
+            </Range>
+          </Panel>
+        </Padding>
+      </Column>
+      <!-- TODO: Implement fixed length for loops: <For index="i" length="12"> -->
+    </Panel>
+  </Padding>
+</UI>

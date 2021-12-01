@@ -20,3 +20,26 @@ func Call(method string, on interface{}) error {
 	}
 	return nil
 }
+
+// Ranger extracts a slice by its field name from an interface.
+func Ranger(slice string, on interface{}) ([]interface{}, error) {
+	v := reflect.ValueOf(on)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
+
+	s := v.FieldByName(slice)
+	if !s.IsValid() {
+		return nil, fmt.Errorf("does not exist")
+	}
+	switch s.Kind() {
+	case reflect.Slice:
+		result := make([]interface{}, 0, s.Len())
+		for i := 0; i < s.Len(); i++ {
+			result = append(result, s.Index(i))
+		}
+		return result, nil
+	default:
+		return nil, fmt.Errorf("wrong kind: %v", s.Kind())
+	}
+}

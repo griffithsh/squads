@@ -1,10 +1,8 @@
 package output
 
 import (
-	"bytes"
 	"fmt"
 	"image"
-	"text/template"
 
 	"github.com/griffithsh/squads/ui"
 	"github.com/hajimehoshi/ebiten/v2"
@@ -22,210 +20,41 @@ func newUIVisualizer(picForTexture func(filename string) (*ebiten.Image, error))
 }
 
 func (uv *uiVisualizer) Render(screen *ebiten.Image, uic *ui.UI) error {
-	_, err := uv.drawChildren(screen, uic.Doc.Children, uic.Data, screen.Bounds(), uic.Doc.Attributes.Align(), uic.Doc.Attributes.Valign())
-
-	return err
-}
-
-// drawChildren returns the remainder of the bounds, unused by the drawn children.
-func (uv *uiVisualizer) drawChildren(screen *ebiten.Image, children []*ui.Element, data interface{}, bounds image.Rectangle, align, valign string) (image.Rectangle, error) {
-	maxColHeight := 0
-	maxWidth := bounds.Dx()
-	widestChild := 0
-	for _, child := range children {
-		switch child.Type {
-		case ui.PanelElement:
-			w, h, err := child.DimensionsWith(data, maxWidth)
+	for _, instruction := range uic.RenderInstructions() {
+		switch t := instruction.(type) {
+		case ui.ImageRenderInstruction:
+			img, err := uv.picForTexture(t.Texture)
 			if err != nil {
-				return bounds, err
+				return fmt.Errorf("picForTexture: %v", err)
 			}
-			x, y := ui.AlignedXY(w, h, bounds, align, valign)
-
-			panelBounds := image.Rect(x, y, x+w, y+h)
-			if invis := child.Attributes["outline"]; invis != "false" {
-				if err = uv.drawPanel(screen, panelBounds); err != nil {
-					return bounds, err
-				}
-			}
-
-			if bounds, err = uv.drawChildren(screen, child.Children, data, panelBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
-				return bounds, err
-			}
-			if widestChild < bounds.Dx() {
-				widestChild = bounds.Dx()
-			}
-
-		case ui.PaddingElement:
-			paddedBounds := bounds
-			paddedBounds.Min.X += child.Attributes.LeftPadding()
-			paddedBounds.Min.Y += child.Attributes.TopPadding()
-			paddedBounds.Max.X -= child.Attributes.RightPadding()
-			paddedBounds.Max.Y -= child.Attributes.BottomPadding()
-
-			w, h, err := child.DimensionsWith(data, paddedBounds.Dx())
-			if err != nil {
-				return bounds, err
-			}
-			x, y := ui.AlignedXY(w, h, paddedBounds, align, valign)
-
-			childrenBounds := image.Rect(x, y, x+w, y+h)
-			if bounds, err = uv.drawChildren(screen, child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
-				return bounds, err
-			}
-			if widestChild < bounds.Dx() {
-				widestChild = bounds.Dx()
-			}
-
-		case ui.ColumnElement:
-			// I think we need to know about siblings to do this correctly?
-			// I don't think we can stomp bounds here?  Only the last Column of
-			// adjacent siblings is block level.
-			colBounds := bounds
-			colBounds.Min.X += bounds.Dx() * child.Attributes.TwelfthsOffset() / 12
-			w := bounds.Dx() * child.Attributes.Twelfths() / 12
-			colBounds.Max.X = colBounds.Min.X + w
-			takenBounds, err := uv.drawChildren(screen, child.Children, data, colBounds, child.Attributes.Align(), child.Attributes.Valign())
-			if err != nil {
-				return bounds, err
-			}
-			colHeight := takenBounds.Min.Y - bounds.Min.Y
-			if colHeight > maxColHeight {
-				maxColHeight = colHeight
-			}
-
-			// If the twelfths and the twelfths-offset total the full width of a
-			// set of columns, then we know that this is the final column of a
-			// group.
-			if child.Attributes.Twelfths()+child.Attributes.TwelfthsOffset() == 12 {
-				bounds.Min.Y += maxColHeight
-				maxColHeight = 0
-				widestChild = bounds.Dx()
-			}
-
-		case ui.TextElement:
-			label := child.Attributes["value"]
-			sz := child.Attributes.FontSize()
-			layout := child.Attributes.FontLayout()
-			buf := bytes.NewBuffer([]byte{})
-			if err := template.Must(template.New("text").Parse(label)).Execute(buf, data); err != nil {
-				return bounds, fmt.Errorf("execute: %v, template: %q", err, label)
-			}
-
-			txtBounds := bounds
-			if child.Attributes["width"] != "" {
-				w, _, err := child.DimensionsWith(data, maxWidth)
-				if err != nil {
-					return bounds, err
-				}
-				txtBounds.Max.X = txtBounds.Min.X + w
-			}
-			h, err := uv.drawText(screen, buf.String(), sz, txtBounds, layout)
-			if err != nil {
-				return bounds, err
-			}
-			bounds.Min.Y += h
-			if widestChild < txtBounds.Dx() {
-				widestChild = txtBounds.Dx()
-			}
-
-		case ui.ButtonElement:
-			label, err := ui.Resolve(child.Attributes["label"], data)
-			if err != nil {
-				return bounds, fmt.Errorf("resolve button label: %v", err)
-			}
-			w, h, err := child.DimensionsWith(data, maxWidth)
-			if err != nil {
-				return bounds, err
-			}
-			// Does the parent align left, right, or centre? Are we valigning
-			// it? Calculate buttonDimensions from that.
-			l := bounds.Min.X
-			switch align {
-			case "right":
-				l = bounds.Max.X - w
-			case "center":
-				l = bounds.Min.X + (bounds.Max.X-bounds.Min.X)/2 - w/2
-			default: // left
-			}
-			t := bounds.Min.Y
-			switch valign {
-			case "bottom":
-				t = bounds.Max.Y - h
-			case "middle":
-				t = bounds.Min.Y + (bounds.Max.Y-bounds.Min.Y)/2 - h/2
-			default: // top
-			}
-			buttonDimensions := image.Rect(l, t, l+w, t+h)
-			if err = uv.drawButton(screen, false, buttonDimensions); err != nil {
-				return bounds, err
-			}
-
-			// Push the text down a bit so it's vertically centered. 2 seems good?
-			buttonDimensions.Min.Y += 2
-
-			uv.drawText(screen, label, ui.TextSizeNormal, buttonDimensions, ui.TextLayoutCenter)
-			bounds.Min.Y += h
-			if widestChild < buttonDimensions.Dx() {
-				widestChild = buttonDimensions.Dx()
-			}
-
-		case ui.ImageElement:
-			texture, err := ui.Resolve(child.Attributes["texture"], data)
-			if err != nil {
-				return bounds, fmt.Errorf("resolve texture: %v", err)
-			}
-			img, err := uv.picForTexture(texture)
-			if err != nil {
-				return bounds, fmt.Errorf("picForTexture: %v", err)
-			}
-			width, err := ui.ResolveInt(child.Attributes["width"], data)
-			if err != nil {
-				return bounds, fmt.Errorf("resolve width: %v", err)
-			}
-			height, err := ui.ResolveInt(child.Attributes["height"], data)
-			if err != nil {
-				return bounds, fmt.Errorf("resolve height: %v", err)
-			}
-			x, err := ui.ResolveInt(child.Attributes["x"], data)
-			if err != nil {
-				return bounds, fmt.Errorf("resolve x: %v", err)
-			}
-			y, err := ui.ResolveInt(child.Attributes["y"], data)
-			if err != nil {
-				return bounds, fmt.Errorf("resolve y: %v", err)
-			}
-			img = img.SubImage(image.Rect(x, y, x+width, y+height)).(*ebiten.Image)
+			img = img.SubImage(t.From).(*ebiten.Image)
 			op := ebiten.DrawImageOptions{}
-			op.GeoM.Translate(float64(bounds.Min.X), float64(bounds.Min.Y))
+			op.GeoM.Translate(t.AtX, t.AtY)
 			screen.DrawImage(img, &op)
 
-			if !child.Attributes.Intangible() {
-				bounds.Min.Y += height
-				if widestChild < width {
-					widestChild = width
-				}
+		case ui.PanelRenderInstruction:
+			if err := uv.drawPanel(screen, t.Bounds); err != nil {
+				return err
 			}
-		case ui.IfElement:
-			expr := child.Attributes["expr"]
-			if ui.EvaluateIfExpression(expr, data) {
-				w, h, err := child.DimensionsWith(data, maxWidth)
-				if err != nil {
-					return bounds, err
-				}
-				x, y := ui.AlignedXY(w, h, bounds, align, valign)
 
-				childrenBounds := image.Rect(x, y, x+w, y+h)
-				if bounds, err = uv.drawChildren(screen, child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
-					return bounds, err
-				}
-				if widestChild < bounds.Dx() {
-					widestChild = bounds.Dx()
-				}
+		case ui.ButtonRenderInstruction:
+			if err := uv.drawButton(screen, false, t.Bounds); err != nil {
+				return err
+			}
+			txtBounds := t.Bounds
+			txtBounds.Min.Y += 2
+			if _, err := uv.drawText(screen, t.Label, ui.TextSizeNormal, txtBounds, ui.TextLayoutCenter); err != nil {
+				return err
+			}
+
+		case ui.TextRenderInstruction:
+			if _, err := uv.drawText(screen, t.Text, t.Size, t.Bounds, t.Layout); err != nil {
+				return err
 			}
 		}
 	}
-	bounds.Max.X = bounds.Min.X + widestChild
-	return bounds, nil
+
+	return nil
 }
 
 // drawPanel renders a nine-slice "panel" that covers the provided Rectangle,

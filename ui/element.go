@@ -8,6 +8,8 @@ import (
 	"strconv"
 	"strings"
 	"text/template"
+
+	"github.com/griffithsh/squads/ui/dynamic"
 )
 
 //go:generate stringer -type=ElementType
@@ -22,6 +24,8 @@ const (
 	ButtonElement
 	ImageElement
 	IfElement
+	ForElement
+	RangeElement
 )
 
 func EvaluateIfExpression(expr string, data interface{}) bool {
@@ -182,20 +186,6 @@ func (m AttributeMap) Twelfths() int {
 		return 0
 	}
 	return twelfths
-}
-
-func (m AttributeMap) TwelfthsOffset() int {
-	str, ok := m["twelfths-offset"]
-	if !ok {
-		return 0
-	}
-
-	off, err := strconv.Atoi(str)
-	if err != nil {
-		// invalid value?
-		return 0
-	}
-	return off
 }
 
 func (m AttributeMap) Align() string {
@@ -428,6 +418,49 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err
 			}
 		}
 		return width, height, nil
+
+	case ForElement:
+		// TODO:
+
+	case RangeElement:
+		field := el.Attributes["over"]
+		childDatas, err := dynamic.Ranger(field, data)
+		switch {
+		case err != nil:
+			return 0, 0, err
+		case len(el.Children) == 0:
+			return 0, 0, nil
+
+		case el.Children[0].Type == ColumnElement:
+			maxHeight := 0
+			for i, column := range el.Children {
+				maxWidth := mult(maxWidth, 1.0/12) * column.Attributes.Twelfths()
+				_, h, err := column.DimensionsWith(childDatas[i], maxWidth)
+				if err != nil {
+					return 0, 0, err
+				}
+				if h > maxHeight {
+					maxHeight = h
+				}
+			}
+			return maxWidth, h, nil
+
+		default:
+			width, height := 0, 0
+			for _, child := range el.Children {
+				w, h, err := child.DimensionsWith(data, maxWidth)
+				if err != nil {
+					return 0, 0, err
+				}
+				if w > width {
+					width = w
+				}
+				if h > height {
+					height = h
+				}
+			}
+			return width, height, nil
+		}
 	}
 	panic(fmt.Sprintf("unhandled element type: %q", el.Type))
 }
@@ -478,67 +511,7 @@ func parse(r io.Reader) (*Element, error) {
 		}
 	}
 
-	// Normalise Column twelfths and inject twelfth-offsets ...
-	var recurse func([]*Element)
-	recurse = func(elements []*Element) {
-		collected := []*Element{}
-
-		for _, el := range elements {
-			if el.Type == ColumnElement {
-				collected = append(collected, el)
-			} else if len(collected) > 0 {
-				normaliseTwelfths(collected)
-				collected = collected[:0]
-			}
-			recurse(el.Children)
-		}
-		if len(collected) > 0 {
-			normaliseTwelfths(collected)
-		}
-	}
-	recurse(e.Children)
-
 	return &e, nil
-}
-
-func normaliseTwelfths(cols []*Element) {
-	// first figure out the exact twelfth values for each element
-	unspecified := []*Element{}
-	unclaimed := 12
-	for _, el := range cols {
-		twelfths := el.Attributes.Twelfths()
-		if twelfths == 0 {
-			unspecified = append(unspecified, el)
-		}
-		unclaimed -= twelfths
-	}
-
-	origUnclaimed := unclaimed
-	for i, el := range unspecified {
-		twelfths := 0
-		if i == 0 {
-			// Add modulo to the first column - it's as good as anywhere.
-			twelfths += origUnclaimed % len(unspecified)
-		}
-
-		// now assign an equal division of the remainder
-		twelfths += origUnclaimed / len(unspecified)
-
-		unclaimed -= twelfths
-		el.Attributes["twelfths"] = strconv.Itoa(twelfths)
-	}
-
-	if unclaimed != 0 {
-		// panic!
-		panic(fmt.Sprintf("unclaimed nonzero: %d", unclaimed))
-	}
-
-	// then figure out the start-offsets
-	for _, el := range cols {
-		twelfth := el.Attributes.Twelfths()
-		el.Attributes["twelfths-offset"] = strconv.Itoa(unclaimed)
-		unclaimed += twelfth
-	}
 }
 
 func getType(start xml.StartElement) ElementType {
@@ -559,6 +532,10 @@ func getType(start xml.StartElement) ElementType {
 		return ImageElement
 	case "If":
 		return IfElement
+	case "For":
+		return ForElement
+	case "Range":
+		return RangeElement
 	default:
 		panic(fmt.Sprintf("unknown element %v", start.Name))
 	}
@@ -589,6 +566,8 @@ var permittedAttributes = map[ElementType][]string{
 	ButtonElement:  {"onclick", "label", "width"},
 	ImageElement:   {"texture", "width", "height", "x", "y", "intangible"},
 	IfElement:      {"expr"},
+	ForElement:     {"index", "length"},
+	RangeElement:   {"over"},
 }
 
 func validateAttributesForType(t ElementType, attrs map[string]string) error {
