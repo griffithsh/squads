@@ -2,9 +2,12 @@ package main
 
 import (
 	"errors"
+	"flag"
 	"fmt"
+	"log"
 	"math/rand"
 	"os"
+	"runtime/pprof"
 	"time"
 
 	"github.com/griffithsh/squads/data"
@@ -53,6 +56,19 @@ func (p *prevUI) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHei
 }
 
 func main() {
+	cpuProfile := flag.String("cpuprofile", "", "write cpu profile to file")
+	flag.Parse()
+	if *cpuProfile != "" {
+		f, err := os.Create(*cpuProfile)
+		if err != nil {
+			log.Fatal("could not create CPU profile: ", err)
+		}
+		if err := pprof.StartCPUProfile(f); err != nil {
+			log.Fatal("could not start CPU profile: ", err)
+		}
+		defer pprof.StopCPUProfile()
+	}
+
 	// Seed the PRNG
 	rand.Seed(time.Now().UnixNano())
 
@@ -84,8 +100,8 @@ func main() {
 	}
 
 	// Set up test data
-	// setupCombatUI(mgr, archive)
-	setupEmbarkFocusCharacter(mgr, archive)
+	setupCombatUI(mgr, archive)
+	// setupEmbarkFocusCharacter(mgr, archive)
 
 	// Start ebiten looping
 	ebiten.SetWindowSize(screenWidth, screenHeight)
