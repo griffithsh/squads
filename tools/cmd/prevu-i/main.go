@@ -14,6 +14,7 @@ import (
 	"github.com/griffithsh/squads/output"
 	"github.com/griffithsh/squads/ui"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 var errExitGame = errors.New("game has completed")
@@ -23,6 +24,7 @@ const screenWidth, screenHeight = 1024, 768
 // prevUI is a thing to preview UIs
 type prevUI struct {
 	mgr *ecs.World
+	bus *event.Bus
 	vis *output.Visualizer
 	ui  *ui.UISystem
 }
@@ -30,6 +32,13 @@ type prevUI struct {
 func (p *prevUI) Update() error {
 	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
 		return errExitGame
+	}
+	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
+		x, y := ebiten.CursorPosition()
+		p.bus.Publish(&ui.Interact{
+			AbsoluteX: float64(x),
+			AbsoluteY: float64(y),
+		})
 	}
 	p.ui.Update()
 	return nil
@@ -69,6 +78,7 @@ func main() {
 	bus := &event.Bus{}
 	p := &prevUI{
 		mgr: mgr,
+		bus: bus,
 		vis: output.NewVisualizer(archive),
 		ui:  ui.NewUISystem(mgr, bus),
 	}

@@ -39,6 +39,22 @@ func TestCall(t *testing.T) {
 			t.Error("original was not changed")
 		}
 	})
+	t.Run("WithPtr", func(t *testing.T) {
+		x := "original"
+		type foo struct {
+			Handler func()
+		}
+		f := foo{
+			Handler: func() {
+				x = "modified"
+			},
+		}
+		Call("Handler", &f)
+
+		if x == "original" {
+			t.Error("original was not changed")
+		}
+	})
 	// should it be possible to call unexported funcs?
 	t.Run("WithStructUnexported", func(t *testing.T) {
 		return

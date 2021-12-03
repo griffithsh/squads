@@ -8,6 +8,9 @@ import (
 // Call the field with the name "method" on the struct or map "on".
 func Call(method string, on interface{}) error {
 	v := reflect.ValueOf(on)
+	if v.Kind() == reflect.Ptr {
+		v = v.Elem()
+	}
 	switch v.Kind() {
 	case reflect.Struct:
 		f := v.FieldByName(method)
