@@ -2,6 +2,7 @@ package ui
 
 import (
 	"bytes"
+	"encoding/json"
 	"fmt"
 	"image"
 	"io"
@@ -111,6 +112,7 @@ func NewUISystem(mgr *ecs.World, bus *event.Bus) *UISystem {
 
 func (uis *UISystem) Handle(ev *Interact) {
 	uiScale := 2.0 // FIXME this needs to come from somewhere ...
+
 	interactPoint := image.Point{int(ev.AbsoluteX / uiScale), int(ev.AbsoluteY / uiScale)}
 	for _, e := range uis.mgr.Get([]string{"UI"}) {
 		uic := uis.mgr.Component(e, "UI").(*UI)
@@ -128,7 +130,6 @@ func (uis *UISystem) Handle(ev *Interact) {
 // calculateNonColumnChildren depending on if the first child is a ColumnElement
 // or not.
 func (sys *UISystem) calculateChildren(root *UI, children []*Element, data interface{}, bounds image.Rectangle, align, valign string) (image.Rectangle, error) {
-
 	// If the first child is a column, make the big assumption that all children are columns.
 	if len(children) > 0 && children[0].Type == ColumnElement {
 		// Make a copy of data for every child.
@@ -144,7 +145,7 @@ func (sys *UISystem) calculateChildren(root *UI, children []*Element, data inter
 
 func (sys *UISystem) calculateColumnChildren(root *UI, columns []*Element, datas []interface{}, bounds image.Rectangle) (image.Rectangle, error) {
 	if len(columns) != len(datas) {
-		return bounds, fmt.Errorf("mismatch between columns(%d) and datas(%d)\n", len(columns), len(datas))
+		return bounds, fmt.Errorf("mismatch between columns(%d) and datas(%d)", len(columns), len(datas))
 	}
 	maxColHeight := 0
 	twelfthOffset := 0
@@ -331,6 +332,7 @@ func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, d
 					widestChild = width
 				}
 			}
+
 		case IfElement:
 			expr := child.Attributes["expr"]
 			if EvaluateIfExpression(expr, data) {
@@ -353,7 +355,8 @@ func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, d
 			field := child.Attributes["over"]
 			childDatas, err := dynamic.Ranger(field, data)
 			if err != nil {
-				return bounds, err
+				str, _ := json.Marshal(data)
+				return bounds, fmt.Errorf("range over %q in %v: %v", field, string(str), err)
 			}
 			switch {
 			case len(child.Children) == 0:

@@ -93,6 +93,7 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err
 		if err != nil {
 			// Since there's no configured width, use the width of the widest child.
 			width = maxWidth
+
 			maxChild, err := el.widestChild(data, maxWidth)
 			if err != nil {
 				return 0, 0, fmt.Errorf("widestChild of %s: %v", el.Type, err)
@@ -198,11 +199,15 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err
 		childDatas, err := dynamic.Ranger(field, data)
 		switch {
 		case err != nil:
+			// It is not possible to range over this field.
 			return 0, 0, err
+
 		case len(el.Children) == 0:
+			// There are no children, so the range takes no space.
 			return 0, 0, nil
 
 		case el.Children[0].Type == ColumnElement:
+			// The children of the Range are Columns.
 			maxHeight := 0
 			for i, column := range el.Children {
 				maxWidth := mult(maxWidth, 1.0/12) * column.Attributes.Twelfths()

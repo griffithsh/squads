@@ -221,7 +221,6 @@ func (m AttributeMap) Intangible() bool {
 	return str == "true"
 }
 
-
 // permittedAttributes defines which attributes are allowed on a given element
 // type. What's an XML schema anyway?
 // First Element must be a "UI" element.
