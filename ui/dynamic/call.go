@@ -36,13 +36,15 @@ func Ranger(slice string, on interface{}) ([]interface{}, error) {
 		return nil, fmt.Errorf("does not exist")
 	}
 	switch s.Kind() {
+	case reflect.Array:
+		fallthrough
 	case reflect.Slice:
 		result := make([]interface{}, 0, s.Len())
 		for i := 0; i < s.Len(); i++ {
-			result = append(result, s.Index(i))
+			result = append(result, s.Index(i).Interface())
 		}
 		return result, nil
 	default:
-		return nil, fmt.Errorf("wrong kind: %v", s.Kind())
+		return nil, fmt.Errorf("kind not iterable: %v", s.Kind())
 	}
 }
