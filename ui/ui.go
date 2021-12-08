@@ -214,12 +214,13 @@ func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, d
 			x, y := AlignedXY(w, h, paddedBounds, align, valign)
 
 			childrenBounds := image.Rect(x, y, x+w, y+h)
-			if bounds, err = sys.calculateChildren(root, child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
+			if _, err = sys.calculateChildren(root, child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
 				return bounds, err
 			}
 			if widestChild < bounds.Dx() {
 				widestChild = bounds.Dx()
 			}
+			bounds.Min.Y += h
 
 		case TextElement:
 			label := child.Attributes["value"]
