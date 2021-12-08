@@ -5,7 +5,6 @@ import (
 	"fmt"
 	"image"
 	"io"
-	"strconv"
 	"text/template"
 
 	"github.com/griffithsh/squads/ecs"
@@ -349,18 +348,7 @@ func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, d
 					widestChild = bounds.Dx()
 				}
 			}
-		case ForElement:
-			// TODO
-			indexName := child.Attributes["index"]
-			strLength := child.Attributes["length"]
-			length, _ := strconv.Atoi(strLength)
 
-			for i := 0; i < length; i++ {
-				// {{ with $i := 0 }}
-				fmt.Sprintf("{{ with $%s := %d }}", indexName, i)
-
-				// ! Need to stack these so that all children can use the values when detemplating ...
-			}
 		case RangeElement:
 			field := child.Attributes["over"]
 			childDatas, err := dynamic.Ranger(field, data)

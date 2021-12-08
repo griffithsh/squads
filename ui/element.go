@@ -23,7 +23,6 @@ const (
 	ButtonElement
 	ImageElement
 	IfElement
-	ForElement
 	RangeElement
 )
 
@@ -194,9 +193,6 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err
 		}
 		return width, height, nil
 
-	case ForElement:
-		// TODO:
-
 	case RangeElement:
 		field := el.Attributes["over"]
 		childDatas, err := dynamic.Ranger(field, data)
@@ -307,8 +303,6 @@ func getType(start xml.StartElement) ElementType {
 		return ImageElement
 	case "If":
 		return IfElement
-	case "For":
-		return ForElement
 	case "Range":
 		return RangeElement
 	default:

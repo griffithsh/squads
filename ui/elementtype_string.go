@@ -16,13 +16,12 @@ func _() {
 	_ = x[ButtonElement-5]
 	_ = x[ImageElement-6]
 	_ = x[IfElement-7]
-	_ = x[ForElement-8]
-	_ = x[RangeElement-9]
+	_ = x[RangeElement-8]
 }
 
-const _ElementType_name = "UIElementPanelElementPaddingElementColumnElementTextElementButtonElementImageElementIfElementForElementRangeElement"
+const _ElementType_name = "UIElementPanelElementPaddingElementColumnElementTextElementButtonElementImageElementIfElementRangeElement"
 
-var _ElementType_index = [...]uint8{0, 9, 21, 35, 48, 59, 72, 84, 93, 103, 115}
+var _ElementType_index = [...]uint8{0, 9, 21, 35, 48, 59, 72, 84, 93, 105}
 
 func (i ElementType) String() string {
 	if i < 0 || i >= ElementType(len(_ElementType_index)-1) {
