@@ -24,18 +24,29 @@ var errExitGame = errors.New("game has completed")
 
 const screenWidth, screenHeight = 1024, 768
 
+var e ecs.Entity
+var uis []func(*ecs.World, *data.Archive) = []func(*ecs.World, *data.Archive){
+	setupCombatUI,
+	setupEmbarkFocusCharacter,
+}
+
 // prevUI is a thing to preview UIs
 type prevUI struct {
-	mgr *ecs.World
-	bus *event.Bus
-	vis *output.Visualizer
-	ui  *ui.UISystem
+	mgr     *ecs.World
+	bus     *event.Bus
+	archive *data.Archive
+	vis     *output.Visualizer
+	ui      *ui.UISystem
 }
 
 func (p *prevUI) Update() error {
 	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
 		return errExitGame
 	}
+	if inpututil.IsKeyJustPressed(ebiten.KeySpace) {
+		p.nextUI()
+	}
+
 	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
 		x, y := ebiten.CursorPosition()
 		p.bus.Publish(&ui.Interact{
@@ -43,8 +54,7 @@ func (p *prevUI) Update() error {
 			AbsoluteY: float64(y),
 		})
 	}
-	p.ui.Update()
-	return nil
+	return p.ui.Update()
 }
 
 func (p *prevUI) Draw(screen *ebiten.Image) {
@@ -53,6 +63,14 @@ func (p *prevUI) Draw(screen *ebiten.Image) {
 
 func (p *prevUI) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
 	return outsideWidth, outsideHeight
+}
+
+func (p *prevUI) nextUI() {
+	p.mgr.DestroyEntity(e)
+	uis[0](p.mgr, p.archive)
+	first := uis[0]
+
+	uis = append(uis[1:], first)
 }
 
 func main() {
@@ -93,15 +111,15 @@ func main() {
 	mgr := ecs.NewWorld()
 	bus := &event.Bus{}
 	p := &prevUI{
-		mgr: mgr,
-		bus: bus,
-		vis: output.NewVisualizer(archive),
-		ui:  ui.NewUISystem(mgr, bus),
+		mgr:     mgr,
+		bus:     bus,
+		archive: archive,
+		vis:     output.NewVisualizer(archive),
+		ui:      ui.NewUISystem(mgr, bus),
 	}
 
 	// Set up test data
-	setupCombatUI(mgr, archive)
-	// setupEmbarkFocusCharacter(mgr, archive)
+	setupEmbarkFocusCharacter(mgr, archive)
 
 	// Start ebiten looping
 	ebiten.SetWindowSize(screenWidth, screenHeight)

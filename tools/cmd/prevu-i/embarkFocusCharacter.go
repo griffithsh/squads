@@ -17,7 +17,7 @@ func setupEmbarkFocusCharacter(mgr *ecs.World, archive *data.Archive) {
 	if err != nil {
 		panic(fmt.Sprintf("%v", err))
 	}
-	e := mgr.NewEntity()
+	e = mgr.NewEntity()
 	nui := ui.NewUI(f)
 	data := randomCharData(archive)
 	nui.Data = &data

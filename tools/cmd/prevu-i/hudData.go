@@ -18,7 +18,7 @@ func setupCombatUI(mgr *ecs.World, archive *data.Archive) {
 	if err != nil {
 		panic(fmt.Sprintf("%v", err))
 	}
-	e := mgr.NewEntity()
+	e = mgr.NewEntity()
 	nui := ui.NewUI(f)
 	data := randHUDData(archive)
 	nui.Data = &data
