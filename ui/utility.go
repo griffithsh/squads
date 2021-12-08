@@ -60,3 +60,11 @@ func AlignedXY(w, h int, parent image.Rectangle, align, valign string) (x, y int
 
 	return x, y
 }
+
+func EvaluateIfExpression(expr string, data interface{}) bool {
+	buf := bytes.NewBuffer([]byte{})
+	if err := template.Must(template.New("text").Parse(fmt.Sprintf("{{ if %s }}true{{ end}}", expr))).Execute(buf, data); err != nil {
+		panic(fmt.Errorf("execute: %v", err))
+	}
+	return buf.String() == "true"
+}
