@@ -129,7 +129,7 @@ func (uis *UISystem) Handle(ev *Interact) {
 // calculateChildren dispatches to either calculateColumnChildren or
 // calculateNonColumnChildren depending on if the first child is a ColumnElement
 // or not.
-func (sys *UISystem) calculateChildren(root *UI, children []*Element, data interface{}, bounds image.Rectangle, align, valign string) (image.Rectangle, error) {
+func (sys *UISystem) calculateChildren(root *UI, children []*Element, data interface{}, bounds image.Rectangle, align, valign string, depth int) (image.Rectangle, error) {
 	// If the first child is a column, make the big assumption that all children are columns.
 	if len(children) > 0 && children[0].Type == ColumnElement {
 		// Make a copy of data for every child.
@@ -138,12 +138,12 @@ func (sys *UISystem) calculateChildren(root *UI, children []*Element, data inter
 			datas[i] = data
 		}
 
-		return sys.calculateColumnChildren(root, children, datas, bounds)
+		return sys.calculateColumnChildren(root, children, datas, bounds, depth+1)
 	}
-	return sys.calculateNonColumnChildren(root, children, data, bounds, align, valign)
+	return sys.calculateNonColumnChildren(root, children, data, bounds, align, valign, depth+1)
 }
 
-func (sys *UISystem) calculateColumnChildren(root *UI, columns []*Element, datas []interface{}, bounds image.Rectangle) (image.Rectangle, error) {
+func (sys *UISystem) calculateColumnChildren(root *UI, columns []*Element, datas []interface{}, bounds image.Rectangle, depth int) (image.Rectangle, error) {
 	if len(columns) != len(datas) {
 		return bounds, fmt.Errorf("mismatch between columns(%d) and datas(%d)", len(columns), len(datas))
 	}
@@ -157,7 +157,7 @@ func (sys *UISystem) calculateColumnChildren(root *UI, columns []*Element, datas
 		colBounds.Min.X += bounds.Dx() * twelfthOffset / 12
 		w := bounds.Dx() * column.Attributes.Twelfths() / 12
 		colBounds.Max.X = colBounds.Min.X + w
-		takenBounds, err := sys.calculateChildren(root, column.Children, datas[i], colBounds, column.Attributes.Align(), column.Attributes.Valign())
+		takenBounds, err := sys.calculateChildren(root, column.Children, datas[i], colBounds, column.Attributes.Align(), column.Attributes.Valign(), depth)
 		if err != nil {
 			return bounds, err
 		}
@@ -173,7 +173,7 @@ func (sys *UISystem) calculateColumnChildren(root *UI, columns []*Element, datas
 	return bounds, nil
 }
 
-func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, data interface{}, bounds image.Rectangle, align, valign string) (image.Rectangle, error) {
+func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, data interface{}, bounds image.Rectangle, align, valign string, depth int) (image.Rectangle, error) {
 	maxWidth := bounds.Dx()
 	widestChild := 0
 
@@ -193,7 +193,7 @@ func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, d
 				})
 			}
 
-			if bounds, err = sys.calculateChildren(root, child.Children, data, panelBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
+			if bounds, err = sys.calculateChildren(root, child.Children, data, panelBounds, child.Attributes.Align(), child.Attributes.Valign(), depth); err != nil {
 				return bounds, err
 			}
 			if widestChild < bounds.Dx() {
@@ -214,7 +214,7 @@ func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, d
 			x, y := AlignedXY(w, h, paddedBounds, align, valign)
 
 			childrenBounds := image.Rect(x, y, x+w, y+h)
-			if _, err = sys.calculateChildren(root, child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
+			if _, err = sys.calculateChildren(root, child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign(), depth); err != nil {
 				return bounds, err
 			}
 			if widestChild < bounds.Dx() {
@@ -343,7 +343,7 @@ func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, d
 				x, y := AlignedXY(w, h, bounds, align, valign)
 
 				childrenBounds := image.Rect(x, y, x+w, y+h)
-				if bounds, err = sys.calculateChildren(root, child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
+				if bounds, err = sys.calculateChildren(root, child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign(), depth); err != nil {
 					return bounds, err
 				}
 				if widestChild < bounds.Dx() {
@@ -367,7 +367,7 @@ func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, d
 				for i := 0; i < len(childDatas); i++ {
 					vchildren[i] = child.Children[0]
 				}
-				bounds, err := sys.calculateColumnChildren(root, vchildren, childDatas, bounds)
+				bounds, err := sys.calculateColumnChildren(root, vchildren, childDatas, bounds, depth)
 				if err != nil {
 					return bounds, err
 				}
@@ -381,7 +381,7 @@ func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, d
 					x, y := AlignedXY(w, h, bounds, align, valign)
 
 					childrenBounds := image.Rect(x, y, x+w, y+h)
-					if bounds, err = sys.calculateChildren(root, child.Children, item, childrenBounds, child.Attributes.Align(), child.Attributes.Valign()); err != nil {
+					if bounds, err = sys.calculateChildren(root, child.Children, item, childrenBounds, child.Attributes.Align(), child.Attributes.Valign(), depth); err != nil {
 						return bounds, err
 					}
 					if widestChild < bounds.Dx() {
@@ -406,7 +406,7 @@ func (sys *UISystem) Update() error {
 		uic.interactives = uic.interactives[:0]
 		uic.renderinstructions = uic.renderinstructions[:0]
 
-		_, err := sys.calculateChildren(uic, uic.Doc.Children, uic.Data, screen, uic.Doc.Attributes.Align(), uic.Doc.Attributes.Valign())
+		_, err := sys.calculateChildren(uic, uic.Doc.Children, uic.Data, screen, uic.Doc.Attributes.Align(), uic.Doc.Attributes.Valign(), 0)
 		if err != nil {
 			return err
 		}
