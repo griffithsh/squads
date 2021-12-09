@@ -21,62 +21,15 @@
               <Text value="{{ .Prep }}/{{ .PrepMax }}" size="small" layout="right"/>
             </Column>
           </Padding>
-          <Padding top="2">
-            <Column twelfths="6">
-              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
-            </Column>
-            <Column twelfths="6">
-              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
-            </Column>
-          </Padding>
-          <Padding top="2">
-            <Column twelfths="6">
-              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
-            </Column>
-            <Column twelfths="6">
-              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
-            </Column>
-          </Padding>
-          <Padding top="2">
-            <Column twelfths="6">
-              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
-            </Column>
-            <Column twelfths="6">
-              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
-            </Column>
-          </Padding>
-          <Padding top="2">
-            <Column twelfths="6">
-              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
-            </Column>
-            <Column twelfths="6">
-              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
-            </Column>
-          </Padding>
-          <Padding top="2">
-            <Column twelfths="6">
-              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
-            </Column>
-            <Column twelfths="6">
-              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
-            </Column>
-          </Padding>
-          <Padding top="2">
-            <Column twelfths="6">
-              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
-            </Column>
-            <Column twelfths="6">
-              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
-            </Column>
-          </Padding>
-          <Padding top="2">
-            <Column twelfths="6">
-              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
-            </Column>
-            <Column twelfths="6">
-              <Image texture="hud.png" width="24" height="24" x="184" y="0" />
-            </Column>
-          </Padding>
+          <Range over="Skills">
+            <Padding top="2">
+              <Range over="Skills">
+                <Column twelfths="6">
+                  <Image texture="{{ .Texture }}" width="24" height="24" x="{{ .IconX }}" y="{{ .IconY }}"/>
+                </Column>
+              </Range>
+            </Padding>
+          </Range>
         </Panel>
       </Column>
       <Column twelfths="11">

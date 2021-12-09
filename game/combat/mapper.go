@@ -20,6 +20,8 @@ type HUDData struct {
 	Prep, PrepMax     int
 
 	TurnQueue []QueuedParticipant
+
+	Skills [7]UISkillInfoRow
 }
 
 type QueuedParticipant struct {
@@ -38,4 +40,14 @@ type QueuedParticipant struct {
 
 func (qp QueuedParticipant) PrepPercent() int {
 	return int(float64(qp.Prep) / float64(qp.PrepMax) * 26)
+}
+
+type UISkillInfoRow struct {
+	Skills [2]UISkillInfo
+}
+type UISkillInfo struct {
+	Texture string
+	IconX   int
+	IconY   int
+	Handle  func()
 }
