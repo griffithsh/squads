@@ -410,39 +410,7 @@ func (sys *UISystem) Update() error {
 		if err != nil {
 			return err
 		}
+		fmt.Printf("SUMMARY: %d renderable and %d clickable\n", len(uic.renderinstructions), len(uic.interactives))
 	}
 	return nil
-}
-
-// heightOfText calculates how many pixels high a given text should be.
-func heightOfText(value string, size TextSize, maxWidth int, align TextLayout) (height int) {
-	text := NewText(value, size)
-
-	// Spacer around each text instance.
-	spacer := TextPadding
-
-	// We know our max width, so we can split long lines.
-	width := maxWidth
-	splitLines := SplitLines(text.Lines, width)
-
-	y := spacer
-	for i, line := range splitLines {
-		if i != 0 {
-			// If not the first line, add a line spacer.
-			y += LineSpacing(size)
-		}
-
-		tallest := 0
-		for _, word := range line {
-			for _, char := range word.Characters {
-				if char.Height > tallest {
-					tallest = char.Height
-				}
-			}
-		}
-
-		y += tallest
-	}
-
-	return spacer + y
 }
