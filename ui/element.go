@@ -12,6 +12,7 @@ import (
 )
 
 //go:generate stringer -type=ElementType
+
 type ElementType int
 
 const (
