@@ -155,6 +155,9 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err
 		return width, ButtonHeight, nil
 
 	case ImageElement:
+		if el.Attributes.Intangible() {
+			return 0, 0, nil
+		}
 		width, err := ResolveInt(el.Attributes["width"], data)
 		if err != nil {
 			return 0, 0, fmt.Errorf("ResolveInt width: %v", err)
@@ -210,9 +213,13 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err
 		case el.Children[0].Type == ColumnElement:
 			// The children of the Range are Columns.
 			maxHeight := 0
-			for i, column := range el.Children {
-				maxWidth := mult(maxWidth, 1.0/12) * column.Attributes.Twelfths()
-				_, h, err := column.DimensionsWith(childDatas[i], maxWidth)
+			for _, data := range childDatas {
+				pseudo := Element{
+					Type:       PaddingElement,
+					Attributes: map[string]string{},
+					Children:   el.Children,
+				}
+				_, h, err := pseudo.DimensionsWith(data, maxWidth)
 				if err != nil {
 					return 0, 0, err
 				}
@@ -220,12 +227,19 @@ func (el *Element) DimensionsWith(data interface{}, maxWidth int) (w, h int, err
 					maxHeight = h
 				}
 			}
-			return maxWidth, h, nil
+
+			return maxWidth, maxHeight, nil
 
 		default:
+			// The children of this Range are not Columns.
 			width, height := 0, 0
-			for _, child := range el.Children {
-				w, h, err := child.DimensionsWith(data, maxWidth)
+			for _, data := range childDatas {
+				pseudo := Element{
+					Type:       PaddingElement,
+					Attributes: map[string]string{},
+					Children:   el.Children,
+				}
+				w, h, err := pseudo.DimensionsWith(data, maxWidth)
 				if err != nil {
 					return 0, 0, err
 				}
