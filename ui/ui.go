@@ -110,6 +110,24 @@ func NewUISystem(mgr *ecs.World, bus *event.Bus) *UISystem {
 	return &uis
 }
 
+func (sys *UISystem) Update() error {
+	uiScale := 2.0 // FIXME!
+	screen := image.Rect(0, 0, int(float64(sys.screenW)/uiScale), int(float64(sys.screenH)/uiScale))
+	for _, e := range sys.mgr.Get([]string{"UI"}) {
+		uic := sys.mgr.Component(e, "UI").(*UI)
+
+		uic.interactives = uic.interactives[:0]
+		uic.renderinstructions = uic.renderinstructions[:0]
+
+		_, err := sys.calculateChildren(uic, uic.Doc.Children, uic.Data, screen, uic.Doc.Attributes.Align(), uic.Doc.Attributes.Valign(), 0)
+		if err != nil {
+			return err
+		}
+		fmt.Printf("SUMMARY: %d renderable and %d clickable\n", len(uic.renderinstructions), len(uic.interactives))
+	}
+	return nil
+}
+
 func (uis *UISystem) Handle(ev *Interact) {
 	uiScale := 2.0 // FIXME this needs to come from somewhere ...
 
@@ -395,22 +413,4 @@ func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, d
 	}
 	bounds.Max.X = bounds.Min.X + widestChild
 	return bounds, nil
-}
-
-func (sys *UISystem) Update() error {
-	uiScale := 2.0 // FIXME!
-	screen := image.Rect(0, 0, int(float64(sys.screenW)/uiScale), int(float64(sys.screenH)/uiScale))
-	for _, e := range sys.mgr.Get([]string{"UI"}) {
-		uic := sys.mgr.Component(e, "UI").(*UI)
-
-		uic.interactives = uic.interactives[:0]
-		uic.renderinstructions = uic.renderinstructions[:0]
-
-		_, err := sys.calculateChildren(uic, uic.Doc.Children, uic.Data, screen, uic.Doc.Attributes.Align(), uic.Doc.Attributes.Valign(), 0)
-		if err != nil {
-			return err
-		}
-		fmt.Printf("SUMMARY: %d renderable and %d clickable\n", len(uic.renderinstructions), len(uic.interactives))
-	}
-	return nil
 }
