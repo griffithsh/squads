@@ -42,7 +42,7 @@ func heightOfDescendants(element *Element, datas []interface{}, maxWidth int) in
 
 // heightOf any element. This is how much the element claims from the available
 // layout, and not the visible height. An intangible <Image /> therefore has
-// zero height.
+// zero height. Recursive.
 func heightOf(element *Element, data interface{}, maxWidth int) int {
 	switch element.Type {
 	case ButtonElement:

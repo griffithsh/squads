@@ -58,7 +58,10 @@ func (p *prevUI) Update() error {
 }
 
 func (p *prevUI) Draw(screen *ebiten.Image) {
-	p.vis.Render(screen, p.mgr, 0, 0, 1.0, screenWidth, screenHeight)
+	err := p.vis.Render(screen, p.mgr, 0, 0, 1.0, screenWidth, screenHeight)
+	if err != nil {
+		fmt.Printf("render: %v\n", err)
+	}
 }
 
 func (p *prevUI) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
@@ -118,8 +121,8 @@ func main() {
 		ui:      ui.NewUISystem(mgr, bus),
 	}
 
-	// Set up test data
-	setupEmbarkFocusCharacter(mgr, archive)
+	// Set up first lot of test data
+	p.nextUI()
 
 	// Start ebiten looping
 	ebiten.SetWindowSize(screenWidth, screenHeight)

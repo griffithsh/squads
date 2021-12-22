@@ -54,6 +54,8 @@ func randHUDData(archive *data.Archive) combat.HUDData {
 		Prep: 0, PrepMax: 91,
 
 		TurnQueue: turnQueue,
+
+		Skills: randSkills(),
 	}
 }
 
@@ -80,5 +82,32 @@ func randQueuedParticipant(archive *data.Archive) combat.QueuedParticipant {
 		OverlayFrameY: frame.Y,
 
 		Prep: rand.Intn(180) + 589, PrepMax: rand.Intn(500) + 812,
+	}
+}
+
+func randSkills() [7]combat.UISkillInfoRow {
+	randSkillInfo := func() combat.UISkillInfo {
+		return combat.UISkillInfo{
+			Texture: "hud.png",
+			IconX:   184,
+			IconY:   0,
+		}
+	}
+	randSkillInfoRow := func() combat.UISkillInfoRow {
+		return combat.UISkillInfoRow{
+			Skills: [2]combat.UISkillInfo{
+				randSkillInfo(),
+				randSkillInfo(),
+			},
+		}
+	}
+	return [7]combat.UISkillInfoRow{
+		randSkillInfoRow(),
+		randSkillInfoRow(),
+		randSkillInfoRow(),
+		randSkillInfoRow(),
+		randSkillInfoRow(),
+		randSkillInfoRow(),
+		randSkillInfoRow(),
 	}
 }

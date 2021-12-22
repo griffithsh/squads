@@ -81,29 +81,29 @@ func TestCall(t *testing.T) {
 func TestRanger(t *testing.T) {
 	tests := []struct {
 		name     string
-		slice    string
+		field    string
 		data     interface{}
 		succeeds bool
 		want     string
 	}{
 		{
 			name:  "slice-of-int",
-			slice: "foo",
-			data: struct{ foo []int }{
-				foo: []int{1, 2, 3},
+			field: "Foo",
+			data: struct{ Foo []int }{
+				Foo: []int{1, 2, 3},
 			},
 			succeeds: true,
 			want:     "1,2,3",
 		},
 		{
 			name:  "slice-of-struct",
-			slice: "bar",
+			field: "Bar",
 			data: struct {
-				bar []struct {
+				Bar []struct {
 					id string
 				}
 			}{
-				bar: []struct{ id string }{
+				Bar: []struct{ id string }{
 					{id: "AK-104F7"}, {"HW-66320"},
 				},
 			},
@@ -112,36 +112,41 @@ func TestRanger(t *testing.T) {
 		},
 		{
 			name:  "data-is-ptr",
-			slice: "foo",
-			data: &struct{ foo []int }{
-				foo: []int{1, 2, 3},
+			field: "Foo",
+			data: &struct{ Foo []int }{
+				Foo: []int{1, 2, 3},
 			},
 			succeeds: true,
 			want:     "1,2,3",
 		},
 		{
 			name:  "non-slice",
-			slice: "baz",
+			field: "Baz",
 			data: struct {
-				baz string
+				Baz string
 			}{
-				baz: "no slices here!",
+				Baz: "no slices here!",
 			},
 		},
 		{
 			name:  "not-found",
-			slice: "qux",
+			field: "Qux",
 			data: struct {
-				quux []int
+				Quux []int
 			}{
-				quux: []int{8, 8, 8},
+				Quux: []int{8, 8, 8},
 			},
 		},
 	}
 
 	for _, tc := range tests {
 		t.Run(tc.name, func(t *testing.T) {
-			result, err := Ranger(tc.slice, tc.data)
+			defer func() {
+				if r := recover(); r != nil {
+					t.Fatalf("panic: %v", r)
+				}
+			}()
+			result, err := Ranger(tc.field, tc.data)
 			if err != nil {
 				fmt.Println("error:", err)
 				if tc.succeeds {

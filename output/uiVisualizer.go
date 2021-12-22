@@ -25,7 +25,7 @@ func (uv *uiVisualizer) Render(screen *ebiten.Image, uic *ui.UI) error {
 		case ui.ImageRenderInstruction:
 			img, err := uv.picForTexture(t.Texture)
 			if err != nil {
-				return fmt.Errorf("picForTexture: %v", err)
+				return fmt.Errorf("%T: picForTexture %q: %v", instruction, t.Texture, err)
 			}
 			img = img.SubImage(t.From).(*ebiten.Image)
 			op := ebiten.DrawImageOptions{}
