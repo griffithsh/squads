@@ -557,7 +557,7 @@ func (hud *HUD) repaintSkills() {
 
 	skills := map[int]v{
 		// Cancel button
-		0: v{
+		0: {
 			icon: *game.Sprite{
 				Texture: "hud.png",
 				X:       208,
@@ -580,7 +580,7 @@ func (hud *HUD) repaintSkills() {
 			0: convert(hud.archive.Skill(skill.BasicMovement)),
 
 			// Consumables
-			7: v{
+			7: {
 				icon: *game.Sprite{
 					Texture: "hud.png",
 					X:       232,
@@ -600,7 +600,7 @@ func (hud *HUD) repaintSkills() {
 			// 3,4,5,10,11,12 are slots 1-6 for profession-provided skills
 
 			// Flee
-			6: v{
+			6: {
 				icon: *game.Sprite{
 					Texture: "hud.png",
 					X:       184,
@@ -617,7 +617,7 @@ func (hud *HUD) repaintSkills() {
 			},
 
 			// End turn
-			13: v{
+			13: {
 				icon: *game.Sprite{
 					Texture: "hud.png",
 					X:       208,
@@ -739,7 +739,6 @@ func (hud *HUD) repaintTurnQueue() {
 	type v struct {
 		e             ecs.Entity
 		remaining     int
-		textureY      int
 		current, max  int
 		icon          *game.Sprite
 		bg            *game.Sprite

@@ -111,8 +111,6 @@ func (se *skillExecutor) determineAffected(ev *UsingSkill, s *skill.Description)
 	default:
 		panic(fmt.Sprintf("skillExecutor.determineAffected does not implement %T", s.TargetingBrush))
 	}
-
-	return []ecs.Entity{}, []geom.Key{}
 }
 
 // createRealiser creates a new timing point realiser for figuring out when

@@ -63,7 +63,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			if dir, err := direction(mover.dx, mover.dy); err == nil {
 				facer.Face = dir
 			}
-			if oldFace != facer.Face || 0 != mover.Speed {
+			if oldFace != facer.Face || mover.Speed != 0 {
 				nav.Publish(&ParticipantMoving{
 					Entity:    e,
 					NewSpeed:  mover.Speed,

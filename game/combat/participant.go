@@ -94,8 +94,8 @@ func (p *Participant) baseDamage() (baseMin, baseMax float64) {
 		mult = 1.0
 	}
 	// If these values are not present, then default zero is appropriate.
-	min, _ := p.ItemStats[game.BaseMinDamageModifier]
-	max, _ := p.ItemStats[game.BaseMaxDamageModifier]
+	min := p.ItemStats[game.BaseMinDamageModifier]
+	max := p.ItemStats[game.BaseMaxDamageModifier]
 	min *= mult
 	max *= mult
 

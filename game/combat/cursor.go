@@ -118,12 +118,6 @@ func (cm *CursorManager) showLiveParticipants() {
 	}
 }
 
-func (cm *CursorManager) hideLiveParticipants() {
-	for _, e := range cm.mgr.Tagged(liveParticipantsTag) {
-		cm.mgr.DestroyEntity(e)
-	}
-}
-
 func (cm *CursorManager) repaintLiveParticipants() {
 	entities := cm.mgr.Get([]string{"Participant"})
 

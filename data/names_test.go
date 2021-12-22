@@ -22,9 +22,9 @@ Jerry: ,M,,
 	}
 
 	want := map[string][]string{
-		"Tom":   []string{"F", "M", "Villanous"},
-		"Jerry": []string{"M"},
-		"Mark":  []string{},
+		"Tom":   {"F", "M", "Villanous"},
+		"Jerry": {"M"},
+		"Mark":  {},
 	}
 	if !reflect.DeepEqual(got, want) {
 		t.Fatalf("want %v, got %v", want, got)

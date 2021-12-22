@@ -55,46 +55,27 @@ func TestCall(t *testing.T) {
 			t.Error("original was not changed")
 		}
 	})
-	// should it be possible to call unexported funcs?
-	t.Run("WithStructUnexported", func(t *testing.T) {
-		return
-		x := "original"
-		type foo struct {
-			handler func()
-		}
-		f := foo{
-			handler: func() {
-				x = "modified"
-			},
-		}
-		Call("handler", f)
-
-		if x == "original" {
-			t.Error("original was not changed")
-		}
-	})
 	// Would I need to be able to descend through structures?
-	t.Run("Descendants", func(t *testing.T) {
-		return
-		x := "original"
-		type foo struct {
-			bar struct {
-				Handler func()
-			}
-		}
-		f := foo{
-			bar: struct{ Handler func() }{
-				Handler: func() {
-					x = "modified"
-				},
-			},
-		}
-		Call("bar.Handler", f)
+	// t.Run("Descendants", func(t *testing.T) {
+	// 	x := "original"
+	// 	type foo struct {
+	// 		bar struct {
+	// 			Handler func()
+	// 		}
+	// 	}
+	// 	f := foo{
+	// 		bar: struct{ Handler func() }{
+	// 			Handler: func() {
+	// 				x = "modified"
+	// 			},
+	// 		},
+	// 	}
+	// 	Call("bar.Handler", f)
 
-		if x == "original" {
-			t.Error("original was not changed")
-		}
-	})
+	// 	if x == "original" {
+	// 		t.Error("original was not changed")
+	// 	}
+	// })
 }
 
 func TestRanger(t *testing.T) {
