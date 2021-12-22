@@ -1,12 +1,10 @@
 package ui
 
 import (
-	"bytes"
-	"encoding/json"
 	"fmt"
 	"image"
 	"io"
-	"text/template"
+	"math"
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
@@ -119,11 +117,12 @@ func (sys *UISystem) Update() error {
 		uic.interactives = uic.interactives[:0]
 		uic.renderinstructions = uic.renderinstructions[:0]
 
-		_, err := sys.calculateChildren(uic, uic.Doc.Children, uic.Data, screen, uic.Doc.Attributes.Align(), uic.Doc.Attributes.Valign(), 0)
+		// NB, uic.Doc.Type == UIElement
+
+		err := calculateChildren(uic, uic.Doc.Children, uic.Data, screen, uic.Doc.Attributes.Align(), uic.Doc.Attributes.Valign(), 0)
 		if err != nil {
 			return err
 		}
-		fmt.Printf("SUMMARY: %d renderable and %d clickable\n", len(uic.renderinstructions), len(uic.interactives))
 	}
 	return nil
 }
@@ -144,78 +143,172 @@ func (uis *UISystem) Handle(ev *Interact) {
 	}
 }
 
+// realiseChildren replaces IfElements and RangeElements with their children as
+// the data dictates.  Also returns the datas that should be applied per child -
+// remember RangeElements are bound to alternative data sources.
+func realiseChildren(children []*Element, data interface{}) ([]*Element, []interface{}) {
+	result := make([]*Element, 0, len(children))
+	datas := make([]interface{}, 0, len(children))
+	for _, child := range children {
+		switch child.Type {
+		case IfElement:
+			if EvaluateIfExpression(child.Attributes["expr"], data) {
+				c, d := realiseChildren(child.Children, data)
+				result = append(result, c...)
+				datas = append(datas, d...)
+			}
+		case RangeElement:
+			field := child.Attributes["over"]
+			childDatas, err := dynamic.Ranger(field, data)
+			if err != nil {
+				panic(fmt.Sprintf("dynamic.Ranger: %v", err))
+			}
+			for _, childData := range childDatas {
+				c, d := realiseChildren(child.Children, childData)
+				result = append(result, c...)
+				datas = append(datas, d...)
+			}
+
+		default:
+			result = append(result, child)
+			datas = append(datas, data)
+		}
+	}
+	return result, datas
+}
+
+// widthOf returns the configured width of an element. Does not recurse.
+// Generally infers width from the width attribute.
+func widthOf(child *Element, data interface{}, available image.Rectangle) int {
+
+	availableWidth := available.Dx()
+
+	attrWidth, errWidthAttr := ResolveInt(child.Attributes["width"], data)
+
+	w := availableWidth
+	switch child.Type {
+	case TextElement:
+		// FIXME: if a text is short enough to not take up the available width,
+		// then it should be align-able. Need a widthOfText function though ...
+		if errWidthAttr == nil {
+			w = attrWidth
+		}
+
+	case ButtonElement:
+		if errWidthAttr == nil {
+			w = attrWidth
+		}
+
+	default:
+		if errWidthAttr == nil {
+			w = attrWidth
+		}
+	}
+	return w
+}
+
+func alignmentOf(child *Element, data interface{}, available image.Rectangle, align, valign string) (x, y int) {
+	// A shortcut appears...
+	if align == "left" && valign == "top" {
+		return available.Min.X, available.Min.Y
+	}
+
+	availableWidth := available.Dx()
+	availableHeight := available.Dy()
+
+	attrWidth, errWidthAttr := ResolveInt(child.Attributes["width"], data)
+	attrHeight, errHeightAttr := ResolveInt(child.Attributes["height"], data)
+
+	w, h := availableWidth, availableHeight
+	switch child.Type {
+	case TextElement:
+		// FIXME: if a text is short enough to not take up the available width,
+		// then it should be align-able. Need a widthOfText function though ...
+		if errWidthAttr == nil {
+			w = attrWidth
+		}
+		txt, err := Resolve(child.Attributes["value"], data)
+		if err != nil {
+			panic(fmt.Sprintf("resolve TextElement value: %v", err))
+		}
+		h = heightOfText(txt, child.Attributes.FontSize(), w, child.Attributes.FontLayout())
+
+	case ButtonElement:
+		if errWidthAttr == nil {
+			w = attrWidth
+		}
+		h = ButtonHeight
+
+	default:
+		if errWidthAttr == nil {
+			w = attrWidth
+		}
+		if errHeightAttr == nil {
+			h = attrHeight
+		}
+	}
+
+	switch align {
+	default:
+		fallthrough
+	case "left":
+		x = available.Min.X
+	case "right":
+		x = available.Max.X - w
+	case "center":
+		x = available.Min.X + (available.Max.X-available.Min.X)/2 - w/2
+	}
+	switch valign {
+	default:
+		fallthrough
+	case "top":
+		y = available.Min.Y
+	case "bottom":
+		y = available.Max.Y - h
+	case "middle":
+		y = available.Min.Y + (available.Max.Y-available.Min.Y)/2 - h/2
+	}
+
+	return x, y
+}
+
 // calculateChildren dispatches to either calculateColumnChildren or
 // calculateNonColumnChildren depending on if the first child is a ColumnElement
 // or not.
-func (sys *UISystem) calculateChildren(root *UI, children []*Element, data interface{}, bounds image.Rectangle, align, valign string, depth int) (image.Rectangle, error) {
-	// If the first child is a column, make the big assumption that all children are columns.
-	if len(children) > 0 && children[0].Type == ColumnElement {
-		// Make a copy of data for every child.
-		datas := make([]interface{}, len(children))
-		for i := range datas {
-			datas[i] = data
-		}
+func calculateChildren(root *UI, children []*Element, data interface{}, available image.Rectangle, align, valign string, depth int) error {
+	realChildren, datas := realiseChildren(children, data)
 
-		return sys.calculateColumnChildren(root, children, datas, bounds, depth+1)
-	}
-	return sys.calculateNonColumnChildren(root, children, data, bounds, align, valign, depth+1)
-}
+	maxHeight := 0
+	sumHeights := 0
 
-func (sys *UISystem) calculateColumnChildren(root *UI, columns []*Element, datas []interface{}, bounds image.Rectangle, depth int) (image.Rectangle, error) {
-	if len(columns) != len(datas) {
-		return bounds, fmt.Errorf("mismatch between columns(%d) and datas(%d)", len(columns), len(datas))
-	}
-	maxColHeight := 0
 	twelfthOffset := 0
-	for i, column := range columns {
-		if column.Type != ColumnElement {
-			return bounds, fmt.Errorf("non-column type %T", column.Type)
-		}
-		colBounds := bounds
-		colBounds.Min.X += bounds.Dx() * twelfthOffset / 12
-		w := bounds.Dx() * column.Attributes.Twelfths() / 12
-		colBounds.Max.X = colBounds.Min.X + w
-		takenBounds, err := sys.calculateChildren(root, column.Children, datas[i], colBounds, column.Attributes.Align(), column.Attributes.Valign(), depth)
-		if err != nil {
-			return bounds, err
-		}
-		colHeight := takenBounds.Min.Y - bounds.Min.Y
-		if colHeight > maxColHeight {
-			maxColHeight = colHeight
-		}
-		twelfthOffset += column.Attributes.Twelfths()
-	}
 
-	// max column height
-	bounds.Min.Y += maxColHeight
-	return bounds, nil
-}
-
-func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, data interface{}, bounds image.Rectangle, align, valign string, depth int) (image.Rectangle, error) {
-	maxWidth := bounds.Dx()
-	widestChild := 0
-
-	for _, child := range children {
+	for i, child := range realChildren {
+		data := datas[i]
+		height := heightOf(child, data, available.Dx())
+		width := widthOf(child, data, available)
+		x, y := alignmentOf(child, data, available, align, valign)
+		bounds := image.Rect(x, y, x+width, y+height)
 		switch child.Type {
-		case PanelElement:
-			w, h, err := child.DimensionsWith(data, maxWidth)
-			if err != nil {
-				return bounds, err
-			}
-			x, y := AlignedXY(w, h, bounds, align, valign)
 
-			panelBounds := image.Rect(x, y, x+w, y+h)
+		// If and Range should be absorbed by realiseChildren().
+		default:
+			fallthrough
+		case IfElement:
+			fallthrough
+		case RangeElement:
+			panic(fmt.Sprintf("element type %q is unacceptable in this context", child.Type))
+
+		case PanelElement:
 			if invis := child.Attributes["outline"]; invis != "false" {
 				root.renderinstructions = append(root.renderinstructions, PanelRenderInstruction{
-					Bounds: panelBounds,
+					Bounds: bounds,
 				})
 			}
 
-			if bounds, err = sys.calculateChildren(root, child.Children, data, panelBounds, child.Attributes.Align(), child.Attributes.Valign(), depth); err != nil {
-				return bounds, err
-			}
-			if widestChild < bounds.Dx() {
-				widestChild = bounds.Dx()
+			err := calculateChildren(root, child.Children, data, bounds, child.Attributes.Align(), child.Attributes.Valign(), depth+1)
+			if err != nil {
+				return fmt.Errorf("<%s>: %v", child.Type, err)
 			}
 
 		case PaddingElement:
@@ -225,79 +318,79 @@ func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, d
 			paddedBounds.Max.X -= child.Attributes.RightPadding()
 			paddedBounds.Max.Y -= child.Attributes.BottomPadding()
 
-			w, h, err := child.DimensionsWith(data, paddedBounds.Dx())
+			err := calculateChildren(root, child.Children, data, paddedBounds, child.Attributes.Align(), child.Attributes.Valign(), depth+1)
 			if err != nil {
-				return bounds, err
+				return fmt.Errorf("<%s>: %v", child.Type, err)
 			}
-			x, y := AlignedXY(w, h, paddedBounds, align, valign)
 
-			childrenBounds := image.Rect(x, y, x+w, y+h)
-			if _, err = sys.calculateChildren(root, child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign(), depth); err != nil {
-				return bounds, err
-			}
-			if widestChild < bounds.Dx() {
-				widestChild = bounds.Dx()
-			}
-			bounds.Min.Y += h
+		case ColumnElement:
+			twelfths := child.Attributes.Twelfths()
+			columnBounds := bounds
+			columnBounds.Min.X += int(math.Round(float64(width) * float64(twelfthOffset) / 12))
+			w := int(math.Round(float64(width) * float64(twelfths) / 12))
+			columnBounds.Max.X = columnBounds.Min.X + w
 
+			err := calculateChildren(root, child.Children, data, columnBounds, child.Attributes.Align(), child.Attributes.Valign(), depth+1)
+			if err != nil {
+				return fmt.Errorf("<%s>: %v", child.Type, err)
+			}
+
+			twelfthOffset += twelfths
+
+		case ImageElement:
+			texture, err := Resolve(child.Attributes["texture"], data)
+			if err != nil {
+				return fmt.Errorf("resolve texture: %v", err)
+			} else if texture == "" {
+				return fmt.Errorf("resolve texture from %q output empty string", child.Attributes["texture"])
+			}
+			fromX, err := ResolveInt(child.Attributes["x"], data)
+			if err != nil {
+				return fmt.Errorf("resolve x: %v", err)
+			}
+			fromY, err := ResolveInt(child.Attributes["y"], data)
+			if err != nil {
+				return fmt.Errorf("resolve y: %v", err)
+			}
+			// NB, we don't need to grab the width attribute again. Intangible only nixes height.
+			fromHeight, err := ResolveInt(child.Attributes["height"], data)
+			if err != nil {
+				return fmt.Errorf("resolve height: %v", err)
+			}
+
+			root.renderinstructions = append(root.renderinstructions, ImageRenderInstruction{
+				Texture: texture,
+				From:    image.Rect(fromX, fromY, fromX+width, fromY+fromHeight),
+				AtX:     float64(x),
+				AtY:     float64(y),
+			})
 		case TextElement:
 			label := child.Attributes["value"]
 			sz := child.Attributes.FontSize()
 			layout := child.Attributes.FontLayout()
-			buf := bytes.NewBuffer([]byte{})
-			if err := template.Must(template.New("text").Parse(label)).Execute(buf, data); err != nil {
-				return bounds, fmt.Errorf("execute: %v, template: %q", err, label)
+			label, err := Resolve(label, data)
+			if err != nil {
+				return fmt.Errorf("Resolve %s: %v", label, err)
 			}
 
-			txtBounds := bounds
-			maxTextWidth := maxWidth
-			if child.Attributes["width"] != "" {
-				maxTextWidth = child.Attributes.Width()
-			}
-			w, h, err := child.DimensionsWith(data, maxTextWidth)
-			if err != nil {
-				return bounds, err
-			}
-			txtBounds.Max.X = txtBounds.Min.X + w
+			txtBounds := available
+			txtBounds.Max.X = txtBounds.Min.X + width
+
 			root.renderinstructions = append(root.renderinstructions, TextRenderInstruction{
-				Text:   buf.String(),
+				Text:   label,
 				Size:   sz,
 				Bounds: txtBounds,
 				Layout: layout,
 			})
-			bounds.Min.Y += h
-			if widestChild < txtBounds.Dx() {
-				widestChild = txtBounds.Dx()
-			}
 
 		case ButtonElement:
 			label, err := Resolve(child.Attributes["label"], data)
 			if err != nil {
-				return bounds, fmt.Errorf("resolve button label: %v", err)
+				return fmt.Errorf("resolve button label: %v", err)
 			}
-			w, h, err := child.DimensionsWith(data, maxWidth)
-			if err != nil {
-				return bounds, err
-			}
-			// Does the parent align left, right, or centre? Are we valigning
-			// it? Calculate buttonDimensions from that.
-			l := bounds.Min.X
-			switch align {
-			case "right":
-				l = bounds.Max.X - w
-			case "center":
-				l = bounds.Min.X + (bounds.Max.X-bounds.Min.X)/2 - w/2
-			default: // left
-			}
-			t := bounds.Min.Y
-			switch valign {
-			case "bottom":
-				t = bounds.Max.Y - h
-			case "middle":
-				t = bounds.Min.Y + (bounds.Max.Y-bounds.Min.Y)/2 - h/2
-			default: // top
-			}
-			buttonDimensions := image.Rect(l, t, l+w, t+h)
+
+			buttonDimensions := image.Rect(x, y, x+width, y+height)
+
 			root.interactives = append(root.interactives, InteractiveRegion{
 				Bounds: buttonDimensions,
 				Handler: func() {
@@ -311,106 +404,20 @@ func (sys *UISystem) calculateNonColumnChildren(root *UI, children []*Element, d
 				Bounds: buttonDimensions,
 				Label:  label,
 			})
-			bounds.Min.Y += h
-			if widestChild < buttonDimensions.Dx() {
-				widestChild = buttonDimensions.Dx()
-			}
+		}
 
-		case ImageElement:
-			texture, err := Resolve(child.Attributes["texture"], data)
-			if err != nil {
-				return bounds, fmt.Errorf("resolve texture: %v", err)
+		if child.Type == ColumnElement {
+			if height > maxHeight {
+				maxHeight = height
 			}
-			width, err := ResolveInt(child.Attributes["width"], data)
-			if err != nil {
-				return bounds, fmt.Errorf("resolve width: %v", err)
-			}
-			height, err := ResolveInt(child.Attributes["height"], data)
-			if err != nil {
-				return bounds, fmt.Errorf("resolve height: %v", err)
-			}
-			x, err := ResolveInt(child.Attributes["x"], data)
-			if err != nil {
-				return bounds, fmt.Errorf("resolve x: %v", err)
-			}
-			y, err := ResolveInt(child.Attributes["y"], data)
-			if err != nil {
-				return bounds, fmt.Errorf("resolve y: %v", err)
-			}
-			root.renderinstructions = append(root.renderinstructions, ImageRenderInstruction{
-				Texture: texture,
-				From:    image.Rect(x, y, x+width, y+height),
-				AtX:     float64(bounds.Min.X),
-				AtY:     float64(bounds.Min.Y),
-			})
-
-			if !child.Attributes.Intangible() {
-				bounds.Min.Y += height
-				if widestChild < width {
-					widestChild = width
-				}
-			}
-
-		case IfElement:
-			expr := child.Attributes["expr"]
-			if EvaluateIfExpression(expr, data) {
-				w, h, err := child.DimensionsWith(data, maxWidth)
-				if err != nil {
-					return bounds, err
-				}
-				x, y := AlignedXY(w, h, bounds, align, valign)
-
-				childrenBounds := image.Rect(x, y, x+w, y+h)
-				if bounds, err = sys.calculateChildren(root, child.Children, data, childrenBounds, child.Attributes.Align(), child.Attributes.Valign(), depth); err != nil {
-					return bounds, err
-				}
-				if widestChild < bounds.Dx() {
-					widestChild = bounds.Dx()
-				}
-			}
-
-		case RangeElement:
-			field := child.Attributes["over"]
-			childDatas, err := dynamic.Ranger(field, data)
-			if err != nil {
-				str, _ := json.Marshal(data)
-				return bounds, fmt.Errorf("range over %q in %v: %v", field, string(str), err)
-			}
-			switch {
-			case len(child.Children) == 0:
-				// It's a no-op if there are no children!
-
-			case child.Children[0].Type == ColumnElement:
-				vchildren := make([]*Element, len(childDatas))
-				for i := 0; i < len(childDatas); i++ {
-					vchildren[i] = child.Children[0]
-				}
-				bounds, err := sys.calculateColumnChildren(root, vchildren, childDatas, bounds, depth)
-				if err != nil {
-					return bounds, err
-				}
-
-			default: // Sibling context is irrelevant when not dealing with columns.
-				for _, item := range childDatas {
-					w, h, err := child.DimensionsWith(data, maxWidth)
-					if err != nil {
-						return bounds, err
-					}
-					x, y := AlignedXY(w, h, bounds, align, valign)
-
-					childrenBounds := image.Rect(x, y, x+w, y+h)
-					if bounds, err = sys.calculateChildren(root, child.Children, item, childrenBounds, child.Attributes.Align(), child.Attributes.Valign(), depth); err != nil {
-						return bounds, err
-					}
-					if widestChild < bounds.Dx() {
-						widestChild = bounds.Dx()
-					}
-				}
-
-			}
-
+		} else {
+			available.Min.Y += height
+			sumHeights += height
 		}
 	}
-	bounds.Max.X = bounds.Min.X + widestChild
-	return bounds, nil
+	// if children were columns, return max height
+	// else return sum of heights
+	available.Min.X += maxHeight + sumHeights
+
+	return nil
 }

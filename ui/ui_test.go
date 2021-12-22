@@ -185,51 +185,50 @@ var tests = []updateTest{
 		},
 		nil,
 	},
-	// IGNORE: known bug
-	// {
-	// 	"range-columns",
-	// 	`<UI>
-	// 		<Range over="Counts">
-	// 			<Column twelfths="3">
-	// 				<Text value="A{{.}}" />
-	// 			</Column>
-	// 		</Range>
-	// 		<Column twelfths="2" />
-	// 		<Range over="Counts">
-	// 			<Column twelfths="2">
-	// 				<Text value="B{{.}}" />
-	// 			</Column>
-	// 		</Range>
-	// 	</UI>`,
-	// 	struct{ Counts [2]int }{[2]int{11, 13}},
-	// 	[]RenderInstruction{
-	// 		TextRenderInstruction{
-	// 			"A11",
-	// 			TextSizeNormal,
-	// 			image.Rect(0, 0, 200, 600),
-	// 			TextLayoutLeft,
-	// 		},
-	// 		TextRenderInstruction{
-	// 			"A13",
-	// 			TextSizeNormal,
-	// 			image.Rect(200, 0, 400, 600),
-	// 			TextLayoutLeft,
-	// 		},
-	// 		TextRenderInstruction{
-	// 			"B11",
-	// 			TextSizeNormal,
-	// 			image.Rect(533, 0, 667, 600),
-	// 			TextLayoutLeft,
-	// 		},
-	// 		TextRenderInstruction{
-	// 			"B13",
-	// 			TextSizeNormal,
-	// 			image.Rect(667, 0, 800, 600),
-	// 			TextLayoutLeft,
-	// 		},
-	// 	},
-	// 	nil,
-	// },
+	{
+		"range-columns",
+		`<UI>
+			<Range over="Counts">
+				<Column twelfths="3">
+					<Text value="A{{.}}" />
+				</Column>
+			</Range>
+			<Column twelfths="2" />
+			<Range over="Counts">
+				<Column twelfths="2">
+					<Text value="B{{.}}" />
+				</Column>
+			</Range>
+		</UI>`,
+		struct{ Counts [2]int }{[2]int{11, 13}},
+		[]RenderInstruction{
+			TextRenderInstruction{
+				"A11",
+				TextSizeNormal,
+				image.Rect(0, 0, 200, 12),
+				TextLayoutLeft,
+			},
+			TextRenderInstruction{
+				"A13",
+				TextSizeNormal,
+				image.Rect(200, 0, 400, 12),
+				TextLayoutLeft,
+			},
+			TextRenderInstruction{
+				"B11",
+				TextSizeNormal,
+				image.Rect(533, 0, 666, 12),
+				TextLayoutLeft,
+			},
+			TextRenderInstruction{
+				"B13",
+				TextSizeNormal,
+				image.Rect(667, 0, 800, 12),
+				TextLayoutLeft,
+			},
+		},
+		nil,
+	},
 	{
 		"conditional",
 		`<UI>
