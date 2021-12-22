@@ -235,7 +235,7 @@ var permittedAttributes = map[ElementType][]string{
 	ColumnElement:  {"twelfths", "align"},
 	TextElement:    {"value", "size", "layout", "color", "width"},
 	ButtonElement:  {"onclick", "label", "width"},
-	ImageElement:   {"texture", "width", "height", "x", "y", "intangible"},
+	ImageElement:   {"texture", "width", "height", "x", "y", "intangible", "onclick"},
 	IfElement:      {"expr"},
 	RangeElement:   {"over"},
 }

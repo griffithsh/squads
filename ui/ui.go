@@ -364,6 +364,18 @@ func calculateChildren(root *UI, children []*Element, data interface{}, availabl
 				AtX:     float64(x),
 				AtY:     float64(y),
 			})
+
+			if onclick := child.Attributes["onclick"]; onclick != "" {
+				root.interactives = append(root.interactives, InteractiveRegion{
+					Bounds: image.Rect(x, y, x+width, y+height),
+					Handler: func() {
+						if err := dynamic.Call(onclick, data); err != nil {
+							panic(fmt.Sprintf("dynamic call: %v", err))
+						}
+					},
+				})
+			}
+
 		case TextElement:
 			label := child.Attributes["value"]
 			sz := child.Attributes.FontSize()

@@ -91,6 +91,9 @@ func randSkills() [7]combat.UISkillInfoRow {
 			Texture: "hud.png",
 			IconX:   184,
 			IconY:   0,
+			Handle: func() {
+				fmt.Println("Skill!")
+			},
 		}
 	}
 	randSkillInfoRow := func() combat.UISkillInfoRow {
