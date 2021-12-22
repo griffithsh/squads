@@ -966,7 +966,7 @@ func (em *Manager) repaint() {
 		app := em.archive.Appearance(char.Profession, char.Sex, char.Hair, char.Skin)
 
 		data := AsCharacterSheetData(char, equip, prof, app)
-		data.HandleCancel = func() {
+		data.HandleCancel = func(string) {
 			// Cancel - destroy the UI.
 			em.mgr.RemoveTag(villager, "embark-focus-villager")
 			em.mgr.DestroyEntity(e)
@@ -977,7 +977,7 @@ func (em *Manager) repaint() {
 		if embarking.Value {
 			data.ActionButton = "Return"
 		}
-		data.HandleAction = func() {
+		data.HandleAction = func(string) {
 			// Prepare or unprepare - toggle embarking status and destroy the UI.
 			em.mgr.RemoveTag(villager, "embark-focus-villager")
 			em.mgr.DestroyEntity(e)

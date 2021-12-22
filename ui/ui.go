@@ -366,10 +366,14 @@ func calculateChildren(root *UI, children []*Element, data interface{}, availabl
 			})
 
 			if onclick := child.Attributes["onclick"]; onclick != "" {
+				id, err := Resolve(child.Attributes["id"], data)
+				if err != nil {
+					return fmt.Errorf("Resolve %s: %v", child.Attributes["id"], err)
+				}
 				root.interactives = append(root.interactives, InteractiveRegion{
 					Bounds: image.Rect(x, y, x+width, y+height),
 					Handler: func() {
-						if err := dynamic.Call(onclick, data); err != nil {
+						if err := dynamic.Call(onclick, data, id); err != nil {
 							panic(fmt.Sprintf("dynamic call: %v", err))
 						}
 					},
@@ -382,7 +386,7 @@ func calculateChildren(root *UI, children []*Element, data interface{}, availabl
 			layout := child.Attributes.FontLayout()
 			label, err := Resolve(label, data)
 			if err != nil {
-				return fmt.Errorf("Resolve %s: %v", label, err)
+				return fmt.Errorf("Resolve %s: %v", child.Attributes["value"], err)
 			}
 
 			txtBounds := available
@@ -403,10 +407,14 @@ func calculateChildren(root *UI, children []*Element, data interface{}, availabl
 
 			buttonDimensions := image.Rect(x, y, x+width, y+height)
 
+			id, err := Resolve(child.Attributes["id"], data)
+			if err != nil {
+				return fmt.Errorf("Resolve %s: %v", child.Attributes["id"], err)
+			}
 			root.interactives = append(root.interactives, InteractiveRegion{
 				Bounds: buttonDimensions,
 				Handler: func() {
-					if err := dynamic.Call(child.Attributes["onclick"], data); err != nil {
+					if err := dynamic.Call(child.Attributes["onclick"], data, id); err != nil {
 						panic(fmt.Sprintf("dynamic call: %v", err))
 					}
 				},

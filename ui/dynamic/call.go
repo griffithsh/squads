@@ -6,7 +6,7 @@ import (
 )
 
 // Call the field with the name "method" on the struct or map "on".
-func Call(method string, on interface{}) error {
+func Call(method string, on interface{}, idArg string) error {
 	v := reflect.ValueOf(on)
 	if v.Kind() == reflect.Ptr {
 		v = v.Elem()
@@ -14,10 +14,10 @@ func Call(method string, on interface{}) error {
 	switch v.Kind() {
 	case reflect.Struct:
 		f := v.FieldByName(method)
-		f.Call([]reflect.Value{})
+		f.Call([]reflect.Value{reflect.ValueOf(idArg)})
 	case reflect.Map:
 		m := on.(map[string]interface{})
-		m[method].(func())()
+		m[method].(func(string))(idArg)
 	default:
 		return fmt.Errorf("unhandled Kind: %v(%v)", v.Kind(), v.Type())
 	}

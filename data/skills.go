@@ -42,7 +42,7 @@ func (a *Archive) Skill(id skill.ID) *skill.Description {
 	if val, ok := a.skills[id]; ok {
 		return &val
 	}
-	panic(fmt.Sprintf("unconfigured skill %s", id))
+	panic(fmt.Sprintf("unconfigured skill %q, %d loaded skills", id, len(a.skills)))
 }
 
 // internalSkills are skills that are compiled into the binary instead of loaded

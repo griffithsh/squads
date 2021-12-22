@@ -49,5 +49,6 @@ type UISkillInfo struct {
 	Texture string
 	IconX   int
 	IconY   int
-	Handle  func()
+	Id      string
+	Handle  func(string)
 }

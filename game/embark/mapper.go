@@ -28,8 +28,8 @@ type CharacterSheetData struct {
 	Intlvl        string
 	Vitlvl        string
 	Masteries     []string
-	HandleCancel  func()
-	HandleAction  func()
+	HandleCancel  func(string)
+	HandleAction  func(string)
 	ActionButton  string
 }
 

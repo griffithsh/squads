@@ -10,11 +10,11 @@ func TestCall(t *testing.T) {
 	t.Run("WithMap", func(t *testing.T) {
 		x := "original"
 		f := map[string]interface{}{
-			"f": func() {
-				x = "modified"
+			"f": func(id string) {
+				x = id
 			},
 		}
-		err := Call("f", f)
+		err := Call("f", f, "modified")
 		if err != nil {
 			t.Fatalf("execute error: %v", err)
 		}
@@ -22,18 +22,21 @@ func TestCall(t *testing.T) {
 		if x == "original" {
 			t.Error("original was not changed")
 		}
+		if x != "modified" {
+			t.Errorf("want %q, got %q","modified",x)
+		}
 	})
 	t.Run("WithStruct", func(t *testing.T) {
 		x := "original"
 		type foo struct {
-			Handler func()
+			Handler func(string)
 		}
 		f := foo{
-			Handler: func() {
+			Handler: func(string) {
 				x = "modified"
 			},
 		}
-		Call("Handler", f)
+		Call("Handler", f, "")
 
 		if x == "original" {
 			t.Error("original was not changed")
@@ -42,14 +45,14 @@ func TestCall(t *testing.T) {
 	t.Run("WithPtr", func(t *testing.T) {
 		x := "original"
 		type foo struct {
-			Handler func()
+			Handler func(string)
 		}
 		f := foo{
-			Handler: func() {
+			Handler: func(string) {
 				x = "modified"
 			},
 		}
-		Call("Handler", &f)
+		Call("Handler", &f, "")
 
 		if x == "original" {
 			t.Error("original was not changed")

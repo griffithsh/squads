@@ -10,6 +10,7 @@ import (
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/game/combat"
 	"github.com/griffithsh/squads/mathx"
+	"github.com/griffithsh/squads/skill"
 	"github.com/griffithsh/squads/ui"
 )
 
@@ -55,7 +56,7 @@ func randHUDData(archive *data.Archive) combat.HUDData {
 
 		TurnQueue: turnQueue,
 
-		Skills: randSkills(),
+		Skills: randSkills(archive),
 	}
 }
 
@@ -85,32 +86,49 @@ func randQueuedParticipant(archive *data.Archive) combat.QueuedParticipant {
 	}
 }
 
-func randSkills() [7]combat.UISkillInfoRow {
-	randSkillInfo := func() combat.UISkillInfo {
+func randSkills(archive *data.Archive) [7]combat.UISkillInfoRow {
+	skillInfo := func(id string) combat.UISkillInfo {
+		if id == "" {
+			return combat.UISkillInfo{
+				Texture: "hud.png",
+				IconX:   184,
+				IconY:   0,
+				Id:      "",
+				Handle: func(string) {
+				},
+			}
+		}
+		desc := archive.Skill(skill.ID(id))
+		icon := desc.Icon.Frames[0]
+		handler := func(string) {}
+		if id != "" {
+			handler = func(id string) {
+				fmt.Printf("Skill %q!\n", id)
+			}
+		}
 		return combat.UISkillInfo{
-			Texture: "hud.png",
-			IconX:   184,
-			IconY:   0,
-			Handle: func() {
-				fmt.Println("Skill!")
-			},
+			Texture: icon.Texture,
+			IconX:   icon.X,
+			IconY:   icon.Y,
+			Id:      id,
+			Handle:  handler,
 		}
 	}
-	randSkillInfoRow := func() combat.UISkillInfoRow {
+	skillInfoRow := func(id1, id2 string) combat.UISkillInfoRow {
 		return combat.UISkillInfoRow{
 			Skills: [2]combat.UISkillInfo{
-				randSkillInfo(),
-				randSkillInfo(),
+				skillInfo(id1),
+				skillInfo(id2),
 			},
 		}
 	}
 	return [7]combat.UISkillInfoRow{
-		randSkillInfoRow(),
-		randSkillInfoRow(),
-		randSkillInfoRow(),
-		randSkillInfoRow(),
-		randSkillInfoRow(),
-		randSkillInfoRow(),
-		randSkillInfoRow(),
+		skillInfoRow("", ""),
+		skillInfoRow("", ""),
+		skillInfoRow("", ""),
+		skillInfoRow("raise-skeleton", "debug-basic-attack"),
+		skillInfoRow("", "debug-lightning"),
+		skillInfoRow("", "debug-revive"),
+		skillInfoRow("", ""),
 	}
 }

@@ -234,8 +234,8 @@ var permittedAttributes = map[ElementType][]string{
 	PaddingElement: {"all", "vertical", "horizontal", "top", "bottom", "left", "right", "valign", "align"},
 	ColumnElement:  {"twelfths", "align"},
 	TextElement:    {"value", "size", "layout", "color", "width"},
-	ButtonElement:  {"onclick", "label", "width"},
-	ImageElement:   {"texture", "width", "height", "x", "y", "intangible", "onclick"},
+	ButtonElement:  {"onclick", "label", "width", "id"},
+	ImageElement:   {"texture", "width", "height", "x", "y", "intangible", "onclick", "id"},
 	IfElement:      {"expr"},
 	RangeElement:   {"over"},
 }

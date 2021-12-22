@@ -81,8 +81,8 @@ func randomCharData(archive *data.Archive) embark.CharacterSheetData {
 		Vitlvl:        fmt.Sprintf("%.2f", 2.005),
 		Masteries:     masteries,
 
-		HandleCancel: func() { fmt.Println("Cancel!") },
-		HandleAction: func() { fmt.Println("Confirm") },
+		HandleCancel: func(string) { fmt.Println("Cancel!") },
+		HandleAction: func(string) { fmt.Println("Confirm") },
 		ActionButton: "Do it!",
 	}
 }
