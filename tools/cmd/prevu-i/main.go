@@ -27,6 +27,7 @@ const screenWidth, screenHeight = 1024, 768
 var e ecs.Entity
 var uis []func(*ecs.World, *data.Archive) = []func(*ecs.World, *data.Archive){
 	setupCombatUI,
+	setupCombatUIPreparing,
 	setupEmbarkFocusCharacter,
 }
 
@@ -71,8 +72,9 @@ func (p *prevUI) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHei
 func (p *prevUI) nextUI() {
 	p.mgr.DestroyEntity(e)
 	uis[0](p.mgr, p.archive)
-	first := uis[0]
 
+	// Matthew 19:30
+	first := uis[0]
 	uis = append(uis[1:], first)
 }
 

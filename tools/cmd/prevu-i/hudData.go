@@ -14,6 +14,18 @@ import (
 	"github.com/griffithsh/squads/ui"
 )
 
+func setupCombatUIPreparing(mgr *ecs.World, archive *data.Archive) {
+	f, err := os.Open("game/combat/turnQueue.xml")
+	if err != nil {
+		panic(fmt.Sprintf("%v", err))
+	}
+	e = mgr.NewEntity()
+	nui := ui.NewUI(f)
+	data := randHUDData(archive)
+	nui.Data = &data
+	mgr.AddComponent(e, nui)
+}
+
 func setupCombatUI(mgr *ecs.World, archive *data.Archive) {
 	f, err := os.Open("game/combat/ui.xml")
 	if err != nil {
@@ -33,7 +45,7 @@ func randHUDData(archive *data.Archive) combat.HUDData {
 	overlayBig := game.PortraitFrameBig[0]
 
 	turnQueue := []combat.QueuedParticipant{}
-	for i := 0; i < 2+rand.Intn(3); i++ {
+	for i := 0; i < 3+rand.Intn(6); i++ {
 		turnQueue = append(turnQueue, randQueuedParticipant(archive))
 	}
 	return combat.HUDData{
