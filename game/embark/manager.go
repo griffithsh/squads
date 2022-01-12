@@ -996,7 +996,7 @@ func (em *Manager) repaint() {
 			panic(fmt.Sprintf("%v", err))
 		}
 		uic := ui.NewUI(f)
-		uic.Data = struct{ HandleStart func() }{func() {
+		uic.Data = struct{ HandleStart func(string) }{func(string) {
 			uiEntity := e
 			em.bus.Publish(&SquadSelected{})
 

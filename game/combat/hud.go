@@ -52,7 +52,6 @@ var (
 	currentParticipantStatsTag         = currentParticipantTag + ".STATS"
 	skillsTag                          = currentParticipantTag + ".SKILLS"
 	turnQueueTag                       = combatHUDTag + ".TURN_QUEUE"
-	endTurnButtonTag                   = combatHUDTag + ".END_TURN_BUTTON"
 
 	invalidatedTag = combatHUDTag + ".INVALIDATED"
 )
@@ -96,15 +95,16 @@ func NewHUD(mgr *ecs.World, bus *event.Bus, screenX int, screenY int, archive Sk
 	return &hud
 }
 
-// Enable is the opposite of Disable. It shows anything that should be shown based on the current state.
+// Enable is the opposite of Disable. It shows anything that should be shown
+// based on the current state.
 func (hud *HUD) Enable() {
-	if hud.lastCombatState == AwaitingInputState || hud.lastCombatState == SelectingTargetState {
+	switch hud.lastCombatState {
+	case AwaitingInputState, SelectingTargetState:
 		hud.showSkills()
 		hud.showCurrentParticipant()
 		hud.showCurrentParticipantStats()
-	}
 
-	if hud.lastCombatState == PreparingState {
+	case PreparingState:
 		hud.showTimePassingIcon()
 	}
 
@@ -133,11 +133,12 @@ func (hud *HUD) handleWindowSizeChanged(e event.Typer) {
 		return
 	}
 
-	if hud.mgr.AnyTagged(timePassingTag) == 0 {
-		return
+	// If the window size has changed, then the center's absolute pixel
+	// coordinates have also changed, so we should invalidate the time passing
+	// icon.
+	if hud.mgr.AnyTagged(timePassingTag) != 0 {
+		hud.showTimePassingIcon()
 	}
-
-	hud.showTimePassingIcon()
 }
 
 func (hud *HUD) handleCombatBegan(event.Typer) {
