@@ -2,6 +2,7 @@ package combat
 
 import (
 	"fmt"
+	"os"
 	"sort"
 	"strconv"
 	"time"
@@ -70,10 +71,24 @@ type HUD struct {
 	turnToken ecs.Entity
 
 	dormant bool
+
+	// Beta stuff:
+
+	uiEntity             ecs.Entity
+	turnQueueUIComponent *ui.UI
+	fullUIComponent      *ui.UI
 }
 
 // NewHUD constructs a HUD.
 func NewHUD(mgr *ecs.World, bus *event.Bus, screenX int, screenY int, archive SkillArchive) *HUD {
+	makeUI := func(file string) *ui.UI {
+		f, err := os.Open(file)
+		if err != nil {
+			panic(fmt.Sprintf("%v", err))
+		}
+		return ui.NewUI(f)
+
+	}
 	hud := HUD{
 		mgr:             mgr,
 		bus:             bus,
@@ -82,7 +97,12 @@ func NewHUD(mgr *ecs.World, bus *event.Bus, screenX int, screenY int, archive Sk
 		layer:           100,
 		centerX:         float64(screenX) / 2,
 		centerY:         float64(screenY) / 2,
-		lastCombatState: AwaitingInputState,
+		lastCombatState: Uninitialised,
+		dormant:         true,
+
+		uiEntity:             mgr.NewEntity(),
+		fullUIComponent:      makeUI("game/combat/ui.xml"),
+		turnQueueUIComponent: makeUI("game/combat/turnQueue.xml"),
 	}
 
 	bus.Subscribe(game.WindowSizeChanged{}.Type(), hud.handleWindowSizeChanged)
@@ -226,6 +246,127 @@ func (hud *HUD) handleDamageAccepted(t event.Typer) {
 	})
 }
 
+func (hud *HUD) skillsForParticipant(p *Participant) [7]UISkillInfoRow {
+	// convert a *skill.Description to a UISkillInfo
+	convert := func(sd *skill.Description) UISkillInfo {
+		spr := sd.Icon.Frames[sd.Icon.Index()]
+		return UISkillInfo{
+			Id:      string(sd.ID),
+			Texture: spr.Texture,
+			IconX:   spr.X,
+			IconY:   spr.Y,
+			Handle: func(string) {
+				hud.bus.Publish(&SkillRequested{
+					Code: sd.ID,
+				})
+			},
+		}
+	}
+
+	var result [7]UISkillInfoRow
+	for i := 0; i < 7; i++ {
+		var row [2]UISkillInfo
+		for i := 0; i < 2; i++ {
+			info := &row[i]
+			info.Texture = "hud.png"
+			info.IconX = 184
+			info.IconY = 0
+			info.Handle = func(string) {}
+		}
+		result[i].Skills = row
+	}
+	if hud.lastCombatState == AwaitingInputState {
+		// Movement
+		result[0].Skills[0] = convert(hud.archive.Skill(skill.BasicMovement))
+
+		// Consumables
+		result[0].Skills[1] = UISkillInfo{
+			Texture: "hud.png",
+			IconX:   232,
+			IconY:   0,
+			Handle: func(string) {
+				// TODO
+			},
+		}
+
+		// Flee
+		result[6].Skills[0] = UISkillInfo{
+			Texture: "hud.png",
+			IconX:   184,
+			IconY:   24,
+			Handle: func(string) {
+				hud.bus.Publish(&AttemptingEscape{Entity: hud.turnToken})
+			},
+		}
+
+		// End turn
+		result[6].Skills[1] = UISkillInfo{
+			Texture: "hud.png",
+			IconX:   208,
+			IconY:   24,
+			Handle: func(string) {
+				hud.bus.Publish(&EndTurnRequested{})
+			},
+		}
+
+		// Skill slots 1, 2, 8, and 9 are reserved for skills provided by the
+		// Character's equipped weapon.
+		// weaponSlots := []int{1, 2, 8, 9}
+		weaponSlots := []*UISkillInfo{
+			&result[1].Skills[0],
+			&result[1].Skills[1],
+			&result[2].Skills[0],
+			&result[2].Skills[1],
+		}
+		for i, sd := range hud.archive.SkillsByWeaponClass(p.EquippedWeaponClass) {
+			if i >= len(weaponSlots) {
+				break
+			}
+			info := convert(sd)
+			slot := weaponSlots[i]
+			slot.Id = info.Id
+			slot.Texture = info.Texture
+			slot.IconX = info.IconX
+			slot.IconY = info.IconY
+			slot.Handle = info.Handle
+		}
+		// Skill slots 3, 4, 5, 10, 11, and 12 are reserved for skills provided
+		// by the Character's profession.
+		// profSlots := []int{3, 4, 5, 10, 11, 12}
+		profSlots := []*UISkillInfo{
+			&result[3].Skills[0],
+			&result[3].Skills[1],
+			&result[4].Skills[0],
+			&result[4].Skills[1],
+			&result[5].Skills[0],
+			&result[5].Skills[1],
+		}
+		for i, sd := range hud.archive.SkillsByProfession(p.Profession) {
+			if i >= len(profSlots) {
+				break
+			}
+			info := convert(sd)
+			slot := profSlots[i]
+			slot.Id = info.Id
+			slot.Texture = info.Texture
+			slot.IconX = info.IconX
+			slot.IconY = info.IconY
+			slot.Handle = info.Handle
+		}
+
+	} else {
+		result[0].Skills[0] = UISkillInfo{
+			Texture: "hud.png",
+			IconX:   208,
+			IconY:   0,
+			Handle: func(string) {
+				hud.bus.Publish(&CancelSkillRequested{})
+			},
+		}
+	}
+	return result
+}
+
 // Update the HUD. Synchronise the current game state to the Entities that compose it.
 func (hud *HUD) Update(elapsed time.Duration) {
 	var e ecs.Entity
@@ -249,6 +390,94 @@ func (hud *HUD) Update(elapsed time.Duration) {
 	e = hud.mgr.AnyTagged(turnQueueTag)
 	if e != 0 && hud.mgr.HasTag(e, invalidatedTag) {
 		hud.repaintTurnQueue()
+	}
+
+	// TODO (re?)construct data for the UI
+	// ...
+
+	if hud.dormant {
+		return
+	}
+
+	participantEntities := hud.mgr.Get([]string{"Participant"})
+	participants := make([]*Participant, len(participantEntities))
+	for i, e := range participantEntities {
+		participants[i] = hud.mgr.Component(e, "Participant").(*Participant)
+	}
+	sort.Slice(participants, func(i, j int) bool {
+		ip, jp := participants[i], participants[j]
+		ipRem := ip.PreparationThreshold.Max - ip.PreparationThreshold.Cur
+		jpRem := jp.PreparationThreshold.Max - jp.PreparationThreshold.Cur
+		if ipRem != jpRem {
+			return ipRem < jpRem
+		}
+		return ip.Disambiguator < jp.Disambiguator
+	})
+
+	turnQueue := make([]QueuedParticipant, 0)
+	for _, participant := range participants {
+		// Knocked Down and Escaped Characters cannot take turns.
+		if participant.Status != Alive {
+			continue
+		}
+
+		turnQueue = append(turnQueue, QueuedParticipant{
+			Background:    participant.SmallPortraitBG.Texture,
+			BackgroundY:   participant.SmallPortraitBG.Y,
+			BackgroundX:   participant.SmallPortraitBG.X,
+			Portrait:      participant.SmallIcon.Texture,
+			PortraitX:     participant.SmallIcon.X,
+			PortraitY:     participant.SmallIcon.Y,
+			OverlayFrame:  participant.SmallPortraitFrame.Texture,
+			OverlayFrameX: participant.SmallPortraitFrame.X,
+			OverlayFrameY: participant.SmallPortraitFrame.Y,
+
+			Prep:    participant.PreparationThreshold.Cur,
+			PrepMax: participant.PreparationThreshold.Max,
+		})
+	}
+
+	// Add the right ui component given current combat state
+	hud.mgr.RemoveComponent(hud.uiEntity, &ui.UI{})
+	switch hud.lastCombatState {
+	case PreparingState:
+		hud.turnQueueUIComponent.Data = struct{ TurnQueue []QueuedParticipant }{
+			// NB the turn queue contains ALL participants, and is the only relevant
+			// field for the turnQueue UI.
+			TurnQueue: turnQueue,
+		}
+		hud.mgr.AddComponent(hud.uiEntity, hud.turnQueueUIComponent)
+	case AwaitingInputState, SelectingTargetState:
+		participant := hud.mgr.Component(hud.turnToken, "Participant").(*Participant)
+		hud.fullUIComponent.Data = HUDData{
+			Background:    participant.BigPortraitBG.Texture,
+			BackgroundY:   participant.BigPortraitBG.Y,
+			BackgroundX:   participant.BigPortraitBG.X,
+			Portrait:      participant.BigIcon.Texture,
+			PortraitX:     participant.BigIcon.X,
+			PortraitY:     participant.BigIcon.Y,
+			OverlayFrame:  participant.BigPortraitFrame.Texture,
+			OverlayFrameX: participant.BigPortraitFrame.X,
+			OverlayFrameY: participant.BigPortraitFrame.Y,
+
+			Name:      participant.Name,
+			Health:    participant.CurrentHealth,
+			HealthMax: participant.maxHealth(),
+			Energy:    0, // FIXME: implement energy
+			EnergyMax: 0, // FIXME: implement energy
+			Action:    participant.ActionPoints.Cur,
+			ActionMax: participant.ActionPoints.Max,
+			Prep:      participant.PreparationThreshold.Cur,
+			PrepMax:   participant.PreparationThreshold.Max,
+
+			// NB the turn queue contains all but the prepared participant.
+			TurnQueue: turnQueue[:len(turnQueue)-1],
+
+			Skills: hud.skillsForParticipant(participant),
+		}
+		hud.mgr.AddComponent(hud.uiEntity, hud.fullUIComponent)
+	default:
+		// Do neither
 	}
 }
 
@@ -299,6 +528,7 @@ func (hud *HUD) repaintTimePassingIcon() {
 }
 
 func (hud *HUD) showCurrentParticipant() {
+	return
 	e := hud.mgr.AnyTagged(currentParticipantTag)
 	if e != 0 {
 		hud.mgr.Tag(e, invalidatedTag)
@@ -421,6 +651,7 @@ func (hud *HUD) repaintCurrentParticipant() {
 }
 
 func (hud *HUD) showCurrentParticipantStats() {
+	return
 	e := hud.mgr.AnyTagged(currentParticipantStatsTag)
 	if e != 0 {
 		hud.mgr.Tag(e, invalidatedTag)
@@ -455,6 +686,9 @@ func (hud *HUD) repaintCurrentParticipantStats() {
 	children := hud.mgr.Component(parent, "Children").(*ecs.Children)
 
 	e := hud.turnToken
+	if e == 0 {
+		return
+	}
 	participant := hud.mgr.Component(e, "Participant").(*Participant)
 	labels := []string{
 		"Health:",
@@ -494,6 +728,7 @@ func (hud *HUD) repaintCurrentParticipantStats() {
 }
 
 func (hud *HUD) showSkills() {
+	return
 	// Create a parent entity tagged with invalidatedTag and skillsTag
 	e := hud.mgr.AnyTagged(skillsTag)
 	if e != 0 {
@@ -699,6 +934,7 @@ const turnQueueSlots int = 8
 const entitiesPerTurnQueueSlot int = 5
 
 func (hud *HUD) showTurnQueue() {
+	return
 	e := hud.mgr.AnyTagged(turnQueueTag)
 	if e != 0 {
 		hud.mgr.Tag(e, invalidatedTag)
