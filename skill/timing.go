@@ -14,6 +14,7 @@ type Timing struct {
 	sched time.Duration
 }
 
+//go:generate stringer -type=TimingPoint
 type TimingPoint int
 
 const (
@@ -21,6 +22,17 @@ const (
 	AttackApexTimingPoint TimingPoint = iota
 	EndTimingPoint
 )
+
+func TimingPointFromString(s string) *TimingPoint {
+	for i := 0; i <= int(EndTimingPoint); i++ {
+		c := TimingPoint(i)
+
+		if c.String() == s {
+			return &c
+		}
+	}
+	return nil
+}
 
 // NewTiming constructs a Timing for an effect that should be triggered the
 // specified Duration after the skill execution starts.

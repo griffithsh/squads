@@ -408,6 +408,16 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, a
 
 		EquippedWeaponClass: equipment.WeaponClass(),
 		ItemStats:           equipment.SumModifiers(),
+		// FIXME: Skills should come from a subset of the available skills
+		// configured by the player. Available skills come from the equipped
+		// items and the profession of the Character.
+		Skills: []skill.ID{
+			"debug-basic-attack",
+			"basic-slash",
+			"debug-lightning",
+			"debug-revive",
+			"raise-skeleton",
+		},
 	}
 
 	participant.Character = charEntity

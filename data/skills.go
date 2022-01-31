@@ -1,21 +1,160 @@
 package data
 
 import (
+	"encoding/json"
 	"fmt"
+	"io"
+	"os"
 	"time"
 
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/skill"
 )
 
+type skillEffect struct {
+	When      int // milliseconds
+	WhenPoint string
+	What      interface{}
+}
+
+type skillDescription struct {
+	ID          skill.ID
+	Name        string
+	Explanation string
+
+	// Tags critically includes Attack or Spell, and allows the game to select
+	// an appropriate animation to use when using the skill.
+	Tags []string
+
+	Icon game.Sprite
+
+	Targeting      string
+	TargetingBrush string
+
+	// Effects of triggering this skill.
+	Effects []skillEffect
+
+	Costs map[string]int
+}
+
+// convert to a skill.Description
+func (sd *skillDescription) convert() (skill.Description, error) {
+	tags := []skill.Classification{}
+	for _, raw := range sd.Tags {
+		tag := skill.ClassificationFromString(raw)
+		if tag == nil {
+			fmt.Fprintf(os.Stderr, "unknown skill.Classification %s", raw)
+			continue
+		}
+		tags = append(tags, *tag)
+	}
+
+	targetingRule := skill.TargetingRuleFromString(sd.Targeting)
+	if targetingRule == nil {
+		return skill.Description{}, fmt.Errorf("convert %q to targetingRule", sd.Targeting)
+	}
+
+	targetingBrush := skill.TargetingBrushFromString(sd.TargetingBrush)
+	if targetingBrush == nil {
+		return skill.Description{}, fmt.Errorf("convert %q to targetingBrush", sd.TargetingBrush)
+	}
+
+	effects := []skill.Effect{}
+	for _, raw := range sd.Effects {
+		when := skill.Timing{}
+		point := skill.TimingPointFromString(raw.WhenPoint)
+		if point != nil {
+			when = skill.NewTimingFromPoint(*point)
+		} else {
+			when = skill.NewTiming(time.Duration(raw.When) * time.Millisecond)
+		}
+		effect := skill.Effect{
+			When: when,
+			What: raw.What,
+		}
+		effects = append(effects, effect)
+	}
+	costs := map[skill.CostType]int{}
+	for k, v := range sd.Costs {
+		costType := skill.CostTypeFromString(k)
+		if costType == nil {
+			return skill.Description{}, fmt.Errorf("convert to costType %q", k)
+		}
+
+		costs[*costType] = v
+	}
+
+	return skill.Description{
+		ID:             sd.ID,
+		Name:           sd.Name,
+		Explanation:    sd.Explanation,
+		Tags:           tags,
+		Icon:           *sd.Icon.AsAnimation(),
+		Targeting:      *targetingRule,
+		TargetingBrush: *targetingBrush,
+		Effects:        effects,
+		Costs:          costs,
+	}, nil
+}
+
+func (d *skillEffect) UnmarshalJSON(data []byte) error {
+	v := struct {
+		When      int
+		WhenPoint string
+		What      struct {
+			Type string `json:"_type"`
+		}
+	}{}
+	if err := json.Unmarshal(data, &v); err != nil {
+		return err
+	}
+	d.When = v.When
+	d.WhenPoint = v.WhenPoint
+
+	switch v.What.Type {
+	case "DamageEffect":
+		v2 := struct {
+			What skill.DamageEffect
+		}{}
+		json.Unmarshal(data, &v2)
+		d.What = v2.What
+
+	default:
+		// TODO: other effect types!
+		return fmt.Errorf("unknown _type %q (%v)", v.What.Type, v)
+	}
+	return nil
+}
+
+func parseSkills(r io.Reader) ([]skill.Description, error) {
+	dec := json.NewDecoder(r)
+
+	result := []skill.Description{}
+	var s skillDescription
+	for {
+		err := dec.Decode(&s)
+		if err == io.EOF {
+			break
+		} else if err != nil {
+			return nil, err
+		}
+		sd, err := s.convert()
+		if err != nil {
+			return nil, fmt.Errorf("convert skillDescription: %v", err)
+		}
+		result = append(result, sd)
+	}
+	return result, nil
+}
+
 // SkillsByProfession gets the skills for a profession.
 func (a *Archive) SkillsByProfession(prof string) []*skill.Description {
 	// FIXME: implementation
 	return []*skill.Description{
-		a.Skill("debug-basic-attack"),
-		a.Skill("debug-lightning"),
-		a.Skill("debug-revive"),
-		a.Skill("raise-skeleton"),
+		// a.Skill("debug-basic-attack"),
+		// a.Skill("debug-lightning"),
+		// a.Skill("debug-revive"),
+		// a.Skill("raise-skeleton"),
 	}
 }
 

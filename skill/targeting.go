@@ -1,5 +1,7 @@
 package skill
 
+//go:generate stringer -output=./targeting_string.go -type=TargetingRule,TargetingBrush
+
 // TargetingRule identifies where a skill can be targeted on a field.
 type TargetingRule int
 
@@ -18,6 +20,17 @@ const (
 	// TODO: implement TargetLinear
 )
 
+func TargetingRuleFromString(s string) *TargetingRule {
+	for i := 0; i <= int(TargetAdjacent); i++ {
+		c := TargetingRule(i)
+
+		if c.String() == s {
+			return &c
+		}
+	}
+	return nil
+}
+
 // TargetingBrush enumerates the different rule sets for which hex or hexes are
 // highlighted given a target and origin.
 type TargetingBrush int
@@ -34,3 +47,14 @@ const (
 	// distance are highlighted.
 	// TODO: implement AreaOfEffect
 )
+
+func TargetingBrushFromString(s string) *TargetingBrush {
+	for i := 0; i <= int(Pathfinding); i++ {
+		c := TargetingBrush(i)
+
+		if c.String() == s {
+			return &c
+		}
+	}
+	return nil
+}

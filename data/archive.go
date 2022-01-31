@@ -8,6 +8,7 @@ import (
 	"image"
 	"image/png"
 	"io"
+	"os"
 	"path/filepath"
 	"strings"
 
@@ -145,8 +146,20 @@ func (a *Archive) Load(r io.Reader) error {
 						return fmt.Errorf("parse %s: %v", head.Name, err)
 					}
 					a.overworldRecipes = append(a.overworldRecipes, recipe)
-				case ".skill-thingy?":
-					// TODO:
+				case ".skills":
+					skills, err := parseSkills(tr)
+					if err != nil {
+						return fmt.Errorf("parse %s.skills: %v", head.Name, err)
+					}
+					for _, skill := range skills {
+						if _, ok := a.skills[skill.ID]; ok {
+							//duplicate - overwrites
+							fmt.Fprintf(os.Stderr, "skill in %s.skills overwrites skill ID %v", head.Name, skill.ID)
+						}
+						a.skills[skill.ID] = skill
+						fmt.Println("loaded skill", skill.ID)
+					}
+
 				case ".names":
 					// .names are a csv-like file that include names with tags for
 					// how they should be used, like M and F for sexes etc.

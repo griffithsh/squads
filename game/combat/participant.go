@@ -5,6 +5,7 @@ import (
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/skill"
 )
 
 // EngagementStatus represents how fit for combat a Character is.
@@ -77,9 +78,11 @@ type Participant struct {
 
 	Masteries map[game.Mastery]int
 
-	// EquippedWeaponClass should not change while in combat.
+	ItemStats map[game.Modifier]float64
+
 	EquippedWeaponClass game.ItemClass
-	ItemStats           map[game.Modifier]float64
+	// Skills should not change while in combat.
+	Skills []skill.ID
 }
 
 // Type of this Component.

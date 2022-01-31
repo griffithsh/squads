@@ -249,29 +249,11 @@ func (hud *HUD) skillsForParticipant(p *Participant) [7]UISkillInfoRow {
 			},
 		}
 
-		// Skill slots 1, 2, 8, and 9 are reserved for skills provided by the
-		// Character's equipped weapon.
-		weaponSlots := []*UISkillInfo{
+		freeSlots := []*UISkillInfo{
 			&result[1].Skills[0],
 			&result[1].Skills[1],
 			&result[2].Skills[0],
 			&result[2].Skills[1],
-		}
-		for i, sd := range hud.archive.SkillsByWeaponClass(p.EquippedWeaponClass) {
-			if i >= len(weaponSlots) {
-				break
-			}
-			info := convert(sd)
-			slot := weaponSlots[i]
-			slot.Id = info.Id
-			slot.Texture = info.Texture
-			slot.IconX = info.IconX
-			slot.IconY = info.IconY
-			slot.Handle = info.Handle
-		}
-		// Skill slots 3, 4, 5, 10, 11, and 12 are reserved for skills provided
-		// by the Character's profession.
-		profSlots := []*UISkillInfo{
 			&result[3].Skills[0],
 			&result[3].Skills[1],
 			&result[4].Skills[0],
@@ -279,12 +261,13 @@ func (hud *HUD) skillsForParticipant(p *Participant) [7]UISkillInfoRow {
 			&result[5].Skills[0],
 			&result[5].Skills[1],
 		}
-		for i, sd := range hud.archive.SkillsByProfession(p.Profession) {
-			if i >= len(profSlots) {
+		for i, id := range p.Skills {
+			sd := hud.archive.Skill(id)
+			if i >= len(freeSlots) {
 				break
 			}
 			info := convert(sd)
-			slot := profSlots[i]
+			slot := freeSlots[i]
 			slot.Id = info.Id
 			slot.Texture = info.Texture
 			slot.IconX = info.IconX

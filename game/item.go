@@ -2,11 +2,14 @@ package game
 
 //go:generate stringer -type=ItemClass
 
-// ItemClass is a low-specificity delineation of item.
+// ItemClass is a low-specificity delineation of item. Within each Class is a
+// collection of more specific types of that class captured as a Code. BowClass
+// might contain a long bow and a short bow. The SwordClass might contain a fast
+// sword and a slow sword.
 type ItemClass int
 
 const (
-	UnarmedClass ItemClass = iota
+	UnarmedClass ItemClass = iota // FIXME?
 	SwordClass
 	AxeClass
 	ClubClass
@@ -27,18 +30,24 @@ const (
 	BeltClass
 )
 
-// TODO: There is an item ... "type" here as well, because a class like swords
-// should include some fast swords and some slow swords. The prep and AP values
-// should be configured at this intermediate level between class and instance.
-// This *might* be the Recipe level?
-//
-// No that's wrong isnt it? The Recipe should contain a range of values and the
-// ItemInstance should be created with a specific value in that range for AP and
-// Prep.
+func (c ItemClass) IsWeapon() bool {
+	return c >= UnarmedClass && c <= WandClass
+}
 
 // ItemInstance is a rolled item that can be equipped.
 type ItemInstance struct {
-	Class     ItemClass
+	Class ItemClass
+
+	// Code represents a more specific implementation of the ItemClass. If an item's
+	// name in English is Short Sword, the Code might be "short_sword". Codes
+	// should be configured in separate game data, and loaded into the game at
+	// runtime.
+	Code string
+
+	// Name is rendered at recipe execution time and might be something like "Deadly
+	// Axe of Iciness"
 	Name      string
 	Modifiers map[Modifier]float64 // base damage, or base armor, or any other modifier
+
+	// Skills []skill.ID
 }
