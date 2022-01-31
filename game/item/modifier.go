@@ -1,4 +1,4 @@
-package game
+package item
 
 //go:generate stringer -type=Modifier
 

@@ -8,6 +8,7 @@ import (
 	"time"
 
 	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/game/item"
 	"github.com/griffithsh/squads/skill"
 )
 
@@ -161,14 +162,14 @@ func (a *Archive) SkillsByProfession(prof string) []*skill.Description {
 // SkillsByWeaponClass provides the skills of a weapon class.
 // FIXME: the skills should be provided by the instance of a class instead, so
 // that a rapier can have different skills to a broadsword and to a scimitar.
-func (a *Archive) SkillsByWeaponClass(weap game.ItemClass) []*skill.Description {
+func (a *Archive) SkillsByWeaponClass(weap item.Class) []*skill.Description {
 	// FIXME: implementation
 	switch weap {
-	case game.SwordClass:
+	case item.SwordClass:
 		return []*skill.Description{
 			a.Skill("debug-basic-attack"),
 		}
-	case game.UnarmedClass:
+	case item.UnarmedClass:
 		fallthrough
 	default:
 		// Because other ItemClasses are armor, they provide no skills.

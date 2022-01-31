@@ -5,6 +5,7 @@ import (
 	"sort"
 
 	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/game/item"
 )
 
 type CharacterSheetData struct {
@@ -33,7 +34,7 @@ type CharacterSheetData struct {
 	ActionButton  string
 }
 
-func AsCharacterSheetData(char *game.Character, equip *game.Equipment, prof *game.ProfessionDetails, app *game.Appearance) CharacterSheetData {
+func AsCharacterSheetData(char *game.Character, equip *item.Equipment, prof *game.ProfessionDetails, app *game.Appearance) CharacterSheetData {
 	var masteries []string
 	for mastery, lvl := range char.Masteries {
 		if lvl == 0 {

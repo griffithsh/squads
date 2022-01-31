@@ -1,15 +1,17 @@
-package game
+package item
 
-//go:generate stringer -type=ItemClass
+import "github.com/griffithsh/squads/skill"
 
-// ItemClass is a low-specificity delineation of item. Within each Class is a
+//go:generate stringer -type=Class
+
+// Class is a low-specificity delineation of item. Within each Class is a
 // collection of more specific types of that class captured as a Code. BowClass
 // might contain a long bow and a short bow. The SwordClass might contain a fast
 // sword and a slow sword.
-type ItemClass int
+type Class int
 
 const (
-	UnarmedClass ItemClass = iota // FIXME?
+	UnarmedClass Class = iota // FIXME?
 	SwordClass
 	AxeClass
 	ClubClass
@@ -30,13 +32,13 @@ const (
 	BeltClass
 )
 
-func (c ItemClass) IsWeapon() bool {
+func (c Class) IsWeapon() bool {
 	return c >= UnarmedClass && c <= WandClass
 }
 
-// ItemInstance is a rolled item that can be equipped.
-type ItemInstance struct {
-	Class ItemClass
+// Instance is a rolled item that can be equipped.
+type Instance struct {
+	Class Class
 
 	// Code represents a more specific implementation of the ItemClass. If an item's
 	// name in English is Short Sword, the Code might be "short_sword". Codes
@@ -49,5 +51,5 @@ type ItemInstance struct {
 	Name      string
 	Modifiers map[Modifier]float64 // base damage, or base armor, or any other modifier
 
-	// Skills []skill.ID
+	Skills []skill.ID
 }

@@ -5,6 +5,7 @@ import (
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/game/item"
 	"github.com/griffithsh/squads/skill"
 )
 
@@ -78,9 +79,9 @@ type Participant struct {
 
 	Masteries map[game.Mastery]int
 
-	ItemStats map[game.Modifier]float64
+	ItemStats map[item.Modifier]float64
 
-	EquippedWeaponClass game.ItemClass
+	EquippedWeaponClass item.Class
 	// Skills should not change while in combat.
 	Skills []skill.ID
 }
@@ -92,46 +93,46 @@ func (*Participant) Type() string {
 
 // baseDamage of a combat participant.
 func (p *Participant) baseDamage() (baseMin, baseMax float64) {
-	mult, ok := p.ItemStats[game.BaseDamageModifier]
+	mult, ok := p.ItemStats[item.BaseDamageModifier]
 	if !ok {
 		mult = 1.0
 	}
 	// If these values are not present, then default zero is appropriate.
-	min := p.ItemStats[game.BaseMinDamageModifier]
-	max := p.ItemStats[game.BaseMaxDamageModifier]
+	min := p.ItemStats[item.BaseMinDamageModifier]
+	max := p.ItemStats[item.BaseMaxDamageModifier]
 	min *= mult
 	max *= mult
 
 	var strBonus, agiBonus float64
 	switch p.EquippedWeaponClass {
-	case game.UnarmedClass:
+	case item.UnarmedClass:
 		strBonus = 0.75
-	case game.SwordClass:
+	case item.SwordClass:
 		strBonus = 0.65
 		agiBonus = 0.35
-	case game.AxeClass:
+	case item.AxeClass:
 		strBonus = 0.85
 		agiBonus = 0.15
-	case game.ClubClass:
+	case item.ClubClass:
 		strBonus = 1
-	case game.DaggerClass:
+	case item.DaggerClass:
 		agiBonus = 1
-	case game.SlingClass:
+	case item.SlingClass:
 		strBonus = 0.1
 		agiBonus = 0.9
-	case game.BowClass:
+	case item.BowClass:
 		strBonus = 0.2
 		agiBonus = 0.8
-	case game.SpearClass:
+	case item.SpearClass:
 		strBonus = 0.75
 		agiBonus = 0.75
-	case game.PolearmClass:
+	case item.PolearmClass:
 		strBonus = 1.0
 		agiBonus = 0.5
-	case game.StaffClass:
+	case item.StaffClass:
 		strBonus = .6
 		agiBonus = .6
-	case game.WandClass:
+	case item.WandClass:
 		strBonus = 0.1
 		agiBonus = 0.1
 	default:

@@ -1,19 +1,19 @@
-package game
+package item
 
 // Equipment is a Component that stores the equipped items of a Character.
 type Equipment struct {
-	Weapon *ItemInstance
-	// RightHand *ItemInstance
-	// LeftHand  *ItemInstance
+	Weapon *Instance
+	// RightHand *Instance
+	// LeftHand  *Instance
 
-	Helm   *ItemInstance
-	Amulet *ItemInstance
-	Armor  *ItemInstance
-	Ring1  *ItemInstance
-	Ring2  *ItemInstance
-	Belt   *ItemInstance
-	Gloves *ItemInstance
-	Boots  *ItemInstance
+	Helm   *Instance
+	Amulet *Instance
+	Armor  *Instance
+	Ring1  *Instance
+	Ring2  *Instance
+	Belt   *Instance
+	Gloves *Instance
+	Boots  *Instance
 }
 
 // Type of this Component.
@@ -28,7 +28,7 @@ func (equip *Equipment) SumModifiers() map[Modifier]float64 {
 	if equip == nil {
 		return result
 	}
-	it := []*ItemInstance{
+	it := []*Instance{
 		equip.Weapon,
 		equip.Helm,
 		equip.Amulet,
@@ -56,7 +56,7 @@ func (equip *Equipment) SumModifiers() map[Modifier]float64 {
 
 // WeaponClass returns the inferred ItemClass of the Weapon that is equipped (if
 // one is equipped), otherwise it returns Unarmed.
-func (equip *Equipment) WeaponClass() ItemClass {
+func (equip *Equipment) WeaponClass() Class {
 	if equip == nil {
 		return UnarmedClass
 	}

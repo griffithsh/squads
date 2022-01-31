@@ -12,6 +12,7 @@ import (
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/game/item"
 	"github.com/griffithsh/squads/geom"
 	"github.com/griffithsh/squads/skill"
 	"github.com/griffithsh/squads/ui"
@@ -21,7 +22,7 @@ import (
 type SkillArchive interface {
 	Skill(skill.ID) *skill.Description
 	SkillsByProfession(string) []*skill.Description
-	SkillsByWeaponClass(game.ItemClass) []*skill.Description
+	SkillsByWeaponClass(item.Class) []*skill.Description
 	Appearance(profession string, sex game.CharacterSex, hair string, skin string) *game.Appearance
 	Profession(profession string) *game.ProfessionDetails
 }
@@ -372,7 +373,7 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, a
 	cm.mgr.Tag(e, "combat")
 
 	// Add Participant Component.
-	equipment, _ := cm.mgr.Component(charEntity, "Equipment").(*game.Equipment)
+	equipment, _ := cm.mgr.Component(charEntity, "Equipment").(*item.Equipment)
 	char := cm.mgr.Component(charEntity, "Character").(*game.Character)
 	prof := cm.archive.Profession(char.Profession)
 

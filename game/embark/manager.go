@@ -9,6 +9,7 @@ import (
 	"os"
 	"sort"
 
+	"github.com/griffithsh/squads/game/item"
 	"github.com/griffithsh/squads/graph"
 	"github.com/griffithsh/squads/mathx"
 
@@ -961,7 +962,7 @@ func (em *Manager) repaint() {
 		em.mgr.Tag(e, "embark")
 		nui := ui.NewUI(f)
 		char := em.mgr.Component(villager, "Character").(*game.Character)
-		equip := em.mgr.Component(villager, "Equipment").(*game.Equipment)
+		equip := em.mgr.Component(villager, "Equipment").(*item.Equipment)
 		prof := em.archive.Profession(char.Profession)
 		app := em.archive.Appearance(char.Profession, char.Sex, char.Hair, char.Skin)
 
@@ -1153,7 +1154,7 @@ func (em *Manager) rollVillagers(num int) {
 		e := em.mgr.NewEntity()
 		em.mgr.Tag(e, "embark")
 		em.mgr.AddComponent(e, g.generateChar())
-		em.mgr.AddComponent(e, &game.Equipment{
+		em.mgr.AddComponent(e, &item.Equipment{
 			Weapon: g.generateWeapon(),
 		})
 
@@ -1164,7 +1165,7 @@ func (em *Manager) rollVillagers(num int) {
 }
 
 // paintChar used to create a panel for a character. It is deprecated.
-func (em *Manager) paintChar(char *game.Character, equip *game.Equipment, left float64, top float64, handlePrepare func(x, y float64)) {
+func (em *Manager) paintChar(char *game.Character, equip *item.Equipment, left float64, top float64, handlePrepare func(x, y float64)) {
 	container := em.mgr.NewEntity()
 	em.mgr.Tag(container, "embark")
 	em.mgr.Tag(container, "embark-characters")

@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/game/item"
 	"github.com/griffithsh/squads/mathx"
 )
 
@@ -56,30 +57,30 @@ func (g *generator) generateChar() *game.Character {
 	}
 }
 
-func (g *generator) generateWeapon() *game.ItemInstance {
+func (g *generator) generateWeapon() *item.Instance {
 	// unarmed or sword or bow
 
 	switch g.r.Intn(3) {
 	case 1:
-		return &game.ItemInstance{
-			Class: game.SwordClass,
+		return &item.Instance{
+			Class: item.SwordClass,
 			Name:  "Skirmish Sword of Quickness",
-			Modifiers: map[game.Modifier]float64{
-				game.BaseMinDamageModifier: 11,
-				game.BaseMaxDamageModifier: 22,
-				game.PreparationModifier:   599,
-				game.ActionPointModifier:   21,
+			Modifiers: map[item.Modifier]float64{
+				item.BaseMinDamageModifier: 11,
+				item.BaseMaxDamageModifier: 22,
+				item.PreparationModifier:   599,
+				item.ActionPointModifier:   21,
 			},
 		}
 	case 2:
-		return &game.ItemInstance{
-			Class: game.BowClass,
+		return &item.Instance{
+			Class: item.BowClass,
 			Name:  "Ferocious Longbow",
-			Modifiers: map[game.Modifier]float64{
-				game.BaseMinDamageModifier: 6,
-				game.BaseMaxDamageModifier: 17,
-				game.PreparationModifier:   461,
-				game.ActionPointModifier:   25,
+			Modifiers: map[item.Modifier]float64{
+				item.BaseMinDamageModifier: 6,
+				item.BaseMaxDamageModifier: 17,
+				item.PreparationModifier:   461,
+				item.ActionPointModifier:   25,
 			},
 		}
 	}
