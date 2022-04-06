@@ -41,6 +41,17 @@ type CurMax struct {
 	Max int
 }
 
+type injury struct {
+	// Value is the duration of the injury in preparation for all Injuries
+	// except Poison. For the poison injury it represents intensity.
+	Value int
+
+	// Remainder is (for Bleeding and Burning) the preparation that has been
+	// removed from Value due to preparation being applied, that has not been
+	// rounded up into a whole number unit of damage.
+	Remainder int
+}
+
 // Participant is a transient aggregation of the stats of a Character for the purposes
 // of combat. Participants are created at the beginning of combat and are destroyed at
 // the end of combat.
@@ -74,6 +85,9 @@ type Participant struct {
 	Vitality     int
 
 	Status EngagementStatus // Alive, Knocked down, or Escaped
+
+	// Injuries stores the current Injuries the Participant is suffering from.
+	Injuries map[skill.InjuryType]*injury
 
 	Disambiguator float64
 

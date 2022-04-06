@@ -10,11 +10,12 @@ func _() {
 	var x [1]struct{}
 	_ = x[TargetAnywhere-0]
 	_ = x[TargetAdjacent-1]
+	_ = x[Untargeted-2]
 }
 
-const _TargetingRule_name = "TargetAnywhereTargetAdjacent"
+const _TargetingRule_name = "TargetAnywhereTargetAdjacentUntargeted"
 
-var _TargetingRule_index = [...]uint8{0, 14, 28}
+var _TargetingRule_index = [...]uint8{0, 14, 28, 38}
 
 func (i TargetingRule) String() string {
 	if i < 0 || i >= TargetingRule(len(_TargetingRule_index)-1) {
@@ -28,11 +29,13 @@ func _() {
 	var x [1]struct{}
 	_ = x[SingleHex-0]
 	_ = x[Pathfinding-1]
+	_ = x[AreaOfEffect-2]
+	_ = x[None-3]
 }
 
-const _TargetingBrush_name = "SingleHexPathfinding"
+const _TargetingBrush_name = "SingleHexPathfindingAreaOfEffectNone"
 
-var _TargetingBrush_index = [...]uint8{0, 9, 20}
+var _TargetingBrush_index = [...]uint8{0, 9, 20, 32, 36}
 
 func (i TargetingBrush) String() string {
 	if i < 0 || i >= TargetingBrush(len(_TargetingBrush_index)-1) {

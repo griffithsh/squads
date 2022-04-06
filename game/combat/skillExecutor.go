@@ -286,6 +286,14 @@ func (se *skillExecutor) executeEffect(effect effect, inPlay *skillExecutionCont
 				At:         key,
 			})
 		}
+	case skill.InjuryEffect:
+		for _, affected := range inPlay.affected {
+			se.bus.Publish(&InjuryApplied{
+				Target:     affected,
+				InjuryType: ef.Type,
+				Value:      ef.Value,
+			})
+		}
 	default:
 		return fmt.Errorf("unhandled skill effect type %T", ef)
 	}

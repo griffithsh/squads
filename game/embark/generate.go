@@ -73,7 +73,7 @@ func (g *generator) generateWeapon() *item.Instance {
 				item.ActionPointModifier:   21,
 			},
 			Skills: []skill.ID{
-				"basic-slash",
+				"sword-slash",
 			},
 		}
 	case 2:

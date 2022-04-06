@@ -18,10 +18,13 @@ const (
 
 	// TargetLinear allows selections that are in a straight line with the origin.
 	// TODO: implement TargetLinear
+
+	// Untargeted skills cannot be targeted on any specific hex.
+	Untargeted
 )
 
 func TargetingRuleFromString(s string) *TargetingRule {
-	for i := 0; i <= int(TargetAdjacent); i++ {
+	for i := 0; i < len(_TargetingRule_index)-1; i++ {
 		c := TargetingRule(i)
 
 		if c.String() == s {
@@ -45,11 +48,15 @@ const (
 
 	// AreaOfEffect indicates that the target and all hexes within a configured
 	// distance are highlighted.
-	// TODO: implement AreaOfEffect
+	// TODO: implement a range for AreaOfEffect
+	AreaOfEffect
+
+	// None means no selected hexes.
+	None
 )
 
 func TargetingBrushFromString(s string) *TargetingBrush {
-	for i := 0; i <= int(Pathfinding); i++ {
+	for i := 0; i < len(_TargetingBrush_index)-1; i++ {
 		c := TargetingBrush(i)
 
 		if c.String() == s {

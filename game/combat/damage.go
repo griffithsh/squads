@@ -4,6 +4,7 @@ import (
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/skill"
 )
 
 type damageSystem struct {
@@ -17,8 +18,77 @@ func newDamageSystem(mgr *ecs.World, bus *event.Bus) *damageSystem {
 		bus: bus,
 	}
 	bus.Subscribe(DamageApplied{}.Type(), result.handleDamageApplied)
+	bus.Subscribe(InjuryApplied{}.Type(), result.handleInjuryApplied)
 
 	return &result
+}
+
+// percentDamageOverTime calculate how much damage to deal for a percentage of
+// maximum health dealt damage over time effect. The percent arg is literally
+// the percent, passing 7 means 7% of max health. perPrep means how long does it
+// take to deal `percent` of the target's max health. max is the target's max
+// health. elapsedPrep is how long to calculate the effect over.
+// The function returns the damage inflicted as well as the amount of
+// elapsedPrep that should be consumed by this damage.
+// Passing 10,1000,100,1000 would result in 10% of 100 being dealt, with all
+// 1000 elapsedPrep being consumed.
+func percentDamageOverTime(percent int, perPrep int, max int, elapsedPrep int) (int, int) {
+	dmg := ((max * percent) / 100) * elapsedPrep / perPrep
+	// consumed := elapsedPrep - ((max*percent)/100)/perPrep*dmg
+	var consumed int
+
+	for i := 0; ; i++ {
+		guess := ((max * percent) / 100) * i / perPrep
+		if guess == dmg {
+			consumed = i
+			break
+		}
+	}
+
+	return dmg, consumed
+}
+
+// bleedingDamageOverTime applies the bleeding injury rules to percentDamageOverTime.
+func bleedingDamageOverTime(max int, elapsedPrep int) (int, int) {
+	return percentDamageOverTime(7, 1000, max, elapsedPrep)
+}
+
+func (ds *damageSystem) ProcessDamageOverTime(elapsedPreparation int) {
+	// for every participant affected by bleeding, poisoned, burning ...
+	for _, e := range ds.mgr.Get([]string{"Participant"}) {
+		participant := ds.mgr.Component(e, "Participant").(*Participant)
+
+		for ty, injury := range participant.Injuries {
+			switch ty {
+			case skill.BleedingInjury:
+				injury.Value -= elapsedPreparation
+				injury.Remainder += elapsedPreparation
+				if injury.Value < 0 {
+					// if elapsed preparation exceeds the value, then remove
+					// that much from the remainder too.
+					injury.Remainder += injury.Value
+				}
+
+				damage, consumed := bleedingDamageOverTime(participant.maxHealth(), injury.Remainder)
+
+				if damage > 0 {
+					// Remove from the remainder, what we have converted to damage.
+					injury.Remainder -= consumed
+
+					ds.bus.Publish(&DamageAccepted{
+						Target:     e,
+						Amount:     damage,
+						Reduced:    0,
+						DamageType: game.PhysicalDamage,
+					})
+				}
+
+				if injury.Value <= 0 {
+					delete(participant.Injuries, ty)
+				}
+			}
+		}
+	}
 }
 
 func (ds *damageSystem) handleDamageApplied(event event.Typer) {
@@ -52,6 +122,23 @@ func (ds *damageSystem) handleDamageApplied(event event.Typer) {
 		ds.bus.Publish(&ParticipantDied{ev.Target})
 	} else {
 		ds.mgr.AddComponent(ev.Target, &game.TakeDamageAnimation{})
+	}
+}
+
+func (ds *damageSystem) handleInjuryApplied(event event.Typer) {
+	ev := event.(*InjuryApplied)
+	participant := ds.mgr.Component(ev.Target, "Participant").(*Participant)
+
+	if participant.Injuries == nil {
+		participant.Injuries = map[skill.InjuryType]*injury{
+			ev.InjuryType: {Value: ev.Value},
+		}
+	} else if existing, ok := participant.Injuries[ev.InjuryType]; ok {
+		existing.Value += ev.Value
+	} else {
+		participant.Injuries[ev.InjuryType] = &injury{
+			Value: ev.Value,
+		}
 	}
 }
 

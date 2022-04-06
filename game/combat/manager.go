@@ -709,6 +709,11 @@ func (cm *Manager) Run(elapsed time.Duration) {
 			}
 		}
 
+		// We need to pass down the amount of preparation we're incrementing to
+		// the damage system, so that Damage over time from injuries etc can be
+		// calculated.
+		cm.ds.ProcessDamageOverTime(increment)
+
 		// prepared captures all Participants who are fully prepared to take their
 		// turn now.
 		prepared := []ecs.Entity{}
@@ -736,7 +741,6 @@ func (cm *Manager) Run(elapsed time.Duration) {
 		// FIXME: It's non-deterministic whose turn it is when multiple
 		// Participants finish preparing at the same time.
 		if len(prepared) > 0 {
-
 			sort.Slice(prepared, func(i, j int) bool {
 				p1 := cm.mgr.Component(prepared[i], "Participant").(*Participant)
 				p2 := cm.mgr.Component(prepared[j], "Participant").(*Participant)

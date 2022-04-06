@@ -120,6 +120,25 @@ func (d *skillEffect) UnmarshalJSON(data []byte) error {
 		json.Unmarshal(data, &v2)
 		d.What = v2.What
 
+	case "InjuryEffect":
+		v2 := struct {
+			What struct {
+				Type  string
+				Value int
+			}
+		}{}
+		if err := json.Unmarshal(data, &v2); err != nil {
+			return err
+		}
+		injuryType := skill.InjuryTypeFromString(v2.What.Type)
+		if injuryType == nil {
+			return fmt.Errorf("unknown InjuryType %q", v2.What.Type)
+		}
+		d.What = skill.InjuryEffect{
+			Type:  *injuryType,
+			Value: v2.What.Value,
+		}
+
 	default:
 		// TODO: other effect types!
 		return fmt.Errorf("unknown _type %q (%v)", v.What.Type, v)

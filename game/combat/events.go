@@ -234,3 +234,14 @@ type CharacterEnteredCombat struct {
 func (CharacterEnteredCombat) Type() event.Type {
 	return "combat.CharacterEnteredCombat"
 }
+
+type InjuryApplied struct {
+	Target     ecs.Entity
+	InjuryType skill.InjuryType
+	Value      int
+}
+
+// Type of the Event.
+func (InjuryApplied) Type() event.Type {
+	return "combat.InjuryApplied"
+}

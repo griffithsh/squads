@@ -66,3 +66,29 @@ type SpawnParticipantEffect struct {
 	Profession string
 	Level      Operations
 }
+
+//go:generate stringer -type=InjuryType
+
+// InjuryType enumerates injuries.
+type InjuryType int
+
+const (
+	BleedingInjury InjuryType = iota
+)
+
+func InjuryTypeFromString(s string) *InjuryType {
+	for i := 0; i <= int(BleedingInjury); i++ {
+		t := InjuryType(i)
+
+		if t.String() == s {
+			return &t
+		}
+	}
+	return nil
+}
+
+// InjuryEffect applies an injury to the target.
+type InjuryEffect struct {
+	Type  InjuryType
+	Value int
+}
