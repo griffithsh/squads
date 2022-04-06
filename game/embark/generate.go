@@ -9,6 +9,7 @@ import (
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/game/item"
 	"github.com/griffithsh/squads/mathx"
+	"github.com/griffithsh/squads/skill"
 )
 
 type generator struct {
@@ -71,6 +72,9 @@ func (g *generator) generateWeapon() *item.Instance {
 				item.PreparationModifier:   599,
 				item.ActionPointModifier:   21,
 			},
+			Skills: []skill.ID{
+				"basic-slash",
+			},
 		}
 	case 2:
 		return &item.Instance{
@@ -81,6 +85,9 @@ func (g *generator) generateWeapon() *item.Instance {
 				item.BaseMaxDamageModifier: 17,
 				item.PreparationModifier:   461,
 				item.ActionPointModifier:   25,
+			},
+			Skills: []skill.ID{
+				"debug-basic-attack",
 			},
 		}
 	}

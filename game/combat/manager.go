@@ -379,6 +379,13 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, a
 
 	app := cm.archive.Appearance(char.Profession, char.Sex, char.Hair, char.Skin)
 
+	// FIXME: there is a configuration layer here, because the player can select
+	// a subset of their skills to use.
+	configuredSkills := []skill.ID{}
+	if equipment != nil && equipment.Weapon != nil {
+		configuredSkills = equipment.Weapon.Skills
+	}
+
 	participant := &Participant{
 		Name:               char.Name,
 		Level:              char.Level,
@@ -412,13 +419,11 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, a
 		// FIXME: Skills should come from a subset of the available skills
 		// configured by the player. Available skills come from the equipped
 		// items and the profession of the Character.
-		Skills: []skill.ID{
-			"debug-basic-attack",
-			"basic-slash",
+		Skills: append(configuredSkills, ([]skill.ID{
 			"debug-lightning",
 			"debug-revive",
 			"raise-skeleton",
-		},
+		})...),
 	}
 
 	participant.Character = charEntity
