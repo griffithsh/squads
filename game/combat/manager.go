@@ -15,6 +15,7 @@ import (
 	"github.com/griffithsh/squads/game/item"
 	"github.com/griffithsh/squads/geom"
 	"github.com/griffithsh/squads/skill"
+	"github.com/griffithsh/squads/targeting"
 	"github.com/griffithsh/squads/ui"
 )
 
@@ -111,10 +112,10 @@ func (cm *Manager) handleTargetSelected(x, y float64) {
 	h := cm.field.At(x, y)
 
 	s := cm.archive.Skill(ctx.Skill)
-	switch s.Targeting {
-	case skill.TargetAnywhere:
+	switch s.Targeting.Selectable.Type {
+	case targeting.SelectAnywhere:
 		// No filtering is applicable.
-	case skill.TargetAdjacent:
+	case targeting.SelectWithin:
 		if h == nil {
 			return
 		}
@@ -182,11 +183,11 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 	}
 
 	s := cm.archive.Skill(ctx.Skill)
-	switch s.Targeting {
-	case skill.TargetAnywhere:
+	switch s.Targeting.Selectable.Type {
+	case targeting.SelectAnywhere:
 		// Because we can target anywhere, there are no reasons to return out of
 		// this function for this case.
-	case skill.TargetAdjacent:
+	case targeting.SelectWithin:
 		adjacent := false
 
 		for key := range origin.Key().Neighbors() {
@@ -231,6 +232,8 @@ func (cm *Manager) setState(stateContext StateContext) {
 		cm.mgr.RemoveComponent(cm.selectingInteractive, &ui.Interactive{})
 	}
 	switch state.Value() {
+	case SelectingPathState:
+		fallthrough
 	case SelectingTargetState:
 		// Using the max float value as the size and a position of 0,0 should
 		// work in all cases, and it's a lot faster than figuring out the actual

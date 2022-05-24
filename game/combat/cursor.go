@@ -10,6 +10,7 @@ import (
 	"github.com/griffithsh/squads/geom"
 	"github.com/griffithsh/squads/graph"
 	"github.com/griffithsh/squads/skill"
+	"github.com/griffithsh/squads/targeting"
 )
 
 var (
@@ -32,8 +33,11 @@ type CursorManager struct {
 	selectedKey *geom.Key
 
 	// Whose turn is it?
-	turnToken        ecs.Entity
-	highlightedHexes skill.TargetingBrush
+	turnToken ecs.Entity
+
+	targeting *targeting.Rule
+
+	lastState State
 }
 
 // NewCursorManager creates a new CursorManager.
@@ -62,20 +66,37 @@ func (cm *CursorManager) handleCombatBegan(ev event.Typer) {
 func (cm *CursorManager) handleDifferentHexSelected(ev event.Typer) {
 	value := ev.(*DifferentHexSelected)
 
-	// if we're navigating
-	switch value.Context.Value() {
-	case SelectingTargetState:
+	cm.lastState = value.Context.Value()
+	if ctx, ok := value.Context.(*selectingTargetState); ok {
+		if ctx.Skill == skill.BasicMovement {
+			cm.lastState = SelectingPathState
+		}
+	}
+	switch cm.lastState {
+	case SelectingPathState:
 		cm.selectedKey = value.K
+		cm.showHighlightedHexes()
+
+	case SelectingTargetState:
 		ctx := value.Context.(*selectingTargetState)
 		s := cm.archive.Skill(ctx.Skill)
-		cm.highlightedHexes = s.TargetingBrush
-		cm.showHighlightedHexes()
-	case ConfirmingSelectedTargetState:
 		cm.selectedKey = value.K
+		cm.targeting = &s.Targeting
+
+		cm.showHighlightedHexes()
+
+	case ConfirmingSelectedTargetState:
 		ctx := value.Context.(*confirmingSelectedTargetState)
 		s := cm.archive.Skill(ctx.Skill)
-		cm.highlightedHexes = s.TargetingBrush
+		cm.selectedKey = value.K
+		cm.targeting = &s.Targeting
+
 		cm.showHighlightedHexes()
+
+	default:
+		cm.selectedKey = nil
+		cm.targeting = nil
+		cm.hideHighlightedHexes()
 	}
 }
 
@@ -155,7 +176,7 @@ func (cm *CursorManager) repaintLiveParticipants() {
 	}
 }
 
-const maxPathNavigationCursors int = 100
+const maxPathNavigationCursors int = 100 // FIXME: could be dynamic based on number of hexes in field?
 
 func (cm *CursorManager) showHighlightedHexes() {
 	for _, e := range cm.mgr.Tagged(pathNavigationTag) {
@@ -178,131 +199,133 @@ func (cm *CursorManager) hideHighlightedHexes() {
 }
 
 func (cm *CursorManager) repaintHighlightedHexes() {
-	switch cm.highlightedHexes {
-	case skill.SingleHex:
-		cm.paintSingleHex()
-	case skill.Pathfinding:
-		cm.paintNavigationHighlights()
-	}
-}
-
-func (cm *CursorManager) paintSingleHex() {
-	for i, e := range cm.mgr.Tagged(pathNavigationTag) {
-		cm.mgr.RemoveTag(e, invalidatedCursorsTag)
-		if i == 0 && cm.selectedKey != nil {
-			x, y := cm.field.Ktow(*cm.selectedKey)
-			cm.mgr.AddComponent(e, &game.Sprite{
-				Texture: "cursors.png",
-
-				X: 0, Y: hexagonHeight * 1,
-				W: hexagonTileWidth, H: hexagonHeight,
-			})
-			cm.mgr.AddComponent(e, &game.Position{
-				Center: game.Center{
-					X: x,
-					Y: y,
-				},
-				Layer: cursorLayer,
-			})
-			continue
-		}
-		cm.mgr.RemoveComponent(e, &game.Position{})
-		cm.mgr.RemoveComponent(e, &game.Sprite{})
-	}
-}
-
-func (cm *CursorManager) paintNavigationHighlights() {
-	participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
-	pos := cm.mgr.Component(cm.turnToken, "Position").(*game.Position)
-
-	var start, goal geom.Key
-
-	sh := cm.field.At(pos.Center.X, pos.Center.Y)
-	start = sh.Key()
-
-	cost := CostsFuncFactory(cm.field, cm.mgr, cm.turnToken)
-	edges := EdgeFuncFactory(cm.field)
-	guess := HeuristicFactory(cm.field)
-
-	type comps struct {
-		p game.Position
+	type cursorSprite struct {
+		// s is the sprite to use
 		s game.Sprite
+		// p is where to paint it
+		p game.Position
 	}
-	c := []comps{}
-	used := map[*geom.Hex]struct{}{}
 
-	var steps []graph.Step
-	if cm.selectedKey == nil {
-		goto repaintLabel
-	}
-	goal = *cm.selectedKey
-	steps = graph.NewSearcher(cost, edges, guess).Search(start, goal)
-	if steps == nil {
-		h := cm.field.Get(goal)
-		if h == nil {
-			goto repaintLabel
-		}
-		x, y := cm.field.Ktow(goal)
-		c = append(c, comps{
-			s: game.Sprite{
-				Texture: "cursors.png",
+	paints := []cursorSprite{}
 
-				X: hexagonTileWidth * 1, Y: hexagonHeight * 1,
-				W: hexagonTileWidth, H: hexagonHeight,
-			},
-			p: game.Position{
-				Center: game.Center{
-					X: x,
-					Y: y,
+	if cm.lastState == SelectingPathState {
+		participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
+		pos := cm.mgr.Component(cm.turnToken, "Position").(*game.Position)
+
+		sh := cm.field.At(pos.Center.X, pos.Center.Y)
+		start, goal := sh.Key(), *cm.selectedKey
+
+		cost := CostsFuncFactory(cm.field, cm.mgr, cm.turnToken)
+		edges := EdgeFuncFactory(cm.field)
+		guess := HeuristicFactory(cm.field)
+		steps := graph.NewSearcher(cost, edges, guess).Search(start, goal)
+		goalHex := cm.field.Get(goal)
+		if goalHex == nil {
+			// TODO: wait, what?
+		} else if steps == nil {
+			x, y := cm.field.Ktow(goal)
+			paints = append(paints, cursorSprite{
+				s: game.Sprite{
+					Texture: "cursors.png",
+
+					X: hexagonTileWidth * 1, Y: hexagonHeight * 1,
+					W: hexagonTileWidth, H: hexagonHeight,
 				},
-				Layer: cursorLayer,
-			},
-		})
-		goto repaintLabel
-	}
-
-	for _, step := range steps {
-		h := cm.field.Get(step.V.(geom.Key))
-		if _, ok := used[h]; ok {
-			continue
-		}
-		used[h] = struct{}{}
-		x, y := h.Center()
-		c = append(c, comps{
-			s: game.Sprite{
-				Texture: "cursors.png",
-
-				X: 0, Y: hexagonHeight * 1,
-				W: hexagonTileWidth, H: hexagonHeight,
-			},
-			p: game.Position{
-				Center: game.Center{
-					X: x,
-					Y: y,
+				p: game.Position{
+					Center: game.Center{
+						X: x,
+						Y: y,
+					},
+					Layer: cursorLayer,
 				},
-				Layer: cursorLayer,
-			},
-		})
-		if step.Cost > float64(participant.ActionPoints.Cur) {
-			c[len(c)-1].s.X = 0
-			c[len(c)-1].s.Y = hexagonHeight * 2
+			})
+		} else {
+			for _, step := range steps {
+				h := cm.field.Get(step.V.(geom.Key))
+				x, y := h.Center()
+				paints = append(paints, cursorSprite{
+					s: game.Sprite{
+						Texture: "cursors.png",
+
+						X: 0, Y: hexagonHeight * 1,
+						W: hexagonTileWidth, H: hexagonHeight,
+					},
+					p: game.Position{
+						Center: game.Center{
+							X: x,
+							Y: y,
+						},
+						Layer: cursorLayer,
+					},
+				})
+
+				// If we don't have enough AP to get all the way, then swap the cursor
+				// sprite to the red one.
+				if step.Cost > float64(participant.ActionPoints.Cur) {
+					paints[len(paints)-1].s.X = 0
+					paints[len(paints)-1].s.Y = hexagonHeight * 2
+				}
+			}
 		}
+
+	} else if cm.lastState == SelectingTargetState || cm.lastState == ConfirmingSelectedTargetState {
+		obstacle := cm.mgr.Component(cm.turnToken, "Obstacle").(*game.Obstacle)
+		ok, highlighted := cm.targeting.Execute(*cm.selectedKey, geom.Key{M: obstacle.M, N: obstacle.N})
+		if !ok {
+			// Add a single red cursor on selected hex.
+			x, y := cm.field.Ktow(*cm.selectedKey)
+			paints = append(paints, cursorSprite{
+				s: game.Sprite{
+					Texture: "cursors.png",
+
+					X: 0, Y: hexagonHeight * 2,
+					W: hexagonTileWidth, H: hexagonHeight,
+				},
+				p: game.Position{
+					Center: game.Center{
+						X: x,
+						Y: y,
+					},
+					Layer: cursorLayer,
+				},
+			})
+
+		} else {
+			for _, k := range highlighted {
+				x, y := cm.field.Ktow(k)
+				paints = append(paints, cursorSprite{
+					s: game.Sprite{
+						Texture: "cursors.png",
+
+						X: 0, Y: hexagonHeight,
+						W: hexagonTileWidth, H: hexagonHeight,
+					},
+					p: game.Position{
+						Center: game.Center{
+							X: x,
+							Y: y,
+						},
+						Layer: cursorLayer,
+					},
+				})
+
+			}
+		}
+
 	}
 
-repaintLabel:
-	if len(c) > len(cm.mgr.Tagged(pathNavigationTag)) {
+	if len(paints) > len(cm.mgr.Tagged(pathNavigationTag)) {
 		fmt.Println("not enough Entity slots for this path!")
 	}
 
 	for i, e := range cm.mgr.Tagged(pathNavigationTag) {
 		cm.mgr.RemoveTag(e, invalidatedCursorsTag)
-		if i >= len(c) {
-			cm.mgr.RemoveComponent(e, &game.Position{})
-			cm.mgr.RemoveComponent(e, &game.Sprite{})
+		if i < len(paints) {
+			cm.mgr.AddComponent(e, &paints[i].s)
+			cm.mgr.AddComponent(e, &paints[i].p)
 			continue
 		}
-
-		cm.mgr.AddComponent(e, &c[i].s)
-		cm.mgr.AddComponent(e, &c[i].p)
+		cm.mgr.RemoveComponent(e, &game.Position{})
+		cm.mgr.RemoveComponent(e, &game.Sprite{})
 	}
 }

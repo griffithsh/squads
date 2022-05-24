@@ -45,7 +45,7 @@ func (nav *Navigator) Update(mgr *ecs.World, elapsed time.Duration) {
 			speed = float64(t)
 		}
 
-		if len(mover.Moves) > 0 && mover.Moves[0].X == pos.Center.X && mover.Moves[0].Y == pos.Center.Y {
+		if len(mover.Moves) > 1 && mover.Moves[0].X == pos.Center.X && mover.Moves[0].Y == pos.Center.Y {
 			// Pop the first move, because it's the current position.
 			mover.Moves = mover.Moves[1:]
 

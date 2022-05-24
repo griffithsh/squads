@@ -12,6 +12,7 @@ import (
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
 	"github.com/griffithsh/squads/skill"
+	"github.com/griffithsh/squads/targeting"
 )
 
 /*
@@ -87,15 +88,15 @@ type skillExecutionContext struct {
 // no entites, as skills (AoEs, summons) can be cast on empty hexes. It also
 // returns the hexes in the field that are targeted.
 func (se *skillExecutor) determineAffected(ev *UsingSkill, s *skill.Description) ([]ecs.Entity, []geom.Key) {
-	switch s.TargetingBrush {
-	case skill.SingleHex:
+	switch s.Targeting.Brush.Type {
+	case targeting.SingleHex:
 		// SingleHex is easy - is there an entity on the exact hex specified by
 		// ev.Selected?
 		affected := []ecs.Entity{}
 
 		for _, e := range se.mgr.Get([]string{"Participant"}) {
-			o, exists := se.mgr.Component(e, "Obstacle").(*game.Obstacle)
 			// Defiled Participants do not have an Obstacle.
+			o, exists := se.mgr.Component(e, "Obstacle").(*game.Obstacle)
 			if !exists {
 				continue
 			}
@@ -108,8 +109,49 @@ func (se *skillExecutor) determineAffected(ev *UsingSkill, s *skill.Description)
 
 		return affected, []geom.Key{ev.Selected.Key()}
 
+	case targeting.WithinRangeOfOrigin:
+		affected := []ecs.Entity{}
+		user := se.mgr.Component(ev.User, "Obstacle").(*game.Obstacle)
+		adjacent := geom.Key{M: user.M, N: user.N}.Neighbors()
+
+		for _, e := range se.mgr.Get([]string{"Participant"}) {
+			// Defiled Participants do not have an Obstacle.
+			o, exists := se.mgr.Component(e, "Obstacle").(*game.Obstacle)
+			if !exists {
+				continue
+			}
+			for k := range adjacent {
+				if k.M == o.M && k.N == o.N {
+					affected = append(affected, e)
+					break
+				}
+			}
+		}
+
+		return affected, []geom.Key{ev.Selected.Key()}
+
+	case targeting.WithinRangeOfTarget:
+		affected := []ecs.Entity{}
+		adjacent := ev.Selected.Key().Neighbors()
+
+		for _, e := range se.mgr.Get([]string{"Participant"}) {
+			// Defiled Participants do not have an Obstacle.
+			o, exists := se.mgr.Component(e, "Obstacle").(*game.Obstacle)
+			if !exists {
+				continue
+			}
+			for k := range adjacent {
+				if k.M == o.M && k.N == o.N {
+					affected = append(affected, e)
+					break
+				}
+			}
+		}
+
+		return affected, []geom.Key{ev.Selected.Key()}
+
 	default:
-		panic(fmt.Sprintf("skillExecutor.determineAffected does not implement %T", s.TargetingBrush))
+		panic(fmt.Sprintf("skillExecutor.determineAffected does not implement %s", s.Targeting.Brush.Type))
 	}
 }
 

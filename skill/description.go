@@ -2,6 +2,7 @@ package skill
 
 import (
 	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/targeting"
 )
 
 // Description contains all the data for a skill so that it can be displayed in
@@ -17,8 +18,7 @@ type Description struct {
 
 	Icon game.FrameAnimation
 
-	Targeting      TargetingRule
-	TargetingBrush TargetingBrush
+	Targeting targeting.Rule
 
 	// Effects of triggering this skill.
 	Effects []Effect

@@ -96,3 +96,28 @@ func (k Key) Adjacent() map[DirectionType]Key {
 		NW: k.ToNW(),
 	}
 }
+
+// HexesFrom calculates how many Hexes away another Key is.
+func (k Key) HexesFrom(other Key) int {
+	mDiff := k.M - other.M
+	// Convert diff to absolute.
+	if mDiff < 0 {
+		mDiff = -mDiff
+	}
+
+	// if M is odd ...
+	minN := k.N - (mDiff / 2)
+	maxN := k.N + ((1 + mDiff) / 2)
+	// else if M is even
+	if k.M%2 == 0 {
+		minN = k.N - ((1 + mDiff) / 2)
+		maxN = k.N + (mDiff / 2)
+	}
+
+	if other.N > maxN {
+		return mDiff + other.N - maxN
+	} else if other.N < minN {
+		return mDiff + minN - other.N
+	}
+	return mDiff
+}

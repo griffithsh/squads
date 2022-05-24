@@ -10,19 +10,20 @@ func _() {
 	var x [1]struct{}
 	_ = x[Uninitialised-0]
 	_ = x[AwaitingInputState-1]
-	_ = x[SelectingTargetState-2]
-	_ = x[ConfirmingSelectedTargetState-3]
-	_ = x[ExecutingState-4]
-	_ = x[ThinkingState-5]
-	_ = x[PreparingState-6]
-	_ = x[Celebration-7]
-	_ = x[FadingIn-8]
-	_ = x[FadingOut-9]
+	_ = x[SelectingPathState-2]
+	_ = x[SelectingTargetState-3]
+	_ = x[ConfirmingSelectedTargetState-4]
+	_ = x[ExecutingState-5]
+	_ = x[ThinkingState-6]
+	_ = x[PreparingState-7]
+	_ = x[Celebration-8]
+	_ = x[FadingIn-9]
+	_ = x[FadingOut-10]
 }
 
-const _State_name = "UninitialisedAwaitingInputStateSelectingTargetStateConfirmingSelectedTargetStateExecutingStateThinkingStatePreparingStateCelebrationFadingInFadingOut"
+const _State_name = "UninitialisedAwaitingInputStateSelectingPathStateSelectingTargetStateConfirmingSelectedTargetStateExecutingStateThinkingStatePreparingStateCelebrationFadingInFadingOut"
 
-var _State_index = [...]uint8{0, 13, 31, 51, 80, 94, 107, 121, 132, 140, 149}
+var _State_index = [...]uint8{0, 13, 31, 49, 69, 98, 112, 125, 139, 150, 158, 167}
 
 func (i State) String() string {
 	if i < 0 || i >= State(len(_State_index)-1) {

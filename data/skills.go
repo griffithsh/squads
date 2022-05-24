@@ -10,7 +10,21 @@ import (
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/game/item"
 	"github.com/griffithsh/squads/skill"
+	"github.com/griffithsh/squads/targeting"
 )
+
+type targetingJSON struct {
+	Selectable struct {
+		Type     string
+		MinRange int
+		MaxRange int
+	}
+	Brush struct {
+		Type     string
+		MinRange int
+		MaxRange int
+	}
+}
 
 type skillEffect struct {
 	When      int // milliseconds
@@ -29,8 +43,7 @@ type skillDescription struct {
 
 	Icon game.Sprite
 
-	Targeting      string
-	TargetingBrush string
+	Targeting targetingJSON
 
 	// Effects of triggering this skill.
 	Effects []skillEffect
@@ -50,14 +63,25 @@ func (sd *skillDescription) convert() (skill.Description, error) {
 		tags = append(tags, *tag)
 	}
 
-	targetingRule := skill.TargetingRuleFromString(sd.Targeting)
-	if targetingRule == nil {
-		return skill.Description{}, fmt.Errorf("convert %q to targetingRule", sd.Targeting)
+	selectableType := targeting.SelectableTypeFromString(sd.Targeting.Selectable.Type)
+	if selectableType == nil {
+		return skill.Description{}, fmt.Errorf("convert %q to SelectableType", sd.Targeting.Selectable.Type)
 	}
-
-	targetingBrush := skill.TargetingBrushFromString(sd.TargetingBrush)
-	if targetingBrush == nil {
-		return skill.Description{}, fmt.Errorf("convert %q to targetingBrush", sd.TargetingBrush)
+	brushType := targeting.BrushTypeFromString(sd.Targeting.Brush.Type)
+	if brushType == nil {
+		return skill.Description{}, fmt.Errorf("convert %q to BrushType", sd.Targeting.Brush.Type)
+	}
+	targetingRule := targeting.Rule{
+		Selectable: targeting.Selectable{
+			Type:     *selectableType,
+			MinRange: sd.Targeting.Selectable.MinRange,
+			MaxRange: sd.Targeting.Selectable.MaxRange,
+		},
+		Brush: targeting.Brush{
+			Type:     *brushType,
+			MinRange: sd.Targeting.Brush.MinRange,
+			MaxRange: sd.Targeting.Brush.MaxRange,
+		},
 	}
 
 	effects := []skill.Effect{}
@@ -86,15 +110,14 @@ func (sd *skillDescription) convert() (skill.Description, error) {
 	}
 
 	return skill.Description{
-		ID:             sd.ID,
-		Name:           sd.Name,
-		Explanation:    sd.Explanation,
-		Tags:           tags,
-		Icon:           *sd.Icon.AsAnimation(),
-		Targeting:      *targetingRule,
-		TargetingBrush: *targetingBrush,
-		Effects:        effects,
-		Costs:          costs,
+		ID:          sd.ID,
+		Name:        sd.Name,
+		Explanation: sd.Explanation,
+		Tags:        tags,
+		Icon:        *sd.Icon.AsAnimation(),
+		Targeting:   targetingRule,
+		Effects:     effects,
+		Costs:       costs,
 	}, nil
 }
 
@@ -219,9 +242,6 @@ var internalSkills = []skill.Description{
 			W:       24,
 			H:       24,
 		}.AsAnimation(),
-
-		Targeting:      skill.TargetAnywhere,
-		TargetingBrush: skill.Pathfinding,
 	},
 	// consumables is a skill?
 	// flee is a skill?
@@ -240,8 +260,16 @@ var internalSkills = []skill.Description{
 			W:       24,
 			H:       24,
 		}.AsAnimation(),
-		Targeting:      skill.TargetAdjacent,
-		TargetingBrush: skill.SingleHex,
+		Targeting: targeting.Rule{
+			Selectable: targeting.Selectable{
+				Type:     targeting.SelectWithin,
+				MinRange: 1,
+				MaxRange: 1,
+			},
+			Brush: targeting.Brush{
+				Type: targeting.SingleHex,
+			},
+		},
 		Costs: map[skill.CostType]int{
 			skill.CostsActionPoints: 20,
 		},
@@ -272,8 +300,14 @@ var internalSkills = []skill.Description{
 			W:       24,
 			H:       24,
 		}.AsAnimation(),
-		Targeting:      skill.TargetAnywhere,
-		TargetingBrush: skill.SingleHex,
+		Targeting: targeting.Rule{
+			Selectable: targeting.Selectable{
+				Type: targeting.SelectAnywhere,
+			},
+			Brush: targeting.Brush{
+				Type: targeting.SingleHex,
+			},
+		},
 		Costs: map[skill.CostType]int{
 			skill.CostsActionPoints: 45,
 		},
@@ -308,8 +342,14 @@ var internalSkills = []skill.Description{
 			W:       24,
 			H:       24,
 		}.AsAnimation(),
-		Targeting:      skill.TargetAnywhere,
-		TargetingBrush: skill.SingleHex,
+		Targeting: targeting.Rule{
+			Selectable: targeting.Selectable{
+				Type: targeting.SelectAnywhere,
+			},
+			Brush: targeting.Brush{
+				Type: targeting.SingleHex,
+			},
+		},
 		Costs: map[skill.CostType]int{
 			skill.CostsActionPoints: 45,
 		},
@@ -339,8 +379,14 @@ var internalSkills = []skill.Description{
 			W:       24,
 			H:       24,
 		}.AsAnimation(),
-		Targeting:      skill.TargetAnywhere,
-		TargetingBrush: skill.SingleHex,
+		Targeting: targeting.Rule{
+			Selectable: targeting.Selectable{
+				Type: targeting.SelectAnywhere,
+			},
+			Brush: targeting.Brush{
+				Type: targeting.SingleHex,
+			},
+		},
 		Costs: map[skill.CostType]int{
 			skill.CostsActionPoints: 65,
 		},

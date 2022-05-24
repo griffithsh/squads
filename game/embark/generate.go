@@ -74,6 +74,7 @@ func (g *generator) generateWeapon() *item.Instance {
 			},
 			Skills: []skill.ID{
 				"sword-slash",
+				"sword-rogue-slash",
 			},
 		}
 	case 2:

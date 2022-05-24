@@ -10,6 +10,8 @@ const (
 	Uninitialised State = iota
 	// AwaitingInputState is when the combat is waiting for the local, human player to make a move.
 	AwaitingInputState
+	// SelectingPathState is where the local player is selecting a hex to move to.
+	SelectingPathState
 	// SelectingTargetState is when the local player is picking a hex to use a skill on.
 	SelectingTargetState
 	// ConfirmingSelectedTargetState is when the player has clicked or tapped on
@@ -27,8 +29,8 @@ const (
 	// FadingIn is when the combat is first starting, or returning from a menu,
 	// and the curtain that obscures the scene change is disappearing.
 	FadingIn
-	//FadingOut is when the combat is going to another scene, and the curtain
-	//that obscures the scene change is appearing.
+	// FadingOut is when the combat is going to another scene, and the curtain
+	// that obscures the scene change is appearing.
 	FadingOut
 )
 
