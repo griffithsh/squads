@@ -121,3 +121,49 @@ func (k Key) HexesFrom(other Key) int {
 	}
 	return mDiff
 }
+
+// ExpandBy determines the Keys that are between min and max away from the Key.
+func (k Key) ExpandBy(min, max int) []Key {
+	inRange := []Key{}
+
+	if min == 0 {
+		inRange = append(inRange, k)
+	}
+	opens := map[Key]struct{}{
+		k: {},
+	}
+	closed := map[Key]struct{}{
+		k: {},
+	}
+
+	for i := 0; i < max; i++ {
+		// extract the keys of everything in open
+		keys := make([]Key, 0, len(opens)*6)
+		for open := range opens {
+			for k2 := range open.Neighbors() {
+				if _, ok := closed[k2]; ok {
+					continue
+				}
+				keys = append(keys, k2)
+			}
+		}
+
+		// empty opens
+		opens = map[Key]struct{}{}
+
+		for _, it := range keys {
+			if _, ok := closed[it]; ok {
+				continue
+			}
+			opens[it] = struct{}{}
+			closed[it] = struct{}{}
+
+			// Is this between min and max?
+			if i+1 >= min {
+				inRange = append(inRange, it)
+			}
+		}
+	}
+
+	return inRange
+}

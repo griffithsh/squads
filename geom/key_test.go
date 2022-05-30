@@ -162,3 +162,111 @@ func BenchmarkHexesFrom(b *testing.B) {
 		b.StartTimer()
 	}
 }
+
+func TestExpandBy(t *testing.T) {
+	prng := rand.New(rand.NewSource(0))
+	for i := 0; i < 64; i++ {
+		key := Key{prng.Intn(1024) - 512, prng.Intn(1024) - 512}
+		t.Run(fmt.Sprintf("{%d,%d}", key.M, key.N), func(t *testing.T) {
+			t.Run("single-hex", func(t *testing.T) {
+				got := key.ExpandBy(0, 0)
+
+				if len(got) != 1 || got[0] != key {
+					t.Errorf("want %v, got %v", []Key{key}, got)
+				}
+			})
+			t.Run("adjacent", func(t *testing.T) {
+				got := key.ExpandBy(1, 1)
+				if len(got) != 6 {
+					t.Errorf("want 6 keys, got %d", got)
+				}
+
+				for _, k := range got {
+					distance := key.HexesFrom(k)
+					if distance != 1 {
+						t.Errorf("want 1, got %d", distance)
+					}
+				}
+			})
+			t.Run("in-the-area", func(t *testing.T) {
+				got := key.ExpandBy(2, 2)
+				if len(got) != 12 {
+					t.Errorf("want 12 keys, got %d - %v", len(got), got)
+				}
+
+				for _, k := range got {
+					distance := key.HexesFrom(k)
+					if distance != 2 {
+						t.Errorf("want distance of 2, got distance of %d", distance)
+					}
+				}
+			})
+			t.Run("jumbo", func(t *testing.T) {
+				got := key.ExpandBy(0, 5)
+				if len(got) != 91 {
+					t.Errorf("want 91 keys, got %d", len(got))
+				}
+
+				for _, k := range got {
+					distance := key.HexesFrom(k)
+					if distance < 0 || distance > 5 {
+						t.Errorf("want between 0 and 5, got %d", distance)
+					}
+				}
+			})
+		})
+	}
+
+	t.Run("sanity-1", func(t *testing.T) {
+		got := (Key{0, 0}).ExpandBy(0, 1)
+		want := map[Key]struct{}{
+			{0, 0}:   {},
+			{0, -1}:  {},
+			{1, -1}:  {},
+			{1, 0}:   {},
+			{0, 1}:   {},
+			{-1, 0}:  {},
+			{-1, -1}: {},
+		}
+
+		if len(got) != 7 {
+			t.Errorf("want 7, got %v", len(got))
+		}
+
+		for _, test := range got {
+			if _, ok := want[test]; !ok {
+				t.Errorf("got %v, did not want it", test)
+			}
+		}
+
+	})
+
+	t.Run("sanity-2", func(t *testing.T) {
+		got := (Key{1, 0}).ExpandBy(2, 2)
+		want := map[Key]struct{}{
+			{1, -2}:  {},
+			{2, -1}:  {},
+			{3, -1}:  {},
+			{3, 0}:   {},
+			{3, 1}:   {},
+			{2, 2}:   {},
+			{1, 2}:   {},
+			{0, 2}:   {},
+			{-1, 1}:  {},
+			{-1, 0}:  {},
+			{-1, -1}: {},
+			{0, -1}:  {},
+		}
+
+		if len(got) != 12 {
+			t.Errorf("want 12, got %v", len(got))
+		}
+
+		for _, test := range got {
+			if _, ok := want[test]; !ok {
+				t.Errorf("got %v, did not want it", test)
+			}
+		}
+
+	})
+}
