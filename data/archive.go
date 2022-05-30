@@ -149,12 +149,12 @@ func (a *Archive) Load(r io.Reader) error {
 				case ".skills":
 					skills, err := parseSkills(tr)
 					if err != nil {
-						return fmt.Errorf("parse %s.skills: %v", head.Name, err)
+						return fmt.Errorf("parse %s: %v", head.Name, err)
 					}
 					for _, skill := range skills {
 						if _, ok := a.skills[skill.ID]; ok {
 							//duplicate - overwrites
-							fmt.Fprintf(os.Stderr, "skill in %s.skills overwrites skill ID %v", head.Name, skill.ID)
+							fmt.Fprintf(os.Stderr, "skill in %s overwrites skill ID %v", head.Name, skill.ID)
 						}
 						a.skills[skill.ID] = skill
 						fmt.Println("loaded skill", skill.ID)

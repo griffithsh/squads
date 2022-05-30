@@ -32,6 +32,7 @@ type skillEffect struct {
 	What      interface{}
 }
 
+// skillDescription is the raw format from a .skills file.
 type skillDescription struct {
 	ID          skill.ID
 	Name        string
@@ -86,7 +87,7 @@ func (sd *skillDescription) convert() (skill.Description, error) {
 
 	effects := []skill.Effect{}
 	for _, raw := range sd.Effects {
-		when := skill.Timing{}
+		var when skill.Timing
 		point := skill.TimingPointFromString(raw.WhenPoint)
 		if point != nil {
 			when = skill.NewTimingFromPoint(*point)
