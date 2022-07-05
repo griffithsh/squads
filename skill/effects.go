@@ -4,6 +4,8 @@ import (
 	"github.com/griffithsh/squads/game"
 )
 
+//go:generate go run github.com/dmarkham/enumer -type=InjuryType,Operator -json -output effects_enumer.go
+
 // Effect is anything that executing a skill could trigger.
 type Effect struct {
 	When Timing
@@ -66,8 +68,6 @@ type SpawnParticipantEffect struct {
 	Profession string
 	Level      Operations
 }
-
-//go:generate stringer -type=InjuryType
 
 // InjuryType enumerates injuries.
 type InjuryType int

@@ -1,5 +1,6 @@
 package game
 
+//go:generate go run github.com/dmarkham/enumer -type=DamageType -json
 type DamageType int
 
 const (
