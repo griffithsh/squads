@@ -81,6 +81,7 @@ type skillExecutionContext struct {
 	effects  []effect
 	affected []ecs.Entity
 	targeted []geom.Key
+	missCalc func() bool
 }
 
 // determineAffected collects the Entities that the usage of this skill affects,
@@ -170,6 +171,28 @@ func (se *skillExecutor) handleUsingSkill(t event.Typer) {
 	ev := t.(*UsingSkill)
 	s := se.archive.Skill(ev.Skill)
 
+	// if the skill is tagged Attack, then we need to apply the chance to hit
+	// modifier to the base chance to hit. Spells do not miss and ignore the
+	// chance to hit modifier.
+	missCalc := func() bool {
+		return false
+	}
+	if s.IsAttack() {
+		usingParticipant := se.mgr.Component(ev.User, "Participant").(*Participant)
+		baseChance := usingParticipant.chanceToHit()
+
+		chance := baseChance + ((1.0 - baseChance) * s.AttackChanceToHitModifier)
+		if chance > 1.0 {
+			chance = 1.0
+		} else if chance < 0 {
+			chance = 0
+		}
+		missCalc = func() bool {
+			roll := rand.Float64()
+			return roll > chance
+		}
+	}
+
 	realiser := se.createRealiser(ev, s)
 
 	// Take a copy of effects so that we can remove them without mutating the
@@ -191,6 +214,7 @@ func (se *skillExecutor) handleUsingSkill(t event.Typer) {
 		effects:  effects,
 		affected: affected,
 		targeted: targeted,
+		missCalc: missCalc,
 	})
 
 	// Apply costs of skill to user.
@@ -261,83 +285,93 @@ func (se *skillExecutor) dereferencer(e ecs.Entity) func(s string) float64 {
 }
 
 func (se *skillExecutor) executeEffect(effect effect, inPlay *skillExecutionContext) error {
-	switch ef := effect.what.(type) {
-	case skill.DamageEffect:
-		dereference := se.dereferencer(inPlay.ev.User)
-		min := ef.Min.Calculate(dereference)
-		max := ef.Max.Calculate(dereference)
+	whats := effect.what.([]interface{})
+	for _, what := range whats {
+		switch ef := what.(type) {
+		case skill.DamageEffect:
+			dereference := se.dereferencer(inPlay.ev.User)
+			min := ef.Min.Calculate(dereference)
+			max := ef.Max.Calculate(dereference)
 
-		// Roll for damage between min and max.
-		dmg := min
-		if max != min {
-			dmg += rand.Intn((max - min) + 1)
-		}
-
-		for _, affected := range inPlay.affected {
-			se.bus.Publish(&DamageApplied{
-				Amount:     dmg,
-				Target:     affected,
-				DamageType: game.PhysicalDamage,
-				SkillType:  ef.Classification,
-			})
-		}
-	case skill.ReviveEffect:
-		for _, e := range inPlay.affected {
-			participant := se.mgr.Component(e, "Participant").(*Participant)
-
-			if participant.Status != KnockedDown {
-				continue
+			// Roll for damage between min and max.
+			dmg := min
+			if max != min {
+				dmg += rand.Intn((max - min) + 1)
 			}
 
-			participant.Status = Alive
-			participant.CurrentHealth = 1
-			se.bus.Publish(&ParticipantRevived{Entity: e})
-		}
-	case skill.HealEffect:
-		for _, e := range inPlay.affected {
-			participant := se.mgr.Component(e, "Participant").(*Participant)
-
-			var heal int
-			if ef.IsPercentage {
-				heal = int(float64(participant.maxHealth()) * ef.Amount)
-			} else {
-				heal = int(ef.Amount)
+			for _, affected := range inPlay.affected {
+				if inPlay.missCalc() {
+					se.bus.Publish(&DamageFailed{
+						Target: affected,
+						Reason: "Miss",
+					})
+					continue
+				}
+				se.bus.Publish(&DamageApplied{
+					Amount:     dmg,
+					Target:     affected,
+					DamageType: game.PhysicalDamage,
+					SkillType:  ef.Classification,
+				})
 			}
-			participant.CurrentHealth = heal
-		}
-	case skill.DefileEffect:
-		for _, e := range inPlay.affected {
-			participant := se.mgr.Component(e, "Participant").(*Participant)
-			if participant.Status == KnockedDown {
-				participant.Status = Defiled
-				se.bus.Publish(&ParticipantDefiled{Entity: e})
-			}
-		}
-	case skill.SpawnParticipantEffect:
-		dereference := se.dereferencer(inPlay.ev.User)
-		for _, key := range inPlay.targeted {
-			// FIXME: When executing a SpawnParticipantEffect, it is assumed
-			// that the new participant is on the same team as the User of the
-			// skill. This assumption might not always hold though.
-			team := se.mgr.Component(inPlay.ev.User, "Team").(*game.Team)
+		case skill.ReviveEffect:
+			for _, e := range inPlay.affected {
+				participant := se.mgr.Component(e, "Participant").(*Participant)
 
-			se.bus.Publish(&CharacterEnteredCombat{
-				Level:      ef.Level.Calculate(dereference),
-				Profession: ef.Profession,
-				Team:       team,
-				At:         key,
-			})
+				if participant.Status != KnockedDown {
+					continue
+				}
+
+				participant.Status = Alive
+				participant.CurrentHealth = 1
+				se.bus.Publish(&ParticipantRevived{Entity: e})
+			}
+		case skill.HealEffect:
+			for _, e := range inPlay.affected {
+				participant := se.mgr.Component(e, "Participant").(*Participant)
+
+				var heal int
+				if ef.IsPercentage {
+					heal = int(float64(participant.maxHealth()) * ef.Amount)
+				} else {
+					heal = int(ef.Amount)
+				}
+				participant.CurrentHealth = heal
+			}
+		case skill.DefileEffect:
+			for _, e := range inPlay.affected {
+				participant := se.mgr.Component(e, "Participant").(*Participant)
+				if participant.Status == KnockedDown {
+					participant.Status = Defiled
+					se.bus.Publish(&ParticipantDefiled{Entity: e})
+				}
+			}
+		case skill.SpawnParticipantEffect:
+			dereference := se.dereferencer(inPlay.ev.User)
+			for _, key := range inPlay.targeted {
+				// FIXME: When executing a SpawnParticipantEffect, it is assumed
+				// that the new participant is on the same team as the User of the
+				// skill. This assumption might not always hold though.
+				team := se.mgr.Component(inPlay.ev.User, "Team").(*game.Team)
+
+				se.bus.Publish(&CharacterEnteredCombat{
+					Level:      ef.Level.Calculate(dereference),
+					Profession: ef.Profession,
+					Team:       team,
+					At:         key,
+				})
+			}
+		case skill.InjuryEffect:
+			for _, affected := range inPlay.affected {
+				se.bus.Publish(&InjuryApplied{
+					Target:     affected,
+					InjuryType: ef.Type,
+					Value:      ef.Value,
+				})
+			}
+		default:
+			return fmt.Errorf("unhandled skill effect type %T", ef)
 		}
-	case skill.InjuryEffect:
-		for _, affected := range inPlay.affected {
-			se.bus.Publish(&InjuryApplied{
-				Target:     affected,
-				InjuryType: ef.Type,
-				Value:      ef.Value,
-			})
-		}
-	default:
-		return fmt.Errorf("unhandled skill effect type %T", ef)
 	}
 	return nil
 }
@@ -373,7 +407,9 @@ func (se *skillExecutor) Update(elapsed time.Duration) {
 			}
 
 			// Apply effects on target (may or may not apply to characters).
-			se.executeEffect(inPlay.effects[0], inPlay)
+			if err := se.executeEffect(inPlay.effects[0], inPlay); err != nil {
+				panic(err)
+			}
 
 			// Because this effect has been executed, it should be removed.
 			inPlay.effects = inPlay.effects[1:]

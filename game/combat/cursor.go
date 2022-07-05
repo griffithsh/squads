@@ -208,7 +208,10 @@ func (cm *CursorManager) repaintHighlightedHexes() {
 
 	paints := []cursorSprite{}
 
-	if cm.lastState == SelectingPathState {
+	if cm.selectedKey == nil {
+		// When nothing is selected, then we have nothing to repaint, skip
+		// straight to the Component removal.
+	} else if cm.lastState == SelectingPathState {
 		participant := cm.mgr.Component(cm.turnToken, "Participant").(*Participant)
 		pos := cm.mgr.Component(cm.turnToken, "Position").(*game.Position)
 

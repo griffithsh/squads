@@ -100,6 +100,7 @@ func NewHUD(mgr *ecs.World, bus *event.Bus, screenX int, screenY int, archive Sk
 	bus.Subscribe(StateTransition{}.Type(), hud.handleCombatStateTransition)
 	bus.Subscribe(ParticipantTurnChanged{}.Type(), hud.handleParticipantTurnChanged)
 	bus.Subscribe(DamageAccepted{}.Type(), hud.handleDamageAccepted)
+	bus.Subscribe(DamageFailed{}.Type(), hud.handleDamageFailed)
 
 	return &hud
 }
@@ -158,17 +159,13 @@ func (hud *HUD) handleParticipantTurnChanged(t event.Typer) {
 	hud.turnToken = ev.Entity
 }
 
-func (hud *HUD) handleDamageAccepted(t event.Typer) {
-	ev := t.(*DamageAccepted)
-
-	targetPosition := hud.mgr.Component(ev.Target, "Position").(*game.Position)
-
+func (hud *HUD) makeDamageOutcome(target ecs.Entity, text string) {
 	e := hud.mgr.NewEntity()
-	text := strconv.Itoa(ev.Amount)
 	hud.mgr.AddComponent(e, &game.Font{
 		Text: text,
 	})
 
+	targetPosition := hud.mgr.Component(target, "Position").(*game.Position)
 	hud.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
 			X: targetPosition.Center.X - float64(len(text)*5)/2,
@@ -184,6 +181,18 @@ func (hud *HUD) handleDamageAccepted(t event.Typer) {
 	hud.mgr.AddComponent(e, &ecs.Expiry{
 		Remaining: time.Millisecond * 1500,
 	})
+}
+
+func (hud *HUD) handleDamageAccepted(t event.Typer) {
+	ev := t.(*DamageAccepted)
+	text := strconv.Itoa(ev.Amount)
+	hud.makeDamageOutcome(ev.Target, text)
+}
+
+func (hud *HUD) handleDamageFailed(t event.Typer) {
+	ev := t.(*DamageFailed)
+	text := ev.Reason
+	hud.makeDamageOutcome(ev.Target, text)
 }
 
 func (hud *HUD) skillsForParticipant(p *Participant) [7]UISkillInfoRow {

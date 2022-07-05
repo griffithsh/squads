@@ -35,11 +35,12 @@ func TestParseSkills(t *testing.T) {
     "costs": {
         "CostsActionPoints": 20
     },
+    "attackChanceToHitModifier": -0.1,
     "effects": [
         {
             "when": 100,
             "whenPoint": "AttackApexTimingPoint",
-            "what": {
+            "what": [{
                 "_type": "DamageEffect",
                 "min": [
                     {
@@ -49,12 +50,13 @@ func TestParseSkills(t *testing.T) {
                 ],
                 "max": [
                     {
-                        "operator": "AddOp",
+                        "operator": "MultOp",
                         "variable": "$DMG-MAX"
                     }
                 ],
-                "classification": "Attack"
-            }
+                "classification": "Attack",
+                "damageType": "FireDamage"
+            }]
         }
     ]
 }`)
@@ -79,7 +81,7 @@ func TestParseSkills(t *testing.T) {
 
 	encoded := strings.TrimSpace(b.String())
 
-	want := `{"ID":"basic-slash","Name":"Slash","Explanation":"Slash the target","Tags":[1],"Icon":{"Frames":[{"texture":"hud2.png","x":0,"y":0,"w":24,"h":24,"offsetX":0,"offsetY":0}],"Timings":[5000000000],"Pointer":0,"EndBehavior":0},"Targeting":{"Selectable":{"Type":1,"MinRange":1,"MaxRange":1},"Brush":{"Type":0,"MinRange":0,"MaxRange":0}},"Effects":[{"When":{},"What":{"Min":[{"Operator":0,"Variable":"$DMG-MIN"}],"Max":[{"Operator":0,"Variable":"$DMG-MAX"}],"Classification":0,"DamageType":0}}],"Costs":{"0":20}}`
+	want := `{"ID":"basic-slash","Name":"Slash","Explanation":"Slash the target","Tags":["Attack"],"Icon":{"Frames":[{"texture":"hud2.png","x":0,"y":0,"w":24,"h":24,"offsetX":0,"offsetY":0}],"Timings":[5000000000],"Pointer":0,"EndBehavior":0},"Targeting":{"Selectable":{"Type":1,"MinRange":1,"MaxRange":1},"Brush":{"Type":0,"MinRange":0,"MaxRange":0}},"Effects":[{"When":{},"What":[{"Min":[{"Operator":"AddOp","Variable":"$DMG-MIN"}],"Max":[{"Operator":"MultOp","Variable":"$DMG-MAX"}],"Classification":"Attack","DamageType":"FireDamage"}]}],"Costs":{"0":20},"AttackChanceToHitModifier":-0.1}`
 	if encoded != want {
 		t.Errorf("want:\n\t%s\ngot:\n\t%s", want, encoded)
 	}

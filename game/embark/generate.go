@@ -64,8 +64,9 @@ func (g *generator) generateWeapon() *item.Instance {
 	switch g.r.Intn(3) {
 	case 1:
 		return &item.Instance{
-			Class: item.SwordClass,
-			Name:  "Skirmish Sword of Quickness",
+			Class:           item.SwordClass,
+			Name:            "Skirmish Sword of Quickness",
+			BaseChanceToHit: 0.99,
 			Modifiers: map[item.Modifier]float64{
 				item.BaseMinDamageModifier: 11,
 				item.BaseMaxDamageModifier: 22,
@@ -79,8 +80,9 @@ func (g *generator) generateWeapon() *item.Instance {
 		}
 	case 2:
 		return &item.Instance{
-			Class: item.BowClass,
-			Name:  "Ferocious Longbow",
+			Class:           item.BowClass,
+			Name:            "Ferocious Longbow",
+			BaseChanceToHit: 0.6,
 			Modifiers: map[item.Modifier]float64{
 				item.BaseMinDamageModifier: 6,
 				item.BaseMaxDamageModifier: 17,
@@ -88,7 +90,7 @@ func (g *generator) generateWeapon() *item.Instance {
 				item.ActionPointModifier:   25,
 			},
 			Skills: []skill.ID{
-				"debug-basic-attack",
+				"bow-attack",
 			},
 		}
 	}

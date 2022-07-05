@@ -83,3 +83,11 @@ func (equip *Equipment) WeaponActionPoints() int {
 	}
 	return int(equip.Weapon.Modifiers[ActionPointModifier])
 }
+
+func (equip *Equipment) WeaponBaseChanceToHit() float64 {
+	if equip == nil || equip.Weapon == nil {
+		// Unarmed hard-coded ChanceToHit
+		return 0.99
+	}
+	return equip.Weapon.BaseChanceToHit
+}

@@ -95,7 +95,8 @@ type Participant struct {
 
 	ItemStats map[item.Modifier]float64
 
-	EquippedWeaponClass item.Class
+	EquippedWeaponClass   item.Class
+	WeaponBaseChanceToHit float64
 	// Skills should not change while in combat.
 	Skills []skill.ID
 }
@@ -163,4 +164,10 @@ func (p *Participant) baseDamage() (baseMin, baseMax float64) {
 func (p *Participant) maxHealth() int {
 	// TODO: Also include vitality and raw health from equipped items.
 	return game.MaxHealth(p.BaseHealth, p.Vitality)
+}
+
+func (p *Participant) chanceToHit() float64 {
+	base := p.WeaponBaseChanceToHit
+	modifiers := p.ItemStats[item.ChanceToHitModifier]
+	return base + ((1.0 - base) * modifiers)
 }

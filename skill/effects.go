@@ -9,7 +9,7 @@ import (
 // Effect is anything that executing a skill could trigger.
 type Effect struct {
 	When Timing
-	What interface{}
+	What []interface{}
 }
 
 type Operator int

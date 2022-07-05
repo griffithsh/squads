@@ -121,14 +121,15 @@ func (cm *Manager) handleTargetSelected(x, y float64) {
 		}
 		obstacle := cm.mgr.Component(cm.turnToken, "Obstacle").(*game.Obstacle)
 		origin := geom.Key{M: obstacle.M, N: obstacle.N}
-		adjacent := false
-		for key := range origin.Neighbors() {
+		valid := origin.ExpandBy(s.Targeting.Selectable.MinRange, s.Targeting.Selectable.MaxRange)
+		inRange := false
+		for _, key := range valid {
 			if key == h.Key() {
-				adjacent = true
+				inRange = true
 				break
 			}
 		}
-		if !adjacent {
+		if !inRange {
 			return
 		}
 	}
@@ -188,15 +189,16 @@ func (cm *Manager) handleTargetConfirmed(x, y float64) {
 		// Because we can target anywhere, there are no reasons to return out of
 		// this function for this case.
 	case targeting.SelectWithin:
-		adjacent := false
+		valid := origin.Key().ExpandBy(s.Targeting.Selectable.MinRange, s.Targeting.Selectable.MaxRange)
+		inRange := false
 
-		for key := range origin.Key().Neighbors() {
+		for _, key := range valid {
 			if key == selected.Key() {
-				adjacent = true
+				inRange = true
 				break
 			}
 		}
-		if !adjacent {
+		if !inRange {
 			return
 		}
 	}
@@ -417,8 +419,9 @@ func (cm *Manager) createParticipation(charEntity ecs.Entity, team *game.Team, a
 		Disambiguator: char.Disambiguator,
 		Masteries:     char.Masteries,
 
-		EquippedWeaponClass: equipment.WeaponClass(),
-		ItemStats:           equipment.SumModifiers(),
+		EquippedWeaponClass:   equipment.WeaponClass(),
+		WeaponBaseChanceToHit: equipment.WeaponBaseChanceToHit(),
+		ItemStats:             equipment.SumModifiers(),
 		// FIXME: Skills should come from a subset of the available skills
 		// configured by the player. Available skills come from the equipped
 		// items and the profession of the Character.

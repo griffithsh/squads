@@ -24,6 +24,12 @@ type Description struct {
 	Effects []Effect
 
 	Costs map[CostType]int
+
+	// AttackChanceToHitModifier multiplies the base chance to hit of the skill.
+	// A value of zero does not modify the chance to hit. A value of 0.1
+	// improves the chance to hit by 10%. A value of -0.5 halves the chance to
+	// hit.
+	AttackChanceToHitModifier float64
 }
 
 // IsAttack returns whether a skill is an attack or not.

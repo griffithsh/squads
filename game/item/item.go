@@ -48,8 +48,9 @@ type Instance struct {
 
 	// Name is rendered at recipe execution time and might be something like "Deadly
 	// Axe of Iciness"
-	Name      string
-	Modifiers map[Modifier]float64 // base damage, or base armor, or any other modifier
+	Name            string
+	BaseChanceToHit float64
+	Modifiers       map[Modifier]float64 // base damage, or base armor, or any other modifier
 
 	Skills []skill.ID
 }

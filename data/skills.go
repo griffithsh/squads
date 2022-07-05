@@ -29,7 +29,7 @@ type targetingJSON struct {
 type skillEffect struct {
 	When      int // milliseconds
 	WhenPoint string
-	What      interface{}
+	What      []interface{}
 }
 
 // skillDescription is the raw format from a .skills file.
@@ -50,18 +50,24 @@ type skillDescription struct {
 	Effects []skillEffect
 
 	Costs map[string]int
+
+	// AttackChanceToHitModifier multiplies the base chance to hit of the skill.
+	// A value of zero does not modify the chance to hit. A value of 0.1
+	// improves the chance to hit by 10%. A value of -0.5 halves the chance to
+	// hit.
+	AttackChanceToHitModifier float64
 }
 
 // convert to a skill.Description
 func (sd *skillDescription) convert() (skill.Description, error) {
 	tags := []skill.Classification{}
 	for _, raw := range sd.Tags {
-		tag := skill.ClassificationFromString(raw)
-		if tag == nil {
+		tag, err := skill.ClassificationString(raw)
+		if err != nil {
 			fmt.Fprintf(os.Stderr, "unknown skill.Classification %s", raw)
 			continue
 		}
-		tags = append(tags, *tag)
+		tags = append(tags, tag)
 	}
 
 	selectableType := targeting.SelectableTypeFromString(sd.Targeting.Selectable.Type)
@@ -111,14 +117,15 @@ func (sd *skillDescription) convert() (skill.Description, error) {
 	}
 
 	return skill.Description{
-		ID:          sd.ID,
-		Name:        sd.Name,
-		Explanation: sd.Explanation,
-		Tags:        tags,
-		Icon:        *sd.Icon.AsAnimation(),
-		Targeting:   targetingRule,
-		Effects:     effects,
-		Costs:       costs,
+		ID:                        sd.ID,
+		Name:                      sd.Name,
+		Explanation:               sd.Explanation,
+		Tags:                      tags,
+		Icon:                      *sd.Icon.AsAnimation(),
+		Targeting:                 targetingRule,
+		Effects:                   effects,
+		Costs:                     costs,
+		AttackChanceToHitModifier: sd.AttackChanceToHitModifier,
 	}, nil
 }
 
@@ -126,7 +133,7 @@ func (d *skillEffect) UnmarshalJSON(data []byte) error {
 	v := struct {
 		When      int
 		WhenPoint string
-		What      struct {
+		What      []struct {
 			Type string `json:"_type"`
 		}
 	}{}
@@ -136,37 +143,51 @@ func (d *skillEffect) UnmarshalJSON(data []byte) error {
 	d.When = v.When
 	d.WhenPoint = v.WhenPoint
 
-	switch v.What.Type {
-	case "DamageEffect":
-		v2 := struct {
-			What skill.DamageEffect
-		}{}
-		json.Unmarshal(data, &v2)
-		d.What = v2.What
-
-	case "InjuryEffect":
-		v2 := struct {
-			What struct {
-				Type  string
-				Value int
-			}
-		}{}
-		if err := json.Unmarshal(data, &v2); err != nil {
-			return err
-		}
-		injuryType := skill.InjuryTypeFromString(v2.What.Type)
-		if injuryType == nil {
-			return fmt.Errorf("unknown InjuryType %q", v2.What.Type)
-		}
-		d.What = skill.InjuryEffect{
-			Type:  *injuryType,
-			Value: v2.What.Value,
-		}
-
-	default:
-		// TODO: other effect types!
-		return fmt.Errorf("unknown _type %q (%v)", v.What.Type, v)
+	v2 := struct {
+		What []json.RawMessage
+	}{}
+	if err := json.Unmarshal(data, &v2); err != nil {
+		return err
 	}
+
+	var whats []interface{}
+	for i, typer := range v.What {
+		ty := typer.Type
+		switch ty {
+		case "DamageEffect":
+			var what skill.DamageEffect
+			if err := json.Unmarshal(v2.What[i], &what); err != nil {
+				return fmt.Errorf("unmarshal DamageEffect: %q\n\n%s", err, v2.What[i])
+			}
+			whats = append(whats, what)
+
+		case "InjuryEffect":
+			what := struct {
+				InjuryType string `json:"type"`
+				Value      int
+			}{}
+			if err := json.Unmarshal(v2.What[i], &what); err != nil {
+				return fmt.Errorf("unmarshal InjuryEffect: %q\n\n%s", err, v2.What[i])
+			}
+			injuryType := skill.InjuryTypeFromString(what.InjuryType)
+			if injuryType == nil {
+				return fmt.Errorf("unknown InjuryType %q", what.InjuryType)
+			}
+			whats = append(whats, skill.InjuryEffect{
+				Type:  *injuryType,
+				Value: what.Value,
+			})
+
+		// case "HealEffect":
+		// case "ReviveEffect":
+		// case "DefileEffect":
+		// case "SpawnParticipantEffect":
+		default:
+			// TODO: other effect types!
+			return fmt.Errorf("unknown _type %q (%v)", ty, v)
+		}
+	}
+	d.What = whats
 	return nil
 }
 
@@ -277,7 +298,7 @@ var internalSkills = []skill.Description{
 		Effects: []skill.Effect{
 			{
 				When: skill.NewTiming(time.Millisecond * 500),
-				What: skill.DamageEffect{
+				What: []interface{}{skill.DamageEffect{
 					Min: []skill.Operation{
 						{Operator: skill.AddOp, Variable: "$DMG-MIN"},
 					},
@@ -285,6 +306,7 @@ var internalSkills = []skill.Description{
 						{Operator: skill.AddOp, Variable: "$DMG-MAX"},
 					},
 					Classification: skill.Attack,
+				},
 				},
 			},
 		},
@@ -315,7 +337,7 @@ var internalSkills = []skill.Description{
 		Effects: []skill.Effect{
 			{
 				When: skill.NewTimingFromPoint(skill.AttackApexTimingPoint),
-				What: skill.DamageEffect{
+				What: []interface{}{skill.DamageEffect{
 					Min: []skill.Operation{
 						{Operator: skill.AddOp, Variable: "1"},
 						{Operator: skill.MultOp, Variable: "$LIGHTNING"},
@@ -327,7 +349,7 @@ var internalSkills = []skill.Description{
 						{Operator: skill.AddOp, Variable: "100"},
 					},
 					Classification: skill.Spell,
-				},
+				}},
 			},
 		},
 	},
@@ -357,13 +379,12 @@ var internalSkills = []skill.Description{
 		Effects: []skill.Effect{
 			{
 				When: skill.NewTimingFromPoint(skill.AttackApexTimingPoint),
-				What: skill.ReviveEffect{},
-			},
-			{
-				When: skill.NewTimingFromPoint(skill.AttackApexTimingPoint),
-				What: skill.HealEffect{
-					Amount:       0.15,
-					IsPercentage: true,
+				What: []interface{}{
+					skill.ReviveEffect{},
+					skill.HealEffect{
+						Amount:       0.15,
+						IsPercentage: true,
+					},
 				},
 			},
 		},
@@ -394,15 +415,14 @@ var internalSkills = []skill.Description{
 		Effects: []skill.Effect{
 			{
 				When: skill.NewTimingFromPoint(skill.AttackApexTimingPoint),
-				What: skill.DefileEffect{},
-			},
-			{
-				When: skill.NewTimingFromPoint(skill.AttackApexTimingPoint),
-				What: skill.SpawnParticipantEffect{
-					Profession: "Skeleton",
-					Level: []skill.Operation{
-						{Operator: skill.AddOp, Variable: "1"},
-						{Operator: skill.MultOp, Variable: "$DARK"},
+				What: []interface{}{
+					skill.DefileEffect{},
+					skill.SpawnParticipantEffect{
+						Profession: "Skeleton",
+						Level: []skill.Operation{
+							{Operator: skill.AddOp, Variable: "1"},
+							{Operator: skill.MultOp, Variable: "$DARK"},
+						},
 					},
 				},
 			},

@@ -36,7 +36,9 @@ func (r *Rule) Execute(selected, origin geom.Key) (selectable bool, paints []geo
 	case SingleHex:
 		paints = []geom.Key{selected}
 	case WithinRangeOfTarget:
+		paints = selected.ExpandBy(r.Selectable.MinRange, r.Selectable.MaxRange)
 	case WithinRangeOfOrigin:
+		paints = origin.ExpandBy(r.Selectable.MinRange, r.Selectable.MaxRange)
 	// case LinearBrush:
 	default:
 		panic(fmt.Sprintf("unhandled BrushType %s", r.Brush.Type))

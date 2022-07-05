@@ -30,4 +30,10 @@ const (
 	PreparationModifier
 	//ActionPointModifier is added to the Character's ActionPoint maximum.
 	ActionPointModifier
+
+	// ChanceToHitModifier multiplies the base chance to hit of Attacks.
+	// A value of zero does not modify the chance to hit. A value of 0.1
+	// improves the chance to hit by 10%. A value of -0.5 halves the chance to
+	// hit.
+	ChanceToHitModifier
 )
