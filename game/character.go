@@ -1,6 +1,6 @@
 package game
 
-//go:generate stringer -output=./character_string.go -type=CharacterSex,CharacterPerformance
+//go:generate go run github.com/dmarkham/enumer -output=./character_enumer.go -type=CharacterSex,CharacterPerformance  -json
 
 // CharacterSex is not CharacterGender, NB.
 type CharacterSex int
