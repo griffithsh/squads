@@ -4,20 +4,7 @@ import "github.com/griffithsh/squads/geom"
 
 type BrushType int
 
-//go:generate stringer -type=BrushType
-
-// BrushTypeFromString converts strings to SelectableTypes. Mostly useful
-// for Unmarshaling.
-func BrushTypeFromString(s string) *BrushType {
-	for i := 0; i < len(_BrushType_index)-1; i++ {
-		c := BrushType(i)
-
-		if c.String() == s {
-			return &c
-		}
-	}
-	return nil
-}
+//go:generate go run github.com/dmarkham/enumer -type=BrushType -json
 
 const (
 	// SingleHex means that only the targeted Hex is highlighted.
@@ -31,7 +18,7 @@ const (
 	// configured ranges of the origin are painted.
 	WithinRangeOfOrigin
 
- 	// LinearFromOrigin uses a direction and length to indicate which hexes are painted.
+	// LinearFromOrigin uses a direction and length to indicate which hexes are painted.
 	LinearFromOrigin
 
 	// Arc? Radius (probably 1, or maye 2?), Length (how many hexes to paint

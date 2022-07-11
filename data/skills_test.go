@@ -81,7 +81,7 @@ func TestParseSkills(t *testing.T) {
 
 	encoded := strings.TrimSpace(b.String())
 
-	want := `{"ID":"basic-slash","Name":"Slash","Explanation":"Slash the target","Tags":["Attack"],"Icon":{"Frames":[{"texture":"hud2.png","x":0,"y":0,"w":24,"h":24,"offsetX":0,"offsetY":0}],"Timings":[5000000000],"Pointer":0,"EndBehavior":0},"Targeting":{"Selectable":{"Type":"SelectWithin","MinRange":1,"MaxRange":1},"Brush":{"Type":0,"MinRange":0,"MaxRange":0,"LinearExtent":0,"LinearDirection":"Forward"}},"Effects":[{"When":{},"What":[{"Min":[{"Operator":"AddOp","Variable":"$DMG-MIN"}],"Max":[{"Operator":"MultOp","Variable":"$DMG-MAX"}],"Classification":"Attack","DamageType":"FireDamage"}]}],"Costs":{"0":20},"AttackChanceToHitModifier":-0.1}`
+	want := `{"ID":"basic-slash","Name":"Slash","Explanation":"Slash the target","Tags":["Attack"],"Icon":{"Frames":[{"texture":"hud2.png","x":0,"y":0,"w":24,"h":24,"offsetX":0,"offsetY":0}],"Timings":[5000000000],"Pointer":0,"EndBehavior":0},"Targeting":{"Selectable":{"Type":"SelectWithin","MinRange":1,"MaxRange":1},"Brush":{"Type":"SingleHex","MinRange":0,"MaxRange":0,"LinearExtent":0,"LinearDirection":"Forward"}},"Effects":[{"When":{},"What":[{"Min":[{"Operator":"AddOp","Variable":"$DMG-MIN"}],"Max":[{"Operator":"MultOp","Variable":"$DMG-MAX"}],"Classification":"Attack","DamageType":"FireDamage"}]}],"Costs":{"0":20},"AttackChanceToHitModifier":-0.1}`
 	if encoded != want {
 		t.Errorf("want:\n\t%s\ngot:\n\t%s", want, encoded)
 	}
