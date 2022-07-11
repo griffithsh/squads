@@ -5,9 +5,10 @@ import (
 	"github.com/griffithsh/squads/event"
 )
 
+//go:generate go run github.com/dmarkham/enumer -output=./events_enumer.go -type=StatType,CombatResult
+
 type StatType int
 
-//go:generate stringer -type=StatType
 const (
 	HPStat StatType = iota
 	EnergyStat
@@ -17,7 +18,6 @@ const (
 
 type CombatResult int
 
-//go:generate stringer -type=CombatResult
 const (
 	Victorious CombatResult = iota
 	Defeated
