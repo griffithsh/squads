@@ -16,7 +16,7 @@ import (
 
 type targetingJSON struct {
 	Selectable struct {
-		Type     string
+		Type     targeting.SelectableType
 		MinRange int
 		MaxRange int
 	}
@@ -73,17 +73,13 @@ func (sd *skillDescription) convert() (skill.Description, error) {
 		tags = append(tags, tag)
 	}
 
-	selectableType := targeting.SelectableTypeFromString(sd.Targeting.Selectable.Type)
-	if selectableType == nil {
-		return skill.Description{}, fmt.Errorf("convert %q to SelectableType", sd.Targeting.Selectable.Type)
-	}
 	brushType := targeting.BrushTypeFromString(sd.Targeting.Brush.Type)
 	if brushType == nil {
 		return skill.Description{}, fmt.Errorf("convert %q to BrushType", sd.Targeting.Brush.Type)
 	}
 	targetingRule := targeting.Rule{
 		Selectable: targeting.Selectable{
-			Type:     *selectableType,
+			Type:     sd.Targeting.Selectable.Type,
 			MinRange: sd.Targeting.Selectable.MinRange,
 			MaxRange: sd.Targeting.Selectable.MaxRange,
 		},

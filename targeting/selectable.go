@@ -3,20 +3,7 @@ package targeting
 // SelectableType enumerates the styles of selection permissions.
 type SelectableType int
 
-//go:generate stringer -type=SelectableType
-
-// SelectableTypeFromString converts strings to SelectableTypes. Mostly useful
-// for Unmarshaling.
-func SelectableTypeFromString(s string) *SelectableType {
-	for i := 0; i < len(_SelectableType_index)-1; i++ {
-		c := SelectableType(i)
-
-		if c.String() == s {
-			return &c
-		}
-	}
-	return nil
-}
+//go:generate go run github.com/dmarkham/enumer -type=SelectableType -json
 
 const (
 	// SelectAnywhere means that the skill can be targeted on any hex in the
@@ -43,5 +30,5 @@ type Selectable struct {
 	MaxRange int
 
 	// LinearLength    int
-	// LinearDirection geom.DirectionType // should be a contextual direction - "Forward", "Back-Left"
+	// LinearDirection geom.RelativeDirection
 }
