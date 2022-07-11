@@ -1,5 +1,7 @@
 package targeting
 
+import "github.com/griffithsh/squads/geom"
+
 type BrushType int
 
 //go:generate stringer -type=BrushType
@@ -29,8 +31,8 @@ const (
 	// configured ranges of the origin are painted.
 	WithinRangeOfOrigin
 
-	// LinearBrush uses a direction and length to indicate which hexes are painted.
-	// LinearBrush
+ 	// LinearFromOrigin uses a direction and length to indicate which hexes are painted.
+	LinearFromOrigin
 
 	// Arc? Radius (probably 1, or maye 2?), Length (how many hexes to paint
 	// around the circle, negative for anticlockwise), Begin (if you want the
@@ -49,6 +51,6 @@ type Brush struct {
 	MinRange int
 	MaxRange int
 
-	// LinearLength    int
-	// LinearDirection geom.DirectionType // should be a contextual direction - "Forward", "Back-Left"
+	LinearExtent    int
+	LinearDirection geom.RelativeDirection
 }

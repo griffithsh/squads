@@ -14,11 +14,12 @@ func _() {
 	_ = x[DamageMultiplierModifier-3]
 	_ = x[PreparationModifier-4]
 	_ = x[ActionPointModifier-5]
+	_ = x[ChanceToHitModifier-6]
 }
 
-const _Modifier_name = "BaseMinDamageModifierBaseMaxDamageModifierBaseDamageModifierDamageMultiplierModifierPreparationModifierActionPointModifier"
+const _Modifier_name = "BaseMinDamageModifierBaseMaxDamageModifierBaseDamageModifierDamageMultiplierModifierPreparationModifierActionPointModifierChanceToHitModifier"
 
-var _Modifier_index = [...]uint8{0, 21, 42, 60, 84, 103, 122}
+var _Modifier_index = [...]uint8{0, 21, 42, 60, 84, 103, 122, 141}
 
 func (i Modifier) String() string {
 	if i < 0 || i >= Modifier(len(_Modifier_index)-1) {

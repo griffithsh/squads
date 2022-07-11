@@ -39,7 +39,35 @@ func (r *Rule) Execute(selected, origin geom.Key) (selectable bool, paints []geo
 		paints = selected.ExpandBy(r.Selectable.MinRange, r.Selectable.MaxRange)
 	case WithinRangeOfOrigin:
 		paints = origin.ExpandBy(r.Selectable.MinRange, r.Selectable.MaxRange)
-	// case LinearBrush:
+	case LinearFromOrigin:
+		orientation := geom.FindDirection(origin, selected)
+
+		direction := geom.Actualize(orientation, r.Brush.LinearDirection)
+		mover := func(k geom.Key) geom.Key {
+			switch direction {
+			case geom.N:
+				return k.ToN()
+			case geom.S:
+				return k.ToS()
+			case geom.NE:
+				return k.ToNE()
+			case geom.NW:
+				return k.ToNW()
+			case geom.SE:
+				return k.ToSE()
+			case geom.SW:
+				return k.ToSW()
+			default:
+				return k
+			}
+		}
+
+		k := origin
+		for i := 0; i < r.Brush.LinearExtent; i++ {
+			k = mover(k)
+			paints = append(paints, k)
+		}
+
 	default:
 		panic(fmt.Sprintf("unhandled BrushType %s", r.Brush.Type))
 	}

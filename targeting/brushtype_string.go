@@ -11,11 +11,12 @@ func _() {
 	_ = x[SingleHex-0]
 	_ = x[WithinRangeOfTarget-1]
 	_ = x[WithinRangeOfOrigin-2]
+	_ = x[LinearFromOrigin-3]
 }
 
-const _BrushType_name = "SingleHexWithinRangeOfTargetWithinRangeOfOrigin"
+const _BrushType_name = "SingleHexWithinRangeOfTargetWithinRangeOfOriginLinearFromOrigin"
 
-var _BrushType_index = [...]uint8{0, 9, 28, 47}
+var _BrushType_index = [...]uint8{0, 9, 28, 47, 63}
 
 func (i BrushType) String() string {
 	if i < 0 || i >= BrushType(len(_BrushType_index)-1) {

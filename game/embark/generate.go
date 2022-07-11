@@ -91,6 +91,7 @@ func (g *generator) generateWeapon() *item.Instance {
 			},
 			Skills: []skill.ID{
 				"bow-attack",
+				"bow-skirmish",
 			},
 		}
 	}

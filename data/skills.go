@@ -9,6 +9,7 @@ import (
 
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/game/item"
+	"github.com/griffithsh/squads/geom"
 	"github.com/griffithsh/squads/skill"
 	"github.com/griffithsh/squads/targeting"
 )
@@ -20,9 +21,11 @@ type targetingJSON struct {
 		MaxRange int
 	}
 	Brush struct {
-		Type     string
-		MinRange int
-		MaxRange int
+		Type            string
+		MinRange        int
+		MaxRange        int
+		LinearExtent    int
+		LinearDirection geom.RelativeDirection
 	}
 }
 
@@ -85,9 +88,11 @@ func (sd *skillDescription) convert() (skill.Description, error) {
 			MaxRange: sd.Targeting.Selectable.MaxRange,
 		},
 		Brush: targeting.Brush{
-			Type:     *brushType,
-			MinRange: sd.Targeting.Brush.MinRange,
-			MaxRange: sd.Targeting.Brush.MaxRange,
+			Type:            *brushType,
+			MinRange:        sd.Targeting.Brush.MinRange,
+			MaxRange:        sd.Targeting.Brush.MaxRange,
+			LinearExtent:    sd.Targeting.Brush.LinearExtent,
+			LinearDirection: sd.Targeting.Brush.LinearDirection,
 		},
 	}
 
