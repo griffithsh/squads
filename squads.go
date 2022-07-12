@@ -246,7 +246,7 @@ func (s *squads) Update() error {
 
 	if inpututil.IsMouseButtonJustReleased(ebiten.MouseButtonLeft) {
 		wx, wy := s.camera.ScreenToWorld(x, y)
-		s.bus.Publish(&ui.Interact{
+		s.bus.Publish(&ui.UIInteract{
 			AbsoluteX: float64(x),
 			AbsoluteY: float64(y),
 			X:         wx,

@@ -987,6 +987,12 @@ func (em *Manager) repaint() {
 		}
 		nui.Data = data
 		em.mgr.AddComponent(e, nui)
+
+		// FIXME: Is this the best way to disable(or remove?) all the buttons in the embark?
+		for _, e := range em.mgr.Tagged("embark-villager-buttons") {
+			em.mgr.RemoveComponent(e, &ui.Interactive{})
+		}
+
 	} else if takenEmbarkPoints > 0 {
 		// Else if no-one is popped, then check how many are embarked. If > 0, show an embark/go! button.
 		e := em.mgr.NewEntity()

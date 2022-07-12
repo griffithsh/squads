@@ -87,17 +87,19 @@ func NewUI(r io.Reader) *UI {
 
 type UISystem struct {
 	mgr              *ecs.World
+	bus              *event.Bus
 	screenW, screenH int
 }
 
 func NewUISystem(mgr *ecs.World, bus *event.Bus) *UISystem {
 	uis := UISystem{
 		mgr:     mgr,
+		bus:     bus,
 		screenW: 0, screenH: 0,
 	}
 
-	bus.Subscribe(Interact{}.Type(), func(t event.Typer) {
-		ev := t.(*Interact)
+	bus.Subscribe(UIInteract{}.Type(), func(t event.Typer) {
+		ev := t.(*UIInteract)
 		uis.Handle(ev)
 	})
 	bus.Subscribe(game.WindowSizeChanged{}.Type(), func(e event.Typer) {
@@ -127,7 +129,7 @@ func (sys *UISystem) Update() error {
 	return nil
 }
 
-func (uis *UISystem) Handle(ev *Interact) {
+func (uis *UISystem) Handle(ev *UIInteract) {
 	uiScale := 2.0 // FIXME this needs to come from somewhere ...
 
 	interactPoint := image.Point{int(ev.AbsoluteX / uiScale), int(ev.AbsoluteY / uiScale)}
@@ -141,6 +143,9 @@ func (uis *UISystem) Handle(ev *Interact) {
 			}
 		}
 	}
+
+	// Unhandled by any UI interactive region, so pass the event on.
+	uis.bus.Publish(&Interact{X: ev.X, Y: ev.Y, AbsoluteX: ev.AbsoluteX, AbsoluteY: ev.AbsoluteY})
 }
 
 // realiseChildren replaces IfElements and RangeElements with their children as
