@@ -74,7 +74,10 @@ func (g *generator) generateWeapon() *item.Instance {
 				item.ActionPointModifier:   21,
 			},
 			Skills: []skill.ID{
+				"sword-attack",
 				"sword-slash",
+				"sword-stab",
+				"sword-hew",
 				"sword-rogue-slash",
 			},
 		}
@@ -91,6 +94,10 @@ func (g *generator) generateWeapon() *item.Instance {
 			},
 			Skills: []skill.ID{
 				"bow-attack",
+				"bow-straight",
+				"bow-quick",
+				"bow-focus",
+				"bow-ballistic",
 				"bow-skirmish",
 			},
 		}
