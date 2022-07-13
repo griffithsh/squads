@@ -99,20 +99,7 @@ func (*FrameAnimation) Type() string {
 }
 
 // HoverAnimation makes the entity float up and down.
-type HoverAnimation struct {
-	YVelocity  float64
-	YTranslate float64
-	Force      float64
-}
-
-// NewHoverAnimation creates a new HoverAnimation.
-func NewHoverAnimation() *HoverAnimation {
-	return &HoverAnimation{
-		Force:      92.5,
-		YTranslate: -5,
-		YVelocity:  0.0,
-	}
-}
+type HoverAnimation struct{}
 
 // Type of this Component.
 func (*HoverAnimation) Type() string {
@@ -170,7 +157,11 @@ func getAnimationElapsed(mgr *ecs.World, e ecs.Entity, elapsed time.Duration) ti
 // AnimationSystem animates the visual Components of Entities. It's not
 // responsible for translating or mapping game concepts like "casting a spell"
 // to the assignment of appropriate animation Components for that Entity.
-type AnimationSystem struct{}
+type AnimationSystem struct {
+	// msElapsed stores wall time as milliseconds. It's used to calculate a sine
+	// wave for HoverAnimations.
+	msElapsed int64
+}
 
 // Update all Animated Entities.
 func (as *AnimationSystem) Update(mgr *ecs.World, elapsed time.Duration) {
@@ -208,22 +199,19 @@ func (as *AnimationSystem) Update(mgr *ecs.World, elapsed time.Duration) {
 		}
 	}
 
+	var cycleTime int64 = 1500 // How long an up-down cycle of a HoverAnimation takes.
+
+	// N.B. ignoring the AnimationSpeed Component for this one.
+	as.msElapsed += elapsed.Milliseconds()
+	as.msElapsed = as.msElapsed % cycleTime
+
+	hoverPercentage := float64(as.msElapsed) / float64(cycleTime)
+	hoverPoint := math.Sin(hoverPercentage * math.Pi * 2)
+
 	for _, e := range mgr.Get([]string{"HoverAnimation"}) {
-		elapsed := getAnimationElapsed(mgr, e, elapsed)
-		anim := mgr.Component(e, "HoverAnimation").(*HoverAnimation)
-
-		if anim.YTranslate > 0 {
-			anim.YVelocity -= anim.Force * elapsed.Seconds()
-		} else {
-			anim.YVelocity += anim.Force * elapsed.Seconds()
-		}
-
-		// Apply velocity to offset.
-		anim.YTranslate += anim.YVelocity * elapsed.Seconds()
-
 		// Save offset.
 		mgr.AddComponent(e, &RenderOffset{
-			Y: int(anim.YTranslate),
+			Y: int(hoverPoint*3 - 1.5),
 		})
 	}
 

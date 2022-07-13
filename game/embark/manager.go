@@ -649,7 +649,7 @@ func (em *Manager) addMulliganHouse(villageW, villageH int) {
 		X: 16, Y: 244,
 		W: 16, H: 12,
 	})
-	em.mgr.AddComponent(e, game.NewHoverAnimation())
+	em.mgr.AddComponent(e, &game.HoverAnimation{})
 }
 
 // Begin an embark Manager, setting up Entities required to display and interact
@@ -934,7 +934,7 @@ func (em *Manager) repaint() {
 				X: 0, Y: 244,
 				W: 16, H: 12,
 			})
-			em.mgr.AddComponent(e, game.NewHoverAnimation())
+			em.mgr.AddComponent(e, &game.HoverAnimation{})
 		}
 	}
 
