@@ -1,8 +1,14 @@
 package geom
 
+import "strconv"
+
 // Key is a way of referencing a Hexagon in a Field.
 type Key struct {
 	M, N int
+}
+
+func (k Key) String() string {
+	return "(" + strconv.Itoa(k.M) + "," + strconv.Itoa(k.N) + ")"
 }
 
 // Equal determines if the M and N values of the passed pointers differ. If
