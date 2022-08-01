@@ -9,7 +9,7 @@ import (
 	"github.com/griffithsh/squads/geom"
 )
 
-func buildVanillaPaths(prng *rand.Rand, level int) map[geom.Key]Placement {
+func buildMazePaths(prng *rand.Rand, level int) Paths {
 	// TODO: Tunables - passed level should drive these values.
 	seeds := 10
 	goalComplexity := 75

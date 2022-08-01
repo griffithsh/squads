@@ -1,28 +1,12 @@
 package procedural
 
 import (
+	"math"
 	"math/rand"
 	"sort"
 
 	"github.com/griffithsh/squads/geom"
 )
-
-func contains[T comparable](s []T, v T) bool {
-	for _, item := range s {
-		if item == v {
-			return true
-		}
-	}
-	return false
-}
-
-func sliceLengths[T any](s [][]T) []int {
-	result := make([]int, len(s))
-	for i, ss := range s {
-		result[i] = len(ss)
-	}
-	return result
-}
 
 func keysOf[K comparable, V any](m map[K]V) []K {
 	keys := make([]K, 0, len(m))
@@ -62,4 +46,80 @@ func deterministicKeyFrom[V any](m map[geom.Key]V) geom.Key {
 		return keys[i].M < keys[j].M
 	})
 	return keys[0]
+}
+
+func DeterministicIndexOf[V any](prng *rand.Rand, s []V) int {
+	switch len(s) {
+	case 0:
+		return -1
+	case 1:
+		return 0
+	default:
+		return prng.Intn(len(s))
+	}
+}
+
+// extentsOf of a set of keys. The most-northerly, southerly, north-westerly, etc...
+func extentsOf(keys []geom.Key) map[geom.DirectionType]geom.Key {
+	// Magic numbers to create a field where rotating 45 degrees lines up the
+	// the two NE-SW, NW-SE vectors with E-W.
+	f := geom.NewField(36, 16, 34)
+	rad := math.Pi / 4
+
+	sinSWNE, cosSWNE := math.Sincos(-rad)
+	sinNWSE, cosNWSE := math.Sincos(rad)
+
+	most := map[geom.DirectionType]int{}
+	result := map[geom.DirectionType]geom.Key{}
+
+	for _, key := range keys {
+		x, y := f.Ktow(key)
+
+		// Is it the smallest y we've seen? - new N
+		if v, ok := most[geom.N]; !ok || int(y) < v {
+			most[geom.N] = int(y)
+			result[geom.N] = key
+		}
+
+		// Is it the largest y we've seen? - new S
+		if v, ok := most[geom.S]; !ok || int(y) > v {
+			most[geom.S] = int(y)
+			result[geom.S] = key
+		}
+
+		// xSWNE := x*cosSWNE - y*sinSWNE
+		ySWNE := x*sinSWNE + y*cosSWNE
+
+		// Is it the smallest y we've seen? - new NE
+		if v, ok := most[geom.NE]; !ok || v > int(ySWNE) {
+			most[geom.NE] = int(ySWNE)
+			result[geom.NE] = key
+		}
+
+		// Is it the largest y we've seen? - new SW
+		if v, ok := most[geom.SW]; !ok || v < int(ySWNE) {
+			most[geom.SW] = int(ySWNE)
+			result[geom.SW] = key
+		}
+
+		// xNWSE := x*cosNWSE - y*sinNWSE
+		yNWSE := x*sinNWSE + y*cosNWSE
+
+		// Is it the smallest y we've seen? - new NW
+		if v, ok := most[geom.NW]; !ok || v > int(yNWSE) {
+			most[geom.NW] = int(yNWSE)
+			result[geom.NW] = key
+		}
+
+		// Is it the largest y we've seen? - new SE
+		if v, ok := most[geom.SE]; !ok || v < int(yNWSE) {
+			most[geom.SE] = int(yNWSE)
+			result[geom.SE] = key
+		}
+	}
+	return result
+}
+
+func leftOfLine(ax, ay, bx, by, cx, cy float64) bool {
+	return ((bx-ax)*(cy-ay) - (by-ay)*(cx-ax)) < 0
 }
