@@ -5,10 +5,7 @@ package main
 import (
 	"embed"
 	"encoding/json"
-	"errors"
 	"fmt"
-	"image"
-	"image/png"
 	"math/rand"
 	"os"
 	"time"
@@ -22,81 +19,15 @@ import (
 	"github.com/hajimehoshi/ebiten/v2"
 )
 
-//go:embed temporary.png
 //go:embed recipes/*
 var content embed.FS
 
-var errExitGame = errors.New("game has completed")
-
 const screenWidth, screenHeight = 1024, 768
-
-var resource image.Image
-
-type overworldGenerator struct {
-	mgr *ecs.World
-	bus *event.Bus
-	vis *output.Visualizer
-}
-
-func (g *overworldGenerator) Update() error {
-	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
-		return errExitGame
-	}
-
-	moveSpeed := 10.0
-	if ebiten.IsKeyPressed(ebiten.KeyW) || ebiten.IsKeyPressed(ebiten.KeyUp) {
-		focusY -= moveSpeed
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyA) || ebiten.IsKeyPressed(ebiten.KeyLeft) {
-		focusX -= moveSpeed
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyS) || ebiten.IsKeyPressed(ebiten.KeyDown) {
-		focusY += moveSpeed
-	}
-	if ebiten.IsKeyPressed(ebiten.KeyD) || ebiten.IsKeyPressed(ebiten.KeyRight) {
-		focusX += moveSpeed
-	}
-
-	return nil
-}
-
-var zoom = 1.0
-var focusX = 0.0
-var focusY = 0.0
-
-func (g *overworldGenerator) Draw(screen *ebiten.Image) {
-	err := g.vis.Render(screen, g.mgr, focusX, focusY, zoom, screenWidth, screenHeight)
-	if err != nil {
-		fmt.Printf("render: %v\n", err)
-	}
-}
-
-func (g *overworldGenerator) Layout(outsideWidth, outsideHeight int) (screenWidth, screenHeight int) {
-	return outsideWidth, outsideHeight
-}
-
-func init() {
-	f, err := content.Open("temporary.png")
-	if err != nil {
-		panic(fmt.Errorf("couldn't open the image file %v", err))
-	}
-	decoded, err := png.Decode(f)
-	if err != nil {
-		panic(fmt.Errorf("couldn't decode the image file %v", err))
-	}
-	resource = decoded
-}
-
-type imageGetter struct{}
-
-func (ig imageGetter) GetImage(string) (val image.Image, ok bool) {
-	return resource, true
-}
 
 func main() {
 	seed := time.Now().Unix()
 
-	recipe, err := content.ReadFile("recipes/recipe.json")
+	recipe, err := content.ReadFile("recipes/shore.json")
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "read recipe: %v", err)
 		os.Exit(1)
@@ -107,20 +38,6 @@ func main() {
 	if err != nil {
 		fmt.Fprintf(os.Stderr, "unmarshal generator: %v\n", err)
 		os.Exit(1)
-	}
-
-	// TODO: add this to the recipe instead!
-	generator.Terrain = &procedural.LinearGradientTerrainStrategy{
-		TargetFilter: procedural.Narrowest,
-
-		Underflows: "WATER",
-		Gradients: procedural.LinearTerrainGradientSlice{
-			{Portions: 1, Value: "WATER", Blend: &procedural.Blend{Value: "SAND", Type: procedural.Smooth}},
-			{Portions: 3, Value: "SAND", Blend: &procedural.Blend{Value: "GRASS", Type: procedural.Spiky}},
-			{Portions: 2, Value: "GRASS", Blend: &procedural.Blend{Value: "FOREST", Type: procedural.Noisy}},
-			{Portions: 1, Value: "FOREST"},
-		},
-		Overflows: "ROCK",
 	}
 
 	generated := generator.Generate(seed, 0)

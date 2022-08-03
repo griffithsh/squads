@@ -1,6 +1,8 @@
 package procedural
 
 import (
+	"encoding/json"
+	"fmt"
 	"math/rand"
 
 	"github.com/griffithsh/squads/geom"
@@ -10,6 +12,39 @@ import (
 type Generator struct {
 	MakePaths pathFunc       `json:"pathGeneration"`
 	Terrain   TerrainBuilder `json:"terrainBuilder"`
+}
+
+func (g *Generator) UnmarshalJSON(b []byte) error {
+	var v struct {
+		PathGeneration pathFunc
+		TerrainBuilder json.RawMessage
+	}
+	err := json.Unmarshal(b, &v)
+	if err != nil {
+		return err
+	}
+	g.MakePaths = v.PathGeneration
+
+	var ty struct {
+		Value string `json:"type"`
+	}
+	err = json.Unmarshal(v.TerrainBuilder, &ty)
+	if err != nil {
+		return fmt.Errorf("unmarshal terrainBuilder: %v", err)
+	}
+
+	switch ty.Value {
+	case "LinearGradientTerrainStrategy":
+		var tb LinearGradientTerrainStrategy
+		if err = json.Unmarshal(v.TerrainBuilder, &tb); err != nil {
+			return fmt.Errorf("unmarshal LinearGradientTerrainStrategy: %v", err)
+		}
+		g.Terrain = &tb
+	default:
+		return fmt.Errorf("unknown terrainBuilder.type value: %s", ty.Value)
+	}
+
+	return nil
 }
 
 // Placement holds info about what roads or paths have been placed on a Key.

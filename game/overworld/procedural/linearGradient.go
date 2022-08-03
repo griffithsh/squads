@@ -8,6 +8,8 @@ import (
 	"github.com/griffithsh/squads/geom"
 )
 
+//go:generate go run github.com/dmarkham/enumer -output=./linearGradient_enumer.go -type=BlendType,StrategyTargetFilter -json
+
 type BlendType int
 
 const (

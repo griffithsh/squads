@@ -1,0 +1,40 @@
+{
+    "name": "Shore",
+    "pathGeneration": "Maze",
+    "terrainBuilder": {
+        "type": "LinearGradientTerrainStrategy",
+        "targetFilter": "Narrowest",
+        "underflows": "WATER",
+        "overflows": "ROCK",
+        "gradients": [
+            {
+                "portions": 1,
+                "value": "WATER",
+                "blend": {
+                    "value": "SAND",
+                    "type": "Smooth"
+                }
+            },
+            {
+                "portions": 3,
+                "value": "SAND",
+                "blend": {
+                    "value": "GRASS",
+                    "type": "Spiky"
+                }
+            },
+            {
+                "portions": 2,
+                "value": "GRASS",
+                "blend": {
+                    "value": "FOREST",
+                    "type": "Noisy"
+                }
+            },
+            {
+                "portions": 1,
+                "value": "FOREST"
+            }
+        ]
+    }
+}
