@@ -1,0 +1,28 @@
+{
+    "name": "Entering the Woods",
+    "pathGeneration": "Vine",
+    "terrainBuilder": {
+        "type": "LinearGradientTerrainStrategy",
+        "targetFilter": "Widest",
+        "underflows": "GRASS",
+        "overflows": "FOREST",
+        "gradients": [
+            {
+                "portions": 2,
+                "value": "GRASS"
+            },
+            {
+                "portions": 4,
+                "value": "GRASS",
+                "blend": {
+                    "value": "FOREST",
+                    "type": "Smooth"
+                }
+            },
+            {
+                "portions": 6,
+                "value": "FOREST"
+            }
+        ]
+    }
+}

@@ -67,12 +67,30 @@ func (k Key) ToSE() Key {
 	}
 	return Key{k.M + 1, k.N}
 }
+func (k Key) ToDirection(dir DirectionType) Key {
+	switch dir {
+	case N:
+		return k.ToN()
+	case NE:
+		return k.ToNE()
+	case SE:
+		return k.ToSE()
+	case S:
+		return k.ToS()
+	case SW:
+		return k.ToSW()
+	case NW:
+		return k.ToNW()
+	default:
+		return k
+	}
+}
 
 // Neighbors calculates the neighbors of a Key and returns them keyed by their Keys.
 func (k Key) Neighbors() map[Key]DirectionType {
 	result := map[Key]DirectionType{
-		Key{k.M, k.N - 1}: N,
-		Key{k.M, k.N + 1}: S,
+		{k.M, k.N - 1}: N,
+		{k.M, k.N + 1}: S,
 	}
 
 	if k.M%2 == 0 {

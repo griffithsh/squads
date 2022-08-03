@@ -1,6 +1,6 @@
 {
     "name": "Shore",
-    "pathGeneration": "Maze",
+    "pathGeneration": "Vine",
     "terrainBuilder": {
         "type": "LinearGradientTerrainStrategy",
         "targetFilter": "Narrowest",
