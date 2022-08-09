@@ -64,8 +64,19 @@ type Generated struct {
 func (g Generator) Generate(seed int64, level int) Generated {
 	prng := rand.New(rand.NewSource(seed))
 
-	// build paths
-	paths := g.MakePaths(prng, level)
+	paths := Paths{}
+	for i := 5; i >= 0; i-- {
+		var err error
+		paths, err = g.MakePaths(seed, level)
+		if err == nil {
+			break
+		}
+		fmt.Printf("path generation failed for bad seed %d: %v\n", seed, err)
+		seed = prng.Int63()
+		if i == 0 {
+			panic(fmt.Sprintf("path generation retries exhausted: %v", err))
+		}
+	}
 
 	terrainCodes := g.Terrain.Build(prng, paths)
 

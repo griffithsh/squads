@@ -9,7 +9,8 @@ import (
 	"github.com/griffithsh/squads/geom"
 )
 
-func buildMazePaths(prng *rand.Rand, level int) Paths {
+func buildMazePaths(seed int64, level int) (Paths, error) {
+	prng := rand.New(rand.NewSource(seed))
 	// TODO: Tunables - passed level should drive these values.
 	seeds := 10
 	goalComplexity := 75
@@ -99,7 +100,7 @@ func buildMazePaths(prng *rand.Rand, level int) Paths {
 	}
 	duration := time.Since(start)
 	fmt.Printf("complexity: %v of %v (%v)\n", len(placed), goalComplexity, duration)
-	return placed
+	return placed, nil
 }
 
 func rollConnection(prng *rand.Rand, numConnections int, currComplexity, goalComplexity int) bool {

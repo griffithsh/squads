@@ -25,7 +25,8 @@ type overworldGenerator struct {
 
 func (g *overworldGenerator) Generate() {
 	g.mgr.Clear()
-	seed := time.Now().Unix()
+	seed := time.Now().UnixMilli()
+
 	generated := g.core.Generate(seed, 0)
 	var field = geom.NewField(36, 16, 34)
 

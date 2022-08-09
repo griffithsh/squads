@@ -10,7 +10,8 @@ import (
 // buildVinePaths generates long maps, as a single correct pathway with
 // alternative dead-ending branches is generated trending in a single direction.
 // It is intended to implement beaches.
-func buildVinePaths(prng *rand.Rand, level int) Paths {
+func buildVinePaths(seed int64, level int) (Paths, error) {
+	prng := rand.New(rand.NewSource(seed))
 	fmt.Println("buildVinePaths")
 	directions := []geom.DirectionType{
 		geom.NE,
@@ -163,5 +164,5 @@ func buildVinePaths(prng *rand.Rand, level int) Paths {
 			tip.key = next
 		}
 	}
-	return result
+	return result, nil
 }

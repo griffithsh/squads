@@ -266,3 +266,10 @@ func (f *Field) Hexes() []*Hex {
 	}
 	return result
 }
+
+// DistanceBetween calculates the distance between two keys in the field.
+func (f *Field) DistanceBetween(a, b Key) float64 {
+	ax, ay := f.Ktow(a)
+	bx, by := f.Ktow(b)
+	return math.Hypot(math.Abs(ax-bx), math.Abs(ay-by))
+}

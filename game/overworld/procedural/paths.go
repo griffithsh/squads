@@ -2,7 +2,6 @@ package procedural
 
 import (
 	"fmt"
-	"math/rand"
 
 	"github.com/griffithsh/squads/geom"
 )
@@ -35,7 +34,7 @@ func (paths Paths) Connect(a, b geom.Key) {
 	paths[b].Connections[back] = struct{}{}
 }
 
-type pathFunc func(prng *rand.Rand, level int) Paths
+type pathFunc func(seed int64, level int) (Paths, error)
 
 func (f *pathFunc) UnmarshalJSON(b []byte) error {
 	switch string(b) {
