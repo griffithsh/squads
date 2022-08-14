@@ -1,25 +1,16 @@
 {
-    "name": "Shore",
+    "name": "Atoll",
     "pathGeneration": "Ring",
     "terrainBuilder": {
-        "type": "LinearGradientTerrainStrategy",
-        "targetFilter": "Narrowest",
+        "type": "RadialGradientTerrainStrategy",
         "underflows": "WATER",
-        "overflows": "ROCK",
+        "overflows": "WATER",
         "gradients": [
             {
-                "portions": 1,
-                "value": "WATER",
-                "blend": {
-                    "value": "SAND",
-                    "type": "Smooth"
-                }
-            },
-            {
-                "portions": 3,
+                "portions": 2,
                 "value": "SAND",
                 "blend": {
-                    "value": "GRASS",
+                    "value": "SAND",
                     "type": "Spiky"
                 }
             },
@@ -27,13 +18,17 @@
                 "portions": 2,
                 "value": "GRASS",
                 "blend": {
-                    "value": "FOREST",
-                    "type": "Noisy"
+                    "value": "SAND",
+                    "type": "Smooth"
                 }
             },
             {
                 "portions": 1,
-                "value": "FOREST"
+                "value": "SAND",
+                "blend": {
+                    "value": "WATER",
+                    "type": "Noisy"
+                }
             }
         ]
     }

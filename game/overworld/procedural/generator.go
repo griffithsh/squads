@@ -40,6 +40,12 @@ func (g *Generator) UnmarshalJSON(b []byte) error {
 			return fmt.Errorf("unmarshal LinearGradientTerrainStrategy: %v", err)
 		}
 		g.Terrain = &tb
+	case "RadialGradientTerrainStrategy":
+		var tb RadialGradientTerrainStrategy
+		if err = json.Unmarshal(v.TerrainBuilder, &tb); err != nil {
+			return fmt.Errorf("unmarshal RadialGradientTerrainStrategy: %v", err)
+		}
+		g.Terrain = &tb
 	default:
 		return fmt.Errorf("unknown terrainBuilder.type value: %s", ty.Value)
 	}

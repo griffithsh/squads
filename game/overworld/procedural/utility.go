@@ -123,3 +123,9 @@ func extentsOf(keys []geom.Key) map[geom.DirectionType]geom.Key {
 func leftOfLine(ax, ay, bx, by, cx, cy float64) bool {
 	return ((bx-ax)*(cy-ay) - (by-ay)*(cx-ax)) < 0
 }
+
+// rotation calculates the angle (in radians) that p has been rotated around
+// center.
+func rotation(cx, cy, px, py float64) float64 {
+	return math.Atan2(px-cx, py-cy)
+}

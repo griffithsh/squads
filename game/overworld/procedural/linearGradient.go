@@ -23,15 +23,17 @@ type Blend struct {
 	Type  BlendType
 }
 
-type LinearTerrainGradient struct {
-	Portions float64 // How much of the entire map this gradient is responsible for.
+type TerrainGradient struct {
+	Portions float64 // How much of the map this gradient is responsible for.
 	Value    Code
 	Blend    *Blend
 }
 
-type LinearTerrainGradientSlice []LinearTerrainGradient
+type TerrainGradientSlice []TerrainGradient
 
-func (gradients LinearTerrainGradientSlice) SubGradient(percent float64) (int, float64) {
+// SubGradient returns which gradient the percent through indicates, as well as
+// the percent through that gradient.
+func (gradients TerrainGradientSlice) SubGradient(percent float64) (int, float64) {
 	if percent < 0 {
 		return -1, percent
 	}
@@ -102,7 +104,7 @@ type LinearGradientTerrainStrategy struct {
 	TargetFilter StrategyTargetFilter
 	Overflows    Code
 	Underflows   Code
-	Gradients    LinearTerrainGradientSlice
+	Gradients    TerrainGradientSlice
 }
 
 func (ts *LinearGradientTerrainStrategy) Build(prng *rand.Rand, paths map[geom.Key]Placement) map[geom.Key]Code {
