@@ -8,30 +8,37 @@ import (
 
 // Paths represents a procedurally generated set of pathways.
 // FIXME: this should also include a start point and end point.
-type Paths map[geom.Key]Placement
+type Paths struct {
+	Start geom.Key
+	Goal  geom.Key
+	Nodes map[geom.Key]Placement
+}
 
 func (paths Paths) Connect(a, b geom.Key) {
 	to, ok := a.Neighbors()[b]
 	if !ok {
 		panic(fmt.Sprintf("cannot connect non-neighbors %v and %v", a, b))
 	}
-	if _, ok := paths[a]; !ok {
-		paths[a] = Placement{
+	if paths.Nodes == nil {
+		paths.Nodes = map[geom.Key]Placement{}
+	}
+	if _, ok := paths.Nodes[a]; !ok {
+		paths.Nodes[a] = Placement{
 			Connections: map[geom.DirectionType]struct{}{},
 		}
 	}
-	paths[a].Connections[to] = struct{}{}
+	paths.Nodes[a].Connections[to] = struct{}{}
 
 	back, ok := b.Neighbors()[a]
 	if !ok {
 		panic(fmt.Sprintf("cannot connect non-neighbors %v and %v", b, a))
 	}
-	if _, ok := paths[b]; !ok {
-		paths[b] = Placement{
+	if _, ok := paths.Nodes[b]; !ok {
+		paths.Nodes[b] = Placement{
 			Connections: map[geom.DirectionType]struct{}{},
 		}
 	}
-	paths[b].Connections[back] = struct{}{}
+	paths.Nodes[b].Connections[back] = struct{}{}
 }
 
 type pathFunc func(seed int64, level int) (Paths, error)

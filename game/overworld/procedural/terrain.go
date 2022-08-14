@@ -74,5 +74,5 @@ type Code string
 
 // TerrainBuilder is anything that can generate terrain for a set of paths.
 type TerrainBuilder interface {
-	Build(prng *rand.Rand, paths map[geom.Key]Placement) map[geom.Key]Code
+	Build(prng *rand.Rand, paths Paths) map[geom.Key]Code
 }

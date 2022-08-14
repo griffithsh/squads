@@ -88,7 +88,7 @@ func (g *overworldGenerator) Generate() {
 		},
 	}
 	prng := rand.New(rand.NewSource(0))
-	for key, placement := range generated.Paths {
+	for key, placement := range generated.Paths.Nodes {
 		x, y := field.Ktow(key)
 		pos := game.Position{
 			Center: game.Center{

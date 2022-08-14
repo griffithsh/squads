@@ -57,7 +57,7 @@ func buildVinePaths(seed int64, level int) (Paths, error) {
 			rel := chances[i].relDir
 			dir := geom.Actualize(sunshine, rel)
 			chances[i].key = current.ToDirection(dir)
-			if _, ok := result[chances[i].key]; ok {
+			if _, ok := result.Nodes[chances[i].key]; ok {
 				chances = append(chances[:i], chances[i+1:]...)
 				l--
 			} else {
@@ -88,7 +88,9 @@ func buildVinePaths(seed int64, level int) (Paths, error) {
 		return chances[i], append(chances[0:i], chances[i+1:]...)
 	}
 
-	result := Paths{}
+	result := Paths{
+		Nodes: map[geom.Key]Placement{},
+	}
 
 	current := geom.Key{}
 	// start := current
@@ -155,7 +157,7 @@ func buildVinePaths(seed int64, level int) (Paths, error) {
 
 			onward := rollOnward(prng)
 			next := tip.key.ToDirection(onward)
-			if _, ok := result[next]; ok {
+			if _, ok := result.Nodes[next]; ok {
 				// no good!
 				fmt.Printf("\ttip %d/%d cannot grow, blocked at %v\n", i+1, len(tips), next)
 				continue

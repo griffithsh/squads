@@ -97,7 +97,7 @@ func (g Generator) Generate(seed int64, level int) Generated {
 	// well as programmatic info on what hexes are navigable.
 	return Generated{
 		Paths:       paths,
-		PathExtents: extentsOf(keysOf(paths)),
+		PathExtents: extentsOf(keysOf(paths.Nodes)),
 		Terrain:     terrainCodes,
 	}
 }

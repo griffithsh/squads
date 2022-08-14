@@ -107,10 +107,10 @@ type LinearGradientTerrainStrategy struct {
 	Gradients    TerrainGradientSlice
 }
 
-func (ts *LinearGradientTerrainStrategy) Build(prng *rand.Rand, paths map[geom.Key]Placement) map[geom.Key]Code {
+func (ts *LinearGradientTerrainStrategy) Build(prng *rand.Rand, paths Paths) map[geom.Key]Code {
 	// Expand paths ...
 	bloated := map[geom.Key]struct{}{}
-	for key := range paths {
+	for key := range paths.Nodes {
 		bloated[key] = struct{}{}
 		neighbors := key.ExpandBy(0, 2)
 		for _, neighbor := range neighbors {
@@ -118,7 +118,7 @@ func (ts *LinearGradientTerrainStrategy) Build(prng *rand.Rand, paths map[geom.K
 		}
 	}
 
-	extents := extentsOf(keysOf(paths))
+	extents := extentsOf(keysOf(paths.Nodes))
 	target := ts.TargetFilter.Generate(prng, extents)
 
 	// Generate a terrain code for each key.

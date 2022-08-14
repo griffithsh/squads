@@ -9,5 +9,7 @@ import (
 // with a river running through the middle where there is only one bridge.
 func buildDoubleBlobPaths(seed int64, level int) (Paths, error) {
 	// prng := rand.New(rand.NewSource(seed))
-	return map[geom.Key]Placement{}, nil
+	return Paths{
+		Nodes: map[geom.Key]Placement{},
+	}, nil
 }

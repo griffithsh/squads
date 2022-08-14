@@ -19,12 +19,12 @@ type RadialGradientTerrainStrategy struct {
 	f        *geom.Field
 }
 
-func (ts *RadialGradientTerrainStrategy) Build(prng *rand.Rand, paths map[geom.Key]Placement) map[geom.Key]Code {
+func (ts *RadialGradientTerrainStrategy) Build(prng *rand.Rand, paths Paths) map[geom.Key]Code {
 	ts.f = geom.NewField(36, 16, 48)
 	ts.nearest = math.MaxFloat64
 	ts.furthest = 0.0
 
-	for k := range paths {
+	for k := range paths.Nodes {
 		dist := ts.f.DistanceBetween(k, ts.center)
 		if dist < ts.nearest {
 			ts.nearest = dist
@@ -36,7 +36,7 @@ func (ts *RadialGradientTerrainStrategy) Build(prng *rand.Rand, paths map[geom.K
 
 	// Expand paths ...
 	bloated := map[geom.Key]struct{}{}
-	for key := range paths {
+	for key := range paths.Nodes {
 		bloated[key] = struct{}{}
 		neighbors := key.ExpandBy(0, 7)
 		for _, neighbor := range neighbors {

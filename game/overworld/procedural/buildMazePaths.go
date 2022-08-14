@@ -100,7 +100,7 @@ func buildMazePaths(seed int64, level int) (Paths, error) {
 	}
 	duration := time.Since(start)
 	fmt.Printf("complexity: %v of %v (%v)\n", len(placed), goalComplexity, duration)
-	return placed, nil
+	return Paths{Nodes: placed}, nil
 }
 
 func rollConnection(prng *rand.Rand, numConnections int, currComplexity, goalComplexity int) bool {

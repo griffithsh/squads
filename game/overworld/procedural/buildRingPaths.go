@@ -104,7 +104,9 @@ func buildRingPaths(seed int64, level int) (Paths, error) {
 
 	sin, cos := math.Sincos(math.Pi * 2 / float64(rotations))
 
-	result := Paths{}
+	result := Paths{
+		Nodes: map[geom.Key]Placement{},
+	}
 
 	contenders := geom.Key{}.ExpandBy(minRing, maxRing)
 	sortKeys(contenders)
@@ -131,7 +133,7 @@ func buildRingPaths(seed int64, level int) (Paths, error) {
 	})
 
 	for _, c := range toConnect {
-		banned := keysOf(result)
+		banned := keysOf(result.Nodes)
 		if geom.Equal(&c.a, &c.b) {
 			// nothing to connect!
 			fmt.Printf("\tnot connecting %v to itself\n", c.a)
@@ -146,11 +148,11 @@ func buildRingPaths(seed int64, level int) (Paths, error) {
 			}
 			fmt.Printf("\tmeander from %v to %v failed\n", c.a, c.b)
 			if i == 0 {
-				return nil, fmt.Errorf("buildRingPaths: could not meander from %v to %v: exhausted retries", c.a, c.b)
+				return Paths{}, fmt.Errorf("buildRingPaths: could not meander from %v to %v: exhausted retries", c.a, c.b)
 			}
 		}
 		if len(aPath) == 0 {
-			return nil, fmt.Errorf("buildRingPaths: could not meander from %v to %v: exhausted retries", c.a, c.b)
+			return Paths{}, fmt.Errorf("buildRingPaths: could not meander from %v to %v: exhausted retries", c.a, c.b)
 		}
 
 		fmt.Printf("\tmeandering from %v to %v: %v\n", c.a, c.b, aPath)
@@ -164,7 +166,7 @@ func buildRingPaths(seed int64, level int) (Paths, error) {
 
 	// Right, ring done, let's add tendrils for interest
 	for _, c := range toConnect {
-		avoid := keysOf(result)
+		avoid := keysOf(result.Nodes)
 		banned := map[geom.Key]struct{}{}
 		for _, k := range avoid {
 			banned[k] = struct{}{}
