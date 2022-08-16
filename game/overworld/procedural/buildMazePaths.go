@@ -100,7 +100,24 @@ func buildMazePaths(seed int64, level int) (Paths, error) {
 	}
 	duration := time.Since(start)
 	fmt.Printf("complexity: %v of %v (%v)\n", len(placed), goalComplexity, duration)
-	return Paths{Nodes: placed}, nil
+
+	result := Paths{
+		Nodes: placed,
+	}
+	for _, k := range shuffledGeomKeys(prng, placed) {
+		if len(placed[k].Connections) == 1 {
+			// found a contender
+			if geom.Equal(&result.Start, &geom.Key{}) {
+				result.Start = k
+				continue
+			} else if geom.Equal(&result.Goal, &geom.Key{}) {
+				result.Goal = k
+				break
+			}
+		}
+	}
+
+	return result, nil
 }
 
 func rollConnection(prng *rand.Rand, numConnections int, currComplexity, goalComplexity int) bool {

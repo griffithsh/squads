@@ -148,7 +148,8 @@ func buildVinePaths(seed int64, level int) (Paths, error) {
 		} else {
 			fmt.Printf("\tbranch from %v is dead; all adjacent hexes are unavailable", current)
 		}
-		current = trunk.key
+
+		result.Goal = trunk.key
 	}
 
 	for i, tip := range tips {

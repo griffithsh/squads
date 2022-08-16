@@ -113,6 +113,9 @@ func buildRingPaths(seed int64, level int) (Paths, error) {
 	i := DeterministicIndexOf(prng, contenders)
 	current := contenders[i]
 
+	result.Start = current
+	goalIndex := rotations/2 + prng.Intn((rotations/3)*2) - (rotations / 3)
+
 	toConnect := []struct{ a, b geom.Key }{}
 	for i = 0; i < rotations-1; i++ {
 		x, y := f.Ktow(current)
@@ -124,7 +127,14 @@ func buildRingPaths(seed int64, level int) (Paths, error) {
 
 		toConnect = append(toConnect, struct{ a, b geom.Key }{a: current, b: next})
 
+		if goalIndex == i {
+			result.Goal = next
+		}
+
 		current = next
+	}
+	if geom.Equal(&result.Goal, &geom.Key{}) {
+		fmt.Printf("\tdid not assign goal from index %d\n", goalIndex)
 	}
 	toConnect = append(toConnect, struct{ a, b geom.Key }{
 		// Link last to first.
