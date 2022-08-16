@@ -128,6 +128,39 @@ func (g *overworldGenerator) Generate() {
 			Layer: 100,
 		})
 	}
+
+	// Add start hex
+	x, y := field.Ktow(generated.Paths.Start)
+	e := g.mgr.NewEntity()
+	g.mgr.AddComponent(e, &game.Sprite{
+		Texture: "temporary.png",
+		X:       68,
+		Y:       238,
+		W:       68,
+		H:       34,
+	})
+	g.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: x, Y: y,
+		},
+		Layer: 1000,
+	})
+	// Add goal hex
+	x, y = field.Ktow(generated.Paths.Goal)
+	e = g.mgr.NewEntity()
+	g.mgr.AddComponent(e, &game.Sprite{
+		Texture: "temporary.png",
+		X:       0,
+		Y:       238,
+		W:       68,
+		H:       34,
+	})
+	g.mgr.AddComponent(e, &game.Position{
+		Center: game.Center{
+			X: x, Y: y,
+		},
+		Layer: 1000,
+	})
 }
 
 var errExitGame = errors.New("game has completed")
