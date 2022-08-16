@@ -5,6 +5,9 @@
         "type": "RadialGradientTerrainStrategy",
         "underflows": "WATER",
         "overflows": "WATER",
+        "pathOverrides": {
+            "WATER": "SAND"
+        },
         "gradients": [
             {
                 "portions": 2,

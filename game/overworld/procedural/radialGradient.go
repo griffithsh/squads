@@ -9,9 +9,10 @@ import (
 )
 
 type RadialGradientTerrainStrategy struct {
-	Overflows  Code
-	Underflows Code
-	Gradients  TerrainGradientSlice
+	Overflows     Code
+	Underflows    Code
+	Gradients     TerrainGradientSlice
+	PathOverrides map[Code]Code
 
 	center   geom.Key
 	nearest  float64
@@ -48,6 +49,13 @@ func (ts *RadialGradientTerrainStrategy) Build(prng *rand.Rand, paths Paths) map
 	result := map[geom.Key]Code{}
 	for _, k := range shuffledGeomKeys(prng, bloated) {
 		code := ts.terrainFor(prng, k)
+
+		if override, hasOverride := ts.PathOverrides[code]; hasOverride {
+			if _, hasPath := paths.Nodes[k]; hasPath {
+				code = override
+			}
+		}
+
 		result[k] = code
 	}
 

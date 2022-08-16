@@ -101,10 +101,11 @@ func (f StrategyTargetFilter) Generate(prng *rand.Rand, extents map[geom.Directi
 }
 
 type LinearGradientTerrainStrategy struct {
-	TargetFilter StrategyTargetFilter
-	Overflows    Code
-	Underflows   Code
-	Gradients    TerrainGradientSlice
+	TargetFilter  StrategyTargetFilter
+	Overflows     Code
+	Underflows    Code
+	Gradients     TerrainGradientSlice
+	PathOverrides map[Code]Code
 }
 
 func (ts *LinearGradientTerrainStrategy) Build(prng *rand.Rand, paths Paths) map[geom.Key]Code {
@@ -125,6 +126,12 @@ func (ts *LinearGradientTerrainStrategy) Build(prng *rand.Rand, paths Paths) map
 	result := map[geom.Key]Code{}
 	for _, k := range shuffledGeomKeys(prng, bloated) {
 		code := ts.terrainFor(prng, k, target, extents)
+
+		if override, hasOverride := ts.PathOverrides[code]; hasOverride {
+			if _, hasPath := paths.Nodes[k]; hasPath {
+				code = override
+			}
+		}
 		result[k] = code
 	}
 

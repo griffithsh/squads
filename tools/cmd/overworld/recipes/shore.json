@@ -6,6 +6,10 @@
         "targetFilter": "Narrowest",
         "underflows": "WATER",
         "overflows": "ROCK",
+        "pathOverrides": {
+            "WATER": "SAND",
+            "ROCK": "FOREST"
+        },
         "gradients": [
             {
                 "portions": 1,
