@@ -6,6 +6,7 @@ import (
 	"math/rand"
 
 	"github.com/griffithsh/squads/geom"
+	"github.com/griffithsh/squads/squad"
 )
 
 // Generator holds configuration data to construct overworld maps.
@@ -64,6 +65,8 @@ type Generated struct {
 	// PathExtents are only being exposed for debugging purposes.
 	PathExtents map[geom.DirectionType]geom.Key
 	Terrain     map[geom.Key]Code
+
+	Opponents map[geom.Key]squad.RecipeID
 }
 
 // Generate should take a recipe and output an overworld map.
@@ -99,5 +102,6 @@ func (g Generator) Generate(seed int64, level int) Generated {
 		Paths:       paths,
 		PathExtents: extentsOf(keysOf(paths.Nodes)),
 		Terrain:     terrainCodes,
+		Opponents:   baddies,
 	}
 }

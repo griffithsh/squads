@@ -105,6 +105,26 @@ func (g *overworldGenerator) Generate() {
 		}
 	}
 
+	// add baddies
+	for k := range generated.Opponents {
+		x, y := field.Ktow(k)
+
+		e := g.mgr.NewEntity()
+		g.mgr.AddComponent(e, &game.Sprite{
+			Texture: "temporary.png",
+
+			X: 0, Y: 204,
+			W: 68, H: 34,
+		})
+		g.mgr.AddComponent(e, &game.Position{
+			Center: game.Center{
+				X: x,
+				Y: y,
+			},
+			Layer: 110,
+		})
+	}
+
 	// dirSprites show the extents being generated - just for debugging.
 	dirSprites := map[geom.DirectionType]*game.Sprite{
 		geom.N:  {Texture: "temporary.png", W: 68, H: 34, X: 0, Y: 170},
