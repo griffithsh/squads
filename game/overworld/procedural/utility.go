@@ -129,3 +129,12 @@ func leftOfLine(ax, ay, bx, by, cx, cy float64) bool {
 func rotation(cx, cy, px, py float64) float64 {
 	return math.Atan2(px-cx, py-cy)
 }
+
+// counts returns the counts of times each value appears in the passed map.
+func counts[K, V comparable](m map[K]V) map[V]int {
+	result := map[V]int{}
+	for _, v := range m {
+		result[v] = result[v] + 1
+	}
+	return result
+}

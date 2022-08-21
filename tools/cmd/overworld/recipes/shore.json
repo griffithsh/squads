@@ -40,5 +40,19 @@
                 "value": "FOREST"
             }
         ]
-    }
+    },
+    "baddies": [
+        {
+            "id": 2,
+            "chance": 1
+        },
+        {
+            "id": 1,
+            "chance": 8
+        },
+        {
+            "id": 3,
+            "chance": 1
+        }
+    ]
 }

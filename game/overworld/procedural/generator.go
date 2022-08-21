@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"math/rand"
+	"time"
 
 	"github.com/griffithsh/squads/geom"
 	"github.com/griffithsh/squads/squad"
@@ -11,19 +12,25 @@ import (
 
 // Generator holds configuration data to construct overworld maps.
 type Generator struct {
+	Name      string
 	MakePaths pathFunc       `json:"pathGeneration"`
 	Terrain   TerrainBuilder `json:"terrainBuilder"`
+
+	Baddies OpponentSquads
 }
 
 func (g *Generator) UnmarshalJSON(b []byte) error {
 	var v struct {
+		Name           string
 		PathGeneration pathFunc
 		TerrainBuilder json.RawMessage
+		Baddies        OpponentSquads
 	}
 	err := json.Unmarshal(b, &v)
 	if err != nil {
 		return err
 	}
+	g.Name = v.Name
 	g.MakePaths = v.PathGeneration
 
 	var ty struct {
@@ -51,6 +58,8 @@ func (g *Generator) UnmarshalJSON(b []byte) error {
 		return fmt.Errorf("unknown terrainBuilder.type value: %s", ty.Value)
 	}
 
+	g.Baddies = v.Baddies
+
 	return nil
 }
 
@@ -66,11 +75,18 @@ type Generated struct {
 	PathExtents map[geom.DirectionType]geom.Key
 	Terrain     map[geom.Key]Code
 
-	Opponents map[geom.Key]squad.RecipeID
+	Opponents          map[geom.Key]squad.RecipeID
+	GenerationDuration time.Duration
+}
+
+func (g *Generated) Complexity() int {
+	return len(g.Paths.Nodes)
 }
 
 // Generate should take a recipe and output an overworld map.
 func (g Generator) Generate(seed int64, level int) Generated {
+
+	start := time.Now()
 	prng := rand.New(rand.NewSource(seed))
 
 	paths := Paths{}
@@ -89,19 +105,18 @@ func (g Generator) Generate(seed int64, level int) Generated {
 
 	terrainCodes := g.Terrain.Build(prng, paths)
 
-	// overwrite standard terrain with doodads
-	// TODO: ...
+	// TODO: overwrite standard terrain with doodads
 
-	// TODO: baddies
+	// TODO: misc other encounters - treasures, recruitable characters,
+	// merchants, rest stops, etc
 
-	// TODO: misc other encounters
-
-	// return an object that contains info on how to render the overworld as
+	// Return an object that contains info on how to render the overworld as
 	// well as programmatic info on what hexes are navigable.
 	return Generated{
-		Paths:       paths,
-		PathExtents: extentsOf(keysOf(paths.Nodes)),
-		Terrain:     terrainCodes,
-		Opponents:   baddies,
+		Paths:              paths,
+		PathExtents:        extentsOf(keysOf(paths.Nodes)),
+		Terrain:            terrainCodes,
+		Opponents:          g.Baddies.Generate(prng, paths, terrainCodes),
+		GenerationDuration: time.Since(start),
 	}
 }
