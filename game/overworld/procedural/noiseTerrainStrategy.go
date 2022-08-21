@@ -49,8 +49,33 @@ func (ts *NoiseTerrainStrategy) Build(prng *rand.Rand, paths Paths) map[geom.Key
 		result[k] = ts.Components.roll(prng)
 	}
 
-	// TODO: run smoothing ...
-	// 🤔 there are only six neighbors, but N possible components ......
+	// Apply smoothing.
+	// If more than 3 neighbors of a hex have the same code, the hex becomes that code.
+	// If exactly 3 neighbors of a hex have the same code, and the other three
+	// neighbors are spread across 2 or more codes, the hex becomes the code of
+	// the three neighbors.
+	nextGen := map[geom.Key]Code{}
+	for i := 0; i < ts.Smoothing; i++ {
+		for k, code := range result {
+			m := map[geom.Key]Code{}
+			for _, key := range k.Adjacent() {
+				if code, ok := result[key]; ok {
+					m[key] = code
+				} else {
+					m[key] = ts.Outside
+				}
+			}
+
+			grouped := counts(m)
+			nextGen[k] = code
+			for v, count := range grouped {
+				if (count == 3 && len(grouped) > 3) || count > 3 {
+					nextGen[k] = v
+				}
+			}
+		}
+		nextGen, result = result, nextGen
+	}
 
 	return result
 }

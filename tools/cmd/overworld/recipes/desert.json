@@ -3,16 +3,16 @@
     "pathGeneration": "Maze",
     "terrainBuilder": {
         "type": "NoiseTerrainStrategy",
-        "smoothing": 0,
+        "smoothing": 3,
         "outside": "SAND",
         "components": [
             {
                 "value": "SAND",
-                "chance": 5
+                "chance": 3
             },
             {
                 "value": "DUNES",
-                "chance": 1
+                "chance": 2
             }
         ]
     },
