@@ -1,0 +1,33 @@
+{
+    "name": "Desert",
+    "pathGeneration": "Maze",
+    "terrainBuilder": {
+        "type": "NoiseTerrainStrategy",
+        "smoothing": 0,
+        "outside": "SAND",
+        "components": [
+            {
+                "value": "SAND",
+                "chance": 5
+            },
+            {
+                "value": "DUNES",
+                "chance": 1
+            }
+        ]
+    },
+    "baddies": [
+        {
+            "id": 1,
+            "chance": 1
+        },
+        {
+            "id": 2,
+            "chance": 1
+        },
+        {
+            "id": 3,
+            "chance": 1
+        }
+    ]
+}

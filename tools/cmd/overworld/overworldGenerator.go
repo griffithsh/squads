@@ -36,6 +36,7 @@ func (g *overworldGenerator) Generate() {
 		"GRASS":  {Texture: "temporary.png", X: 136, Y: 68, W: 68, H: 34},
 		"FOREST": {Texture: "temporary.png", X: 136, Y: 102, W: 68, H: 34},
 		"ROCK":   {Texture: "temporary.png", X: 136, Y: 136, W: 68, H: 34},
+		"DUNES":  {Texture: "temporary.png", X: 136, Y: 170, W: 68, H: 34},
 	}
 
 	// Add terrain!
