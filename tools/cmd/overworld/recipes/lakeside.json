@@ -1,0 +1,48 @@
+{
+    "name": "Lakeside",
+    "pathGeneration": "Ring",
+    "terrainBuilder": {
+        "type": "RadialGradientTerrainStrategy",
+        "underflows": "WATER",
+        "overflows": "GRASS",
+        "pathOverrides": {
+            "WATER": "SAND"
+        },
+        "gradients": [
+            {
+                "portions": 1,
+                "value": "WATER",
+                "blend": {
+                    "value": "SAND",
+                    "type": "Spiky"
+                }
+            },
+            {
+                "portions": 1,
+                "value": "SAND",
+                "blend": {
+                    "value": "GRASS",
+                    "type": "Smooth"
+                }
+            },
+            {
+                "portions": 3,
+                "value": "GRASS"
+            }
+        ]
+    },
+    "baddies": [
+        {
+            "id": 1,
+            "chance": 1
+        },
+        {
+            "id": 2,
+            "chance": 1
+        },
+        {
+            "id": 3,
+            "chance": 1
+        }
+    ]
+}
