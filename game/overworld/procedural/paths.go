@@ -7,11 +7,11 @@ import (
 )
 
 // Paths represents a procedurally generated set of pathways.
-// FIXME: this should also include a start point and end point.
 type Paths struct {
-	Start geom.Key
-	Goal  geom.Key
-	Nodes map[geom.Key]Placement
+	Start    geom.Key
+	Goal     geom.Key
+	Nodes    map[geom.Key]Placement
+	Specials map[string][]geom.Key
 }
 
 func (paths Paths) Connect(a, b geom.Key) {

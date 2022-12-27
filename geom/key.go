@@ -146,7 +146,7 @@ func (k Key) HexesFrom(other Key) int {
 	return mDiff
 }
 
-// ExpandBy determines the Keys that are between min and max away from the Key.
+// ExpandBy determines the Keys that are between min and max away from the Key. The order is randomised.
 func (k Key) ExpandBy(min, max int) []Key {
 	inRange := []Key{}
 

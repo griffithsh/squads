@@ -2,6 +2,7 @@ package procedural
 
 import (
 	"fmt"
+	"math/rand"
 	"testing"
 )
 
@@ -26,5 +27,20 @@ func TestLeftOfLine(t *testing.T) {
 				t.Errorf("got: %t, want %t", got, tc.want)
 			}
 		})
+	}
+}
+
+func TestShuffleSlice(t *testing.T) {
+	s := []int{
+		1, 2, 3, 4, 5,
+	}
+	prng := rand.New(rand.NewSource(0))
+	shuffleSlice(prng, s)
+
+	want := []int{
+		3, 4, 2, 1, 5,
+	}
+	if fmt.Sprintf("%v", s) != fmt.Sprintf("%v", want) {
+		t.Errorf("want %v, got %v", want, s)
 	}
 }

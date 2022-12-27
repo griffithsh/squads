@@ -17,6 +17,7 @@ func keysOf[K comparable, V any](m map[K]V) []K {
 	return keys
 }
 
+// sortKeys sorts a slice of geom.Keys in place.
 func sortKeys(keys []geom.Key) {
 	sort.Slice(keys, func(i, j int) bool {
 		if keys[i].M == keys[j].M {
@@ -26,6 +27,15 @@ func sortKeys(keys []geom.Key) {
 	})
 }
 
+// shuffleSlice in-place, mutating the passed slice.
+func shuffleSlice[V any](prng *rand.Rand, s []V) {
+	prng.Shuffle(len(s), func(i, j int) {
+		s[i], s[j] = s[j], s[i]
+	})
+}
+
+// shuffledGeomKeys extracts the keys of the passed map in a deterministically
+// randomised way.
 func shuffledGeomKeys[V any](prng *rand.Rand, m map[geom.Key]V) []geom.Key {
 	keys := keysOf(m)
 	if len(keys) > 1 {

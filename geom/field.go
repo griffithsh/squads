@@ -150,6 +150,11 @@ func clickMap(w, h int) []int {
 	return clicks
 }
 
+// FlatField is a default Field where the pixel-projection distance between
+// hexes is equal (or close to) in all directions.
+var FlatField = NewField(5, 8, 15)
+var FlatFieldDistance = FlatField.DistanceBetween(Key{}, Key{}.ToN())
+
 // NewField creates an empty Field. The parameters configure the shape of the
 // Hexagons in the Field.
 func NewField(bodyWidth, wingWidth, height int) *Field {

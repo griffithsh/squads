@@ -12,19 +12,21 @@ import (
 
 // Generator holds configuration data to construct overworld maps.
 type Generator struct {
-	Name      string
-	MakePaths pathFunc       `json:"pathGeneration"`
-	Terrain   TerrainBuilder `json:"terrainBuilder"`
+	Name             string
+	MakePaths        pathFunc        `json:"pathGeneration"`
+	Terrain          TerrainBuilder  `json:"terrainBuilder"`
+	TerrainOverrides map[string]Code `json:"terrainSpecialOverrides"`
 
 	Baddies OpponentSquads
 }
 
 func (g *Generator) UnmarshalJSON(b []byte) error {
 	var v struct {
-		Name           string
-		PathGeneration pathFunc
-		TerrainBuilder json.RawMessage
-		Baddies        OpponentSquads
+		Name                    string
+		PathGeneration          pathFunc
+		TerrainBuilder          json.RawMessage
+		TerrainSpecialOverrides map[string]Code
+		Baddies                 OpponentSquads
 	}
 	err := json.Unmarshal(b, &v)
 	if err != nil {
@@ -63,6 +65,7 @@ func (g *Generator) UnmarshalJSON(b []byte) error {
 	default:
 		return fmt.Errorf("unknown terrainBuilder.type value: %s", ty.Value)
 	}
+	g.TerrainOverrides = v.TerrainSpecialOverrides
 
 	g.Baddies = v.Baddies
 
@@ -91,7 +94,6 @@ func (g *Generated) Complexity() int {
 
 // Generate should take a recipe and output an overworld map.
 func (g Generator) Generate(seed int64, level int) Generated {
-
 	start := time.Now()
 	prng := rand.New(rand.NewSource(seed))
 

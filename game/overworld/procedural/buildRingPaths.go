@@ -8,6 +8,7 @@ import (
 	"github.com/griffithsh/squads/geom"
 )
 
+// meander from a start to a goal, generating a less-than-ideal path.
 func meander(prng *rand.Rand, start, goal geom.Key, avoid []geom.Key) []geom.Key {
 	f := geom.NewField(3, 5, 12)
 	current := start

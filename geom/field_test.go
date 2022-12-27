@@ -2,6 +2,7 @@ package geom
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 	"testing"
 )
@@ -175,5 +176,19 @@ func TestWorldToKey(t *testing.T) {
 				}
 			}
 		})
+	}
+}
+
+func TestFlatField(t *testing.T) {
+	zero := Key{}
+	n := zero.ToN()
+	ne := zero.ToNE()
+
+	up := FlatField.DistanceBetween(zero, n)
+	upRight := FlatField.DistanceBetween(zero, ne)
+
+	difference := math.Abs(up - upRight)
+	if difference > 0.01 {
+		t.Fatalf("difference between angular and vertical hexes should be small, but was %f", difference)
 	}
 }

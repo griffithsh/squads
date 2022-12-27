@@ -7,12 +7,12 @@ import (
 	"github.com/griffithsh/squads/geom"
 )
 
-func TestBuildMazePaths(t *testing.T) {
-	for i := 0; i < 50; i++ {
+func TestBuildDoubleBlobPaths(t *testing.T) {
+	for i := 0; i < 250; i++ {
 		seed := int64(i) + 1234567891011
 		var errs []error
 		t.Run(fmt.Sprintf("seed=%v", seed), func(t *testing.T) {
-			paths, err := buildMazePaths(seed, 0)
+			paths, err := buildDoubleBlobPaths(seed, 0)
 			if err != nil {
 				errs = append(errs, err)
 				return
@@ -28,8 +28,8 @@ func TestBuildMazePaths(t *testing.T) {
 				t.Errorf("missing goal key")
 			}
 		})
-		if len(errs) > 1 {
-			t.Errorf("above 2%% failure rate: %v", errs)
+		if len(errs) > 2 {
+			t.Errorf("above 1%% failure rate: %v", errs)
 		}
 	}
 }
