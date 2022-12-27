@@ -23,7 +23,8 @@ const screenWidth, screenHeight = 1024, 768
 
 func main() {
 	// recipe, err := content.ReadFile("recipes/atoll.json")
-	recipe, err := content.ReadFile("recipes/desert.json")
+	recipe, err := content.ReadFile("recipes/dark-forest.json")
+	// recipe, err := content.ReadFile("recipes/desert.json")
 	// recipe, err := content.ReadFile("recipes/edge-of-the-woods.json")
 	// recipe, err := content.ReadFile("recipes/lakeside.json")
 	// recipe, err := content.ReadFile("recipes/shore.json")

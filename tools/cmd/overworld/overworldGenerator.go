@@ -39,6 +39,21 @@ func (g *overworldGenerator) Generate() {
 		"DUNES":  {Texture: "temporary.png", X: 136, Y: 170, W: 68, H: 34},
 	}
 
+	// generated.Paths.Specials - maps arbitrary lists of keys in a name
+	// g.core.TerrainOverrides declares that everything named "this" has to have "this" specific code.
+	terrainOverrides := map[geom.Key]procedural.Code{}
+	for name, code := range g.core.TerrainOverrides {
+		keys, ok := generated.Paths.Specials[name]
+		if !ok {
+			continue
+		}
+
+		for _, key := range keys {
+			// key must be `code`
+			terrainOverrides[key] = code
+		}
+	}
+
 	// Add terrain!
 	for key, code := range generated.Terrain {
 		e := g.mgr.NewEntity()
@@ -50,6 +65,10 @@ func (g *overworldGenerator) Generate() {
 			},
 			Layer: 0,
 		})
+
+		if override, ok := terrainOverrides[key]; ok {
+			code = override
+		}
 		g.mgr.AddComponent(e, terrainSprites[code])
 	}
 
