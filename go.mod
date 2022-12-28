@@ -4,16 +4,18 @@ go 1.18
 
 require github.com/dmarkham/enumer v1.5.5
 
-require github.com/hajimehoshi/ebiten/v2 v2.0.1
+require github.com/hajimehoshi/ebiten/v2 v2.4.15
 
 require (
-	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20200707082815-5321531c36a2 // indirect
+	github.com/ebitengine/purego v0.0.0-20220905075623-aeed57cda744 // indirect
+	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20220806181222-55e207c401ad // indirect
+	github.com/hajimehoshi/file2byteslice v0.0.0-20210813153925-5340248a8f41 // indirect
+	github.com/jezek/xgb v1.0.1 // indirect
 	github.com/pascaldekloe/name v1.0.0 // indirect
-	golang.org/x/exp v0.0.0-20220713135740-79cabaa25d75 // indirect
-	golang.org/x/image v0.0.0-20200927104501-e162460cd6b5 // indirect
-	golang.org/x/mobile v0.0.0-20200801112145-973feb4309de // indirect
-	golang.org/x/mod v0.6.0-dev.0.20220106191415-9b9b3d81d5e3 // indirect
-	golang.org/x/sys v0.0.0-20211019181941-9d821ace8654 // indirect
-	golang.org/x/tools v0.1.10 // indirect
-	golang.org/x/xerrors v0.0.0-20200804184101-5ec99f83aff1 // indirect
+	golang.org/x/exp/shiny v0.0.0-20221227203929-1b447090c38c // indirect
+	golang.org/x/image v0.1.0 // indirect
+	golang.org/x/mobile v0.0.0-20220722155234-aaac322e2105 // indirect
+	golang.org/x/mod v0.6.0-dev.0.20220419223038-86c51ed26bb4 // indirect
+	golang.org/x/sys v0.0.0-20220818161305-2296e01440c6 // indirect
+	golang.org/x/tools v0.1.12 // indirect
 )
