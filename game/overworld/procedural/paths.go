@@ -8,6 +8,9 @@ import (
 
 // Paths represents a procedurally generated set of pathways.
 type Paths struct {
+	Algorithm string
+	Seed      int64
+
 	Start    geom.Key
 	Goal     geom.Key
 	Nodes    map[geom.Key]Placement

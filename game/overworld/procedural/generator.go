@@ -7,12 +7,11 @@ import (
 	"time"
 
 	"github.com/griffithsh/squads/geom"
-	"github.com/griffithsh/squads/squad"
 )
 
 // Generator holds configuration data to construct overworld maps.
 type Generator struct {
-	Name             string
+	RecipeName       string
 	MakePaths        pathFunc        `json:"pathGeneration"`
 	Terrain          TerrainBuilder  `json:"terrainBuilder"`
 	TerrainOverrides map[string]Code `json:"terrainSpecialOverrides"`
@@ -32,7 +31,7 @@ func (g *Generator) UnmarshalJSON(b []byte) error {
 	if err != nil {
 		return err
 	}
-	g.Name = v.Name
+	g.RecipeName = v.Name
 	g.MakePaths = v.PathGeneration
 
 	var ty struct {
@@ -77,21 +76,6 @@ type Placement struct {
 	Connections map[geom.DirectionType]struct{}
 }
 
-type Generated struct {
-	Paths Paths
-
-	// PathExtents are only being exposed for debugging purposes.
-	PathExtents map[geom.DirectionType]geom.Key
-	Terrain     map[geom.Key]Code
-
-	Opponents          map[geom.Key]squad.RecipeID
-	GenerationDuration time.Duration
-}
-
-func (g *Generated) Complexity() int {
-	return len(g.Paths.Nodes)
-}
-
 // Generate should take a recipe and output an overworld map.
 func (g Generator) Generate(seed int64, level int) Generated {
 	start := time.Now()
@@ -111,7 +95,34 @@ func (g Generator) Generate(seed int64, level int) Generated {
 		}
 	}
 
+	// terrainCodes is the terrain that's been generated.
 	terrainCodes := g.Terrain.Build(prng, paths)
+
+	// terrainSpecialOverrides is a way of saying that an arbitrary sets of keys
+	// must have a specific code. This is how the double-blobber path generation
+	// communicates which keys represent the river that separates the two lobes.
+	terrainOverrides := map[geom.Key]Code{}
+	for name, code := range g.TerrainOverrides {
+		keys, ok := paths.Specials[name]
+		if !ok {
+			continue
+		}
+
+		for _, key := range keys {
+			// key must be `code`
+			terrainOverrides[key] = code
+		}
+	}
+
+	// I've separated the assignment of all special terrain codes above from the
+	// overriding below, otherwise for example the entire river of the dark
+	// forest would always be part of the final map, even the parts that aren't
+	// anywhere near the generated paths.
+	for key, _ := range terrainCodes {
+		if override, ok := terrainOverrides[key]; ok {
+			terrainCodes[key] = override
+		}
+	}
 
 	// TODO: overwrite standard terrain with doodads
 
@@ -121,6 +132,7 @@ func (g Generator) Generate(seed int64, level int) Generated {
 	// Return an object that contains info on how to render the overworld as
 	// well as programmatic info on what hexes are navigable.
 	return Generated{
+		Recipe:             g.RecipeName,
 		Paths:              paths,
 		PathExtents:        extentsOf(keysOf(paths.Nodes)),
 		Terrain:            terrainCodes,

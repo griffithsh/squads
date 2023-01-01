@@ -1,9 +1,12 @@
 package main
 
 import (
+	"encoding/json"
 	"errors"
 	"fmt"
 	"math/rand"
+	"os"
+	"strings"
 	"time"
 
 	"github.com/griffithsh/squads/ecs"
@@ -13,6 +16,7 @@ import (
 	"github.com/griffithsh/squads/geom"
 	"github.com/griffithsh/squads/output"
 	"github.com/hajimehoshi/ebiten/v2"
+	"github.com/hajimehoshi/ebiten/v2/inpututil"
 )
 
 type overworldGenerator struct {
@@ -20,14 +24,17 @@ type overworldGenerator struct {
 	bus *event.Bus
 	vis *output.Visualizer
 
-	core procedural.Generator
+	core       procedural.Generator
+	lastOutput *procedural.Generated
 }
 
 func (g *overworldGenerator) Generate() {
 	g.mgr.Clear()
 	seed := time.Now().UnixMilli()
+	seed = rand.New(rand.NewSource(seed)).Int63()
 
 	generated := g.core.Generate(seed, 0)
+	g.lastOutput = &generated
 	var field = geom.NewField(36, 16, 34)
 
 	terrainSprites := map[procedural.Code]*game.Sprite{
@@ -37,21 +44,6 @@ func (g *overworldGenerator) Generate() {
 		"FOREST": {Texture: "temporary.png", X: 136, Y: 102, W: 68, H: 34},
 		"ROCK":   {Texture: "temporary.png", X: 136, Y: 136, W: 68, H: 34},
 		"DUNES":  {Texture: "temporary.png", X: 136, Y: 170, W: 68, H: 34},
-	}
-
-	// generated.Paths.Specials - maps arbitrary lists of keys in a name
-	// g.core.TerrainOverrides declares that everything named "this" has to have "this" specific code.
-	terrainOverrides := map[geom.Key]procedural.Code{}
-	for name, code := range g.core.TerrainOverrides {
-		keys, ok := generated.Paths.Specials[name]
-		if !ok {
-			continue
-		}
-
-		for _, key := range keys {
-			// key must be `code`
-			terrainOverrides[key] = code
-		}
 	}
 
 	// Add terrain!
@@ -66,9 +58,6 @@ func (g *overworldGenerator) Generate() {
 			Layer: 0,
 		})
 
-		if override, ok := terrainOverrides[key]; ok {
-			code = override
-		}
 		g.mgr.AddComponent(e, terrainSprites[code])
 	}
 
@@ -125,7 +114,7 @@ func (g *overworldGenerator) Generate() {
 		}
 	}
 
-	// add baddies
+	// Add baddies!
 	for k := range generated.Opponents {
 		x, y := field.Ktow(k)
 
@@ -185,6 +174,7 @@ func (g *overworldGenerator) Generate() {
 		},
 		Layer: 1000,
 	})
+
 	// Add goal hex
 	x, y = field.Ktow(generated.Paths.Goal)
 	e = g.mgr.NewEntity()
@@ -210,6 +200,45 @@ func (g *overworldGenerator) Update() error {
 		return errExitGame
 	}
 
+	if ebiten.IsKeyPressed(ebiten.KeyControl) {
+		if inpututil.IsKeyJustPressed(ebiten.KeyS) {
+			// do a save!
+			b, err := json.Marshal(g.lastOutput)
+			if err != nil {
+				panic(fmt.Sprintf("could not marshal overworld map: %v", err))
+			}
+			recipe := strings.ReplaceAll(g.lastOutput.Recipe, " ", "_")
+			algorithm := strings.ToLower(strings.ReplaceAll(g.lastOutput.Paths.Algorithm, " ", "-"))
+			seed := g.lastOutput.Paths.Seed
+			filename := fmt.Sprintf("%s-%s-%d.json", recipe, algorithm, seed)
+			err = os.WriteFile(filename, b, 0644)
+			if err != nil {
+				panic(fmt.Sprintf("could not write overworld map to file: %v", err))
+			}
+			fmt.Println("Saved", filename)
+		}
+
+		// Regenerate map button.
+		if inpututil.IsKeyJustPressed(ebiten.KeyR) {
+			focusX = 0
+			focusY = 0
+
+			recipe, err := content.ReadFile("recipes/shore.json")
+			if err != nil {
+				return fmt.Errorf("read recipe: %v", err)
+			}
+
+			var generator procedural.Generator
+			err = json.Unmarshal(recipe, &generator)
+			if err != nil {
+				return fmt.Errorf("unmarshal generator: %v", err)
+			}
+			g.core = generator
+			g.Generate()
+		}
+		return nil
+	}
+
 	moveSpeed := 10.0
 	if ebiten.IsKeyPressed(ebiten.KeyW) || ebiten.IsKeyPressed(ebiten.KeyUp) {
 		focusY -= moveSpeed
@@ -224,22 +253,9 @@ func (g *overworldGenerator) Update() error {
 		focusX += moveSpeed
 	}
 
-	// Regenerate map button.
-	if ebiten.IsKeyPressed(ebiten.KeyR) {
-		if !regeneratingDown {
-			focusX = 0
-			focusY = 0
-			g.Generate()
-			regeneratingDown = true
-		}
-	} else {
-		regeneratingDown = false
-	}
-
 	return nil
 }
 
-var regeneratingDown bool
 var zoom = 1.0
 var focusX = 0.0
 var focusY = 0.0

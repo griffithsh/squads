@@ -89,7 +89,9 @@ func buildVinePaths(seed int64, level int) (Paths, error) {
 	}
 
 	result := Paths{
-		Nodes: map[geom.Key]Placement{},
+		Algorithm: "vine-paths",
+		Seed:      seed,
+		Nodes:     map[geom.Key]Placement{},
 	}
 
 	current := geom.Key{}

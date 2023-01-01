@@ -102,7 +102,9 @@ func buildMazePaths(seed int64, level int) (Paths, error) {
 	fmt.Printf("complexity: %v of %v (%v)\n", len(placed), goalComplexity, duration)
 
 	result := Paths{
-		Nodes: placed,
+		Algorithm: "maze-paths",
+		Seed:      seed,
+		Nodes:     placed,
 	}
 	for _, k := range shuffledGeomKeys(prng, placed) {
 		if len(placed[k].Connections) == 1 {

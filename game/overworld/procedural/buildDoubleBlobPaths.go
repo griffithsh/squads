@@ -66,6 +66,8 @@ func buildDoubleBlobPaths(seed int64, level int) (Paths, error) {
 	forwards := geom.Opposite[backwards]
 
 	paths := Paths{
+		Algorithm: "double-blobber",
+		Seed:      seed,
 		Nodes: map[geom.Key]Placement{
 			{}: {Connections: map[geom.DirectionType]struct{}{}},
 		},

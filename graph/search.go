@@ -21,8 +21,8 @@ func NewSearcher(cost CostFunc, edge EdgeFunc, guess Heuristic) *Searcher {
 	}
 }
 
-// Search finds the path between two Vertices. It returns nil when no path is
-// available.
+// Search finds the path between two Vertices. The generated path includes both
+// the start and the goal Vertices. It returns nil when no path is available.
 func (s *Searcher) Search(start, goal Vertex) []Step {
 	closed := map[Vertex]interface{}{}
 	open := map[Vertex]interface{}{

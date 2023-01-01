@@ -106,7 +106,9 @@ func buildRingPaths(seed int64, level int) (Paths, error) {
 	sin, cos := math.Sincos(math.Pi * 2 / float64(rotations))
 
 	result := Paths{
-		Nodes: map[geom.Key]Placement{},
+		Algorithm: "ring-paths",
+		Seed:      seed,
+		Nodes:     map[geom.Key]Placement{},
 	}
 
 	contenders := geom.Key{}.ExpandBy(minRing, maxRing)
