@@ -24,14 +24,23 @@ type overworldGenerator struct {
 	bus *event.Bus
 	vis *output.Visualizer
 
-	core       procedural.Generator
-	lastOutput *procedural.Generated
+	core              *procedural.Generator
+	generatorProvider func() *procedural.Generator
+	lastOutput        *procedural.Generated
+	forceSeed         *int64
 }
 
 func (g *overworldGenerator) Generate() {
 	g.mgr.Clear()
 	seed := time.Now().UnixMilli()
 	seed = rand.New(rand.NewSource(seed)).Int63()
+	if g.forceSeed != nil {
+		seed = *g.forceSeed
+	}
+
+	if g.core == nil {
+		g.core = g.generatorProvider()
+	}
 
 	generated := g.core.Generate(seed, 0)
 	g.lastOutput = &generated
@@ -222,18 +231,9 @@ func (g *overworldGenerator) Update() error {
 		if inpututil.IsKeyJustPressed(ebiten.KeyR) {
 			focusX = 0
 			focusY = 0
-
-			recipe, err := content.ReadFile("recipes/shore.json")
-			if err != nil {
-				return fmt.Errorf("read recipe: %v", err)
+			if generator := g.generatorProvider(); generator != nil {
+				g.core = generator
 			}
-
-			var generator procedural.Generator
-			err = json.Unmarshal(recipe, &generator)
-			if err != nil {
-				return fmt.Errorf("unmarshal generator: %v", err)
-			}
-			g.core = generator
 			g.Generate()
 		}
 		return nil
