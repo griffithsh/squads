@@ -8,6 +8,7 @@ import (
 	"github.com/griffithsh/squads/geom"
 )
 
+// keysOf a map in non-deterministic order.
 func keysOf[K comparable, V any](m map[K]V) []K {
 	keys := make([]K, 0, len(m))
 

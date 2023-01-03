@@ -217,8 +217,38 @@ func buildDoubleBlobPaths(seed int64, level int) (Paths, error) {
 			}
 		}
 	}
+
 	paths.Start = bank1[1]
 	paths.Goal = bank2[1]
+
+	// Delete any disconnected bits.
+	connected := map[geom.Key]struct{}{
+		paths.Start: {},
+	}
+
+	toCheck := map[geom.Key]struct{}{
+		paths.Start: {},
+	}
+	for {
+		if len(toCheck) == 0 {
+			break
+		}
+		first := keysOf(toCheck)[0]
+		adjacent := first.Adjacent()
+		for dir := range paths.Nodes[first].Connections {
+			neighbor := adjacent[dir]
+
+			// If not already connected...
+			if _, ok := connected[neighbor]; !ok {
+				toCheck[neighbor] = struct{}{}
+			}
+		}
+		delete(toCheck, first)
+		connected[first] = struct{}{}
+	}
+	if len(connected) != len(paths.Nodes) {
+		return Paths{}, errors.New("fragmented paths")
+	}
 
 	return paths, nil
 }
