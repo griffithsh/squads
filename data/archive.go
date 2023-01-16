@@ -57,9 +57,6 @@ func NewArchive() (*Archive, error) {
 // Load data into the Archive from a tar.gz archive, replacing data already in
 // the Archive if the provided files share the same filenames.
 func (a *Archive) Load(r io.Reader) error {
-
-	hairColors := map[string]struct{}{}
-	skinColors := map[string]struct{}{}
 	gzr, err := gzip.NewReader(r)
 	if err != nil {
 		return fmt.Errorf("new reader: %v", err)
@@ -76,113 +73,104 @@ func (a *Archive) Load(r io.Reader) error {
 		}
 
 		if head.Typeflag == tar.TypeReg {
-			if strings.HasPrefix(head.Name, "combat-terrain/") {
-				switch filepath.Ext(head.Name) {
-				case ".png":
-					decoded, err := png.Decode(tr)
-					if err != nil {
-						return fmt.Errorf("png.Decode %s: %s", head.Name, err)
-					}
-					a.images[head.Name] = decoded
-
-				case ".terrain":
-					dec := json.NewDecoder(tr)
-					var v game.CombatMapRecipe
-					err := dec.Decode(&v)
-					if err != nil {
-						return fmt.Errorf("parse %s: %v", head.Name, err)
-					}
-					a.combatMaps = append(a.combatMaps, v)
-				}
-			} else if strings.HasPrefix(head.Name, "character-appearance/") {
-				switch {
-				case strings.HasSuffix(head.Name, ".variations.png"):
-					decoded, err := png.Decode(tr)
-					if err != nil {
-						return fmt.Errorf("png.Decode %s: %s", head.Name, err)
-					}
-					a.images[head.Name] = decoded
-				case strings.HasSuffix(head.Name, ".appearance"):
-					dec := json.NewDecoder(tr)
-					var v struct {
-						game.Appearance
-						Sex        string
-						Profession string
-						HairColor  string
-						SkinColor  string
-					}
-					err := dec.Decode(&v)
-					if err != nil {
-						return fmt.Errorf("parse %s: %v", head.Name, err)
-					}
-					var sex game.CharacterSex
-					if v.Sex == "XX" {
-						sex = game.Female
-					} else if v.Sex == "XY" {
-						sex = game.Male
-					} else {
-						return fmt.Errorf("unknown Sex %s", v.Sex)
-					}
-
-					key := AppearanceKey{
-						Sex:        sex,
-						Profession: v.Profession,
-						Hair:       v.HairColor,
-						Skin:       v.SkinColor,
-					}
-					hairColors[key.Hair] = struct{}{}
-					skinColors[key.Skin] = struct{}{}
-					if _, ok := a.appearances[key]; ok {
-						//stomp alert!
-						return fmt.Errorf("duplicate appearance %v %s, %s-hair, %s skin", sex, v.Profession, v.HairColor, v.SkinColor)
-					}
-					a.appearances[key] = &v.Appearance
-				}
-			} else {
-				switch filepath.Ext(head.Name) {
-				case ".overworld-recipe":
-					recipe, err := overworld.ParseRecipe(tr)
-					if err != nil {
-						return fmt.Errorf("parse %s: %v", head.Name, err)
-					}
-					a.overworldRecipes = append(a.overworldRecipes, recipe)
-				case ".skills":
-					skills, err := parseSkills(tr)
-					if err != nil {
-						return fmt.Errorf("parse %s: %v", head.Name, err)
-					}
-					for _, skill := range skills {
-						if _, ok := a.skills[skill.ID]; ok {
-							//duplicate - overwrites
-							fmt.Fprintf(os.Stderr, "skill in %s overwrites skill ID %v", head.Name, skill.ID)
-						}
-						a.skills[skill.ID] = skill
-						fmt.Println("loaded skill", skill.ID)
-					}
-
-				case ".names":
-					// .names are a csv-like file that include names with tags for
-					// how they should be used, like M and F for sexes etc.
-					names, err := parseNames(tr)
-					if err != nil {
-						return fmt.Errorf("parse %s.names: %v", head.Name, err)
-					}
-					for k, v := range names {
-						a.names[k] = v
-					}
-				}
-
+			if err := a.interpret(head.Name, tr); err != nil {
+				return fmt.Errorf("interpret %q: %v", head.Name, err)
 			}
 		}
 	}
 
-	for color := range hairColors {
-		a.hairColors = append(a.hairColors, color)
+	return nil
+}
+
+func (a *Archive) interpret(filename string, r io.Reader) error {
+	switch filepath.Ext(filename) {
+	case ".names":
+		// .names are a csv-like file that include names with tags for
+		// how they should be used, like M and F for sexes etc.
+		names, err := parseNames(r)
+		if err != nil {
+			return fmt.Errorf("parse %s.names: %v", filename, err)
+		}
+		for k, v := range names {
+			a.names[k] = v
+		}
+
+	case ".overworld-recipe":
+		recipe, err := overworld.ParseRecipe(r)
+		if err != nil {
+			return fmt.Errorf("parse %s: %v", filename, err)
+		}
+		a.overworldRecipes = append(a.overworldRecipes, recipe)
+
+	case ".png":
+		decoded, err := png.Decode(r)
+		if err != nil {
+			return fmt.Errorf("png.Decode %s: %s", filename, err)
+		}
+		a.images[filename] = decoded
+
+	case ".skills":
+		skills, err := parseSkills(r)
+		if err != nil {
+			return fmt.Errorf("parse %s: %v", filename, err)
+		}
+		for _, skill := range skills {
+			if _, ok := a.skills[skill.ID]; ok {
+				//duplicate - overwrites
+				fmt.Fprintf(os.Stderr, "skill in %s overwrites skill ID %v", filename, skill.ID)
+			}
+			a.skills[skill.ID] = skill
+			fmt.Println("loaded skill", skill.ID)
+		}
+
+	case ".terrain":
+		dec := json.NewDecoder(r)
+		var v game.CombatMapRecipe
+		err := dec.Decode(&v)
+		if err != nil {
+			return fmt.Errorf("parse %s: %v", filename, err)
+		}
+		a.combatMaps = append(a.combatMaps, v)
 	}
 
-	for color := range skinColors {
-		a.skinColors = append(a.skinColors, color)
+	switch {
+	case strings.HasSuffix(filename, ".appearance"):
+		dec := json.NewDecoder(r)
+		var v struct {
+			game.Appearance
+			Sex        string
+			Profession string
+			HairColor  string
+			SkinColor  string
+		}
+		err := dec.Decode(&v)
+		if err != nil {
+			return fmt.Errorf("parse %s: %v", filename, err)
+		}
+		var sex game.CharacterSex
+		if v.Sex == "XX" {
+			sex = game.Female
+		} else if v.Sex == "XY" {
+			sex = game.Male
+		} else {
+			return fmt.Errorf("unknown Sex %s", v.Sex)
+		}
+
+		key := AppearanceKey{
+			Sex:        sex,
+			Profession: v.Profession,
+			Hair:       v.HairColor,
+			Skin:       v.SkinColor,
+		}
+		a.hairColors = append(a.hairColors, key.Hair)
+		a.skinColors = append(a.skinColors, key.Skin)
+		if _, ok := a.appearances[key]; ok {
+			//stomp alert!
+			return fmt.Errorf("duplicate appearance %v %s, %s-hair, %s skin", sex, v.Profession, v.HairColor, v.SkinColor)
+		}
+		a.appearances[key] = &v.Appearance
 	}
+
 	return nil
 }
 
