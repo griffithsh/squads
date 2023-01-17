@@ -2,6 +2,7 @@ package data
 
 import (
 	"archive/tar"
+	"bytes"
 	"compress/gzip"
 	"encoding/json"
 	"fmt"
@@ -12,6 +13,7 @@ import (
 	"path/filepath"
 	"strings"
 
+	"github.com/griffithsh/squads/embedded"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/game/overworld"
 	"github.com/griffithsh/squads/skill"
@@ -50,6 +52,21 @@ func NewArchive() (*Archive, error) {
 	}
 
 	archive.combatMaps = append(archive.combatMaps, internalCombatMaps...)
+
+	// Load all the embedded contents in here.
+	files, err := embedded.Filenames()
+	if err != nil {
+		return nil, fmt.Errorf("list embedded files: %v", err)
+	}
+	for _, filename := range files {
+		b, err := embedded.Get(filename)
+		if err != nil {
+			return nil, fmt.Errorf("get file %q: %v", filename, err)
+		}
+		if err := archive.interpret(filename, bytes.NewReader(b)); err != nil {
+			return nil, fmt.Errorf("interpret %q: %v", filename, err)
+		}
+	}
 
 	return &archive, nil
 }
