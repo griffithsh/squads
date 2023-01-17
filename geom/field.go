@@ -76,6 +76,14 @@ type Field struct {
 	clickMap []int
 }
 
+func (f Field) HexWidth() int {
+	return f.totalWidth
+}
+
+func (f Field) HexHeight() int {
+	return f.height
+}
+
 // Strides here are used for dividing a hexagonal field into rectangular areas
 // that are composed of the left wing of a hexagon, and the body.
 
@@ -151,7 +159,8 @@ func clickMap(w, h int) []int {
 }
 
 // FlatField is a default Field where the pixel-projection distance between
-// hexes is equal (or close to) in all directions.
+// hexes is equal (or close to) in all directions. The hexagons end up being 21
+// pixels wide by 15 pixels tall.
 var FlatField = NewField(5, 8, 15)
 var FlatFieldDistance = FlatField.DistanceBetween(Key{}, Key{}.ToN())
 

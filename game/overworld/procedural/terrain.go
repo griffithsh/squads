@@ -69,7 +69,7 @@ a "river" that intersects 0,0 in some way, but does not cross paths in any other
 location. A special bridge doodad could be used to overwrite 0,0?
 */
 
-// Code uniquely identifies either a Terrain or a Fill
+// Code uniquely identifies either a Terrain or a Fill for an overworld tile.
 type Code string
 
 // TerrainBuilder is anything that can generate terrain for a set of paths.

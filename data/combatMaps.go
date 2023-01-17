@@ -10,7 +10,6 @@ var internalCombatMaps = []game.CombatMapRecipe{}
 
 // GetCombatMap for use in a combat.
 func (a *Archive) GetCombatMap() *game.CombatMapRecipe {
-
 	switch len(a.combatMaps) {
 	case 0:
 		panic("no combat maps available")
