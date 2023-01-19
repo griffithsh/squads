@@ -217,7 +217,7 @@ func (hud *HUD) skillsForParticipant(p *Participant) [7]UISkillInfoRow {
 		var row [2]UISkillInfo
 		for i := 0; i < 2; i++ {
 			info := &row[i]
-			info.Texture = "hud.png"
+			info.Texture = "combat/hud.png"
 			info.IconX = 184
 			info.IconY = 0
 			info.Handle = func(string) {}
@@ -230,7 +230,7 @@ func (hud *HUD) skillsForParticipant(p *Participant) [7]UISkillInfoRow {
 
 		// Consumables
 		result[0].Skills[1] = UISkillInfo{
-			Texture: "hud.png",
+			Texture: "combat/hud.png",
 			IconX:   232,
 			IconY:   0,
 			Handle: func(string) {
@@ -240,7 +240,7 @@ func (hud *HUD) skillsForParticipant(p *Participant) [7]UISkillInfoRow {
 
 		// Flee
 		result[6].Skills[0] = UISkillInfo{
-			Texture: "hud.png",
+			Texture: "combat/hud.png",
 			IconX:   184,
 			IconY:   24,
 			Handle: func(string) {
@@ -250,7 +250,7 @@ func (hud *HUD) skillsForParticipant(p *Participant) [7]UISkillInfoRow {
 
 		// End turn
 		result[6].Skills[1] = UISkillInfo{
-			Texture: "hud.png",
+			Texture: "combat/hud.png",
 			IconX:   208,
 			IconY:   24,
 			Handle: func(string) {
@@ -286,7 +286,7 @@ func (hud *HUD) skillsForParticipant(p *Participant) [7]UISkillInfoRow {
 
 	} else {
 		result[0].Skills[0] = UISkillInfo{
-			Texture: "hud.png",
+			Texture: "combat/hud.png",
 			IconX:   208,
 			IconY:   0,
 			Handle: func(string) {
@@ -415,7 +415,7 @@ func (hud *HUD) repaintTimePassingIcon() {
 		return
 	}
 	hud.mgr.AddComponent(e, &game.Sprite{
-		Texture: "hud.png",
+		Texture: "combat/hud.png",
 		X:       16,
 		Y:       0,
 		W:       16,

@@ -102,7 +102,7 @@ func randSkills(archive *data.Archive) [7]combat.UISkillInfoRow {
 	skillInfo := func(id string) combat.UISkillInfo {
 		if id == "" {
 			return combat.UISkillInfo{
-				Texture: "hud.png",
+				Texture: "combat/hud.png",
 				IconX:   184,
 				IconY:   0,
 				Id:      "",

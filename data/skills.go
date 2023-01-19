@@ -255,7 +255,7 @@ var internalSkills = []skill.Description{
 		Explanation: "Move to another tile",
 		Tags:        []skill.Classification{skill.Skill},
 		Icon: *game.Sprite{
-			Texture: "hud.png",
+			Texture: "combat/hud.png",
 			X:       232,
 			Y:       24,
 			W:       24,
@@ -273,7 +273,7 @@ var internalSkills = []skill.Description{
 		Explanation: "Attack an adjacent tile",
 		Tags:        []skill.Classification{skill.Attack},
 		Icon: *game.Sprite{
-			Texture: "hud.png",
+			Texture: "combat/hud.png",
 			X:       160,
 			Y:       0,
 			W:       24,
@@ -314,7 +314,7 @@ var internalSkills = []skill.Description{
 		Explanation: "A lightning bolt strikes the target dealing 1-10 damage",
 		Tags:        []skill.Classification{skill.Spell},
 		Icon: *game.Sprite{
-			Texture: "hud.png",
+			Texture: "combat/hud.png",
 			X:       160,
 			Y:       24,
 			W:       24,
@@ -356,7 +356,7 @@ var internalSkills = []skill.Description{
 		Explanation: "A pheonix feather lands on the target, reviving it.",
 		Tags:        []skill.Classification{skill.Spell},
 		Icon: *game.Sprite{
-			Texture: "hud.png",
+			Texture: "combat/hud.png",
 			X:       160,
 			Y:       48,
 			W:       24,
@@ -392,7 +392,7 @@ var internalSkills = []skill.Description{
 		Explanation: "Raise the bones of the dead to fight alongside you.",
 		Tags:        []skill.Classification{skill.Spell},
 		Icon: *game.Sprite{
-			Texture: "hud.png",
+			Texture: "combat/hud.png",
 			X:       184,
 			Y:       48,
 			W:       24,
