@@ -156,7 +156,7 @@ func (cm *CursorManager) repaintLiveParticipants() {
 	for i, slot := range cm.mgr.Tagged(liveParticipantsTag) {
 		if liveEntity(i) {
 			spr := game.Sprite{
-				Texture: "cursors.png",
+				Texture: "combat/cursors.png",
 
 				X: 0, Y: 0,
 				W: hexagonTileWidth, H: hexagonHeight,
@@ -229,7 +229,7 @@ func (cm *CursorManager) repaintHighlightedHexes() {
 			x, y := cm.field.Ktow(goal)
 			paints = append(paints, cursorSprite{
 				s: game.Sprite{
-					Texture: "cursors.png",
+					Texture: "combat/cursors.png",
 
 					X: hexagonTileWidth * 1, Y: hexagonHeight * 1,
 					W: hexagonTileWidth, H: hexagonHeight,
@@ -248,7 +248,7 @@ func (cm *CursorManager) repaintHighlightedHexes() {
 				x, y := h.Center()
 				paints = append(paints, cursorSprite{
 					s: game.Sprite{
-						Texture: "cursors.png",
+						Texture: "combat/cursors.png",
 
 						X: 0, Y: hexagonHeight * 1,
 						W: hexagonTileWidth, H: hexagonHeight,
@@ -279,7 +279,7 @@ func (cm *CursorManager) repaintHighlightedHexes() {
 			x, y := cm.field.Ktow(*cm.selectedKey)
 			paints = append(paints, cursorSprite{
 				s: game.Sprite{
-					Texture: "cursors.png",
+					Texture: "combat/cursors.png",
 
 					X: 0, Y: hexagonHeight * 2,
 					W: hexagonTileWidth, H: hexagonHeight,
@@ -298,7 +298,7 @@ func (cm *CursorManager) repaintHighlightedHexes() {
 				x, y := cm.field.Ktow(k)
 				paints = append(paints, cursorSprite{
 					s: game.Sprite{
-						Texture: "cursors.png",
+						Texture: "combat/cursors.png",
 
 						X: 0, Y: hexagonHeight,
 						W: hexagonTileWidth, H: hexagonHeight,
