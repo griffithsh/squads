@@ -13,14 +13,14 @@ func (a *Archive) GetPedestal(pedestalAppearance int) *game.Sprite {
 	switch pedestalAppearance {
 	case 2:
 		return &game.Sprite{
-			Texture: "coasters.png",
+			Texture: "combat/coasters.png",
 			X:       48,
 			W:       54,
 			H:       42,
 		}
 	case 3:
 		return &game.Sprite{
-			Texture: "coasters.png",
+			Texture: "combat/coasters.png",
 			X:       0,
 			Y:       42,
 			W:       39,
@@ -28,7 +28,7 @@ func (a *Archive) GetPedestal(pedestalAppearance int) *game.Sprite {
 		}
 	case 4:
 		return &game.Sprite{
-			Texture: "coasters.png",
+			Texture: "combat/coasters.png",
 			X:       0,
 			Y:       76,
 			W:       39,
@@ -36,7 +36,7 @@ func (a *Archive) GetPedestal(pedestalAppearance int) *game.Sprite {
 		}
 	default:
 		return &game.Sprite{
-			Texture: "coasters.png",
+			Texture: "combat/coasters.png",
 			W:       48,
 			H:       40,
 		}
