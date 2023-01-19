@@ -324,7 +324,7 @@ func (m *Manager) boot(d Map) {
 	m.mgr.Tag(e, "player")
 	m.mgr.AddComponent(e, m.playerTeam())
 	m.mgr.AddComponent(e, &game.Sprite{
-		Texture: "figure.png",
+		Texture: "deprecated/figure.png",
 
 		X: 0, Y: 0,
 		W: 24, H: 48,
