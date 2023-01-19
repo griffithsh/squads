@@ -51,7 +51,7 @@ func (f *Feature) StartOfPathFor(origin geom.Key) geom.Key {
 var houseFeatures = []Feature{
 	{
 		Sprite: game.Sprite{
-			Texture: "embark-tiles.png",
+			Texture: "embark/village-tiles.png",
 
 			X: 0, Y: 24,
 			W: 50, H: 42,
@@ -62,7 +62,7 @@ var houseFeatures = []Feature{
 	},
 	{
 		Sprite: game.Sprite{
-			Texture: "embark-tiles.png",
+			Texture: "embark/village-tiles.png",
 
 			X: 50, Y: 24,
 			W: 50, H: 42,
@@ -74,7 +74,7 @@ var houseFeatures = []Feature{
 	},
 	{
 		Sprite: game.Sprite{
-			Texture: "embark-tiles.png",
+			Texture: "embark/village-tiles.png",
 
 			X: 100, Y: 24,
 			W: 50, H: 42,
@@ -86,7 +86,7 @@ var houseFeatures = []Feature{
 	},
 	{
 		Sprite: game.Sprite{
-			Texture: "embark-tiles.png",
+			Texture: "embark/village-tiles.png",
 
 			X: 150, Y: 24,
 			W: 50, H: 42,
@@ -99,7 +99,7 @@ var houseFeatures = []Feature{
 
 var faeGateFeature = Feature{
 	Sprite: game.Sprite{
-		Texture: "embark-tiles.png",
+		Texture: "embark/village-tiles.png",
 
 		X: 0, Y: 66,
 		W: 50, H: 38,
@@ -111,7 +111,7 @@ var faeGateFeature = Feature{
 
 var windmillFeature = Feature{
 	Sprite: game.Sprite{
-		Texture: "embark-tiles.png",
+		Texture: "embark/village-tiles.png",
 
 		X: 50, Y: 66,
 		W: 50, H: 38,
@@ -123,7 +123,7 @@ var windmillFeature = Feature{
 var flavorFeatures = []Feature{
 	{
 		Sprite: game.Sprite{
-			Texture: "embark-tiles.png",
+			Texture: "embark/village-tiles.png",
 
 			X: 0, Y: 203,
 			W: 35, H: 29,
@@ -134,7 +134,7 @@ var flavorFeatures = []Feature{
 	},
 	{
 		Sprite: game.Sprite{
-			Texture: "embark-tiles.png",
+			Texture: "embark/village-tiles.png",
 
 			X: 35, Y: 203,
 			W: 35, H: 29,
@@ -145,7 +145,7 @@ var flavorFeatures = []Feature{
 	},
 	{
 		Sprite: game.Sprite{
-			Texture: "embark-tiles.png",
+			Texture: "embark/village-tiles.png",
 
 			X: 0, Y: 232,
 			W: 20, H: 12,
@@ -153,7 +153,7 @@ var flavorFeatures = []Feature{
 	},
 	{
 		Sprite: game.Sprite{
-			Texture: "embark-tiles.png",
+			Texture: "embark/village-tiles.png",
 
 			X: 20, Y: 232,
 			W: 20, H: 12,
@@ -161,7 +161,7 @@ var flavorFeatures = []Feature{
 	},
 	{
 		Sprite: game.Sprite{
-			Texture: "embark-tiles.png",
+			Texture: "embark/village-tiles.png",
 
 			X: 70, Y: 203,
 			W: 35, H: 29,
@@ -172,7 +172,7 @@ var flavorFeatures = []Feature{
 	},
 	{
 		Sprite: game.Sprite{
-			Texture: "embark-tiles.png",
+			Texture: "embark/village-tiles.png",
 
 			X: 105, Y: 203,
 			W: 35, H: 29,

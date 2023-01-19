@@ -178,7 +178,7 @@ func (em *Manager) addRoadwayEntity(key geom.Key, dir geom.DirectionType) {
 		Layer: layer,
 	})
 	em.mgr.AddComponent(e, &game.Sprite{
-		Texture: "embark-tiles.png",
+		Texture: "embark/village-tiles.png",
 
 		X: sx, Y: sy,
 		W: 20, H: 12,
@@ -410,37 +410,37 @@ func (em *Manager) addPathways() {
 func spriteForPathway(dir geom.DirectionType, version int) *game.Sprite {
 	alternate := version%2 != 0
 	ne := &game.Sprite{
-		Texture: "embark-tiles.png",
+		Texture: "embark/village-tiles.png",
 
 		X: 0, Y: 104,
 		W: 26, H: 18,
 	}
 	e := &game.Sprite{
-		Texture: "embark-tiles.png",
+		Texture: "embark/village-tiles.png",
 
 		X: 26, Y: 104,
 		W: 26, H: 18,
 	}
 	se := &game.Sprite{
-		Texture: "embark-tiles.png",
+		Texture: "embark/village-tiles.png",
 
 		X: 52, Y: 104,
 		W: 26, H: 18,
 	}
 	sw := &game.Sprite{
-		Texture: "embark-tiles.png",
+		Texture: "embark/village-tiles.png",
 
 		X: 52, Y: 122,
 		W: 26, H: 18,
 	}
 	w := &game.Sprite{
-		Texture: "embark-tiles.png",
+		Texture: "embark/village-tiles.png",
 
 		X: 26, Y: 122,
 		W: 26, H: 18,
 	}
 	nw := &game.Sprite{
-		Texture: "embark-tiles.png",
+		Texture: "embark/village-tiles.png",
 
 		X: 0, Y: 122,
 		W: 26, H: 18,
@@ -545,7 +545,7 @@ func (em *Manager) rollRoadway(villageW, villageH int) {
 				Layer: roadwaySpritesZ,
 			})
 			em.mgr.AddComponent(e, &game.Sprite{
-				Texture: "embark-tiles.png",
+				Texture: "embark/village-tiles.png",
 
 				X: 0, Y: 143,
 				W: 20, H: 12,
@@ -644,7 +644,7 @@ func (em *Manager) addMulliganHouse(villageW, villageH int) {
 	})
 
 	em.mgr.AddComponent(e, &game.Sprite{
-		Texture: "embark-tiles.png",
+		Texture: "embark/village-tiles.png",
 
 		X: 16, Y: 244,
 		W: 16, H: 12,
@@ -717,7 +717,7 @@ func (em *Manager) Begin() {
 			Layer: groundSpritesZ,
 		})
 		spr := game.Sprite{
-			Texture: "embark-tiles.png",
+			Texture: "embark/village-tiles.png",
 
 			X: 60, Y: 0,
 			W: 20, H: 24,
@@ -747,7 +747,7 @@ func (em *Manager) Begin() {
 					Layer: grassSpriteZ,
 				})
 				spr := game.Sprite{
-					Texture: "embark-tiles.png",
+					Texture: "embark/village-tiles.png",
 
 					X: 0, Y: 179,
 					W: 20, H: 24,
@@ -773,7 +773,7 @@ func (em *Manager) Begin() {
 				Layer: grassSpriteZ,
 			})
 			spr := game.Sprite{
-				Texture: "embark-tiles.png",
+				Texture: "embark/village-tiles.png",
 
 				X: 140, Y: 0,
 				W: 20, H: 24,
@@ -798,7 +798,7 @@ func (em *Manager) Begin() {
 				Layer: grassSpriteZ,
 			})
 			spr := game.Sprite{
-				Texture: "embark-tiles.png",
+				Texture: "embark/village-tiles.png",
 
 				X: 0, Y: 0,
 				W: 20, H: 24,
@@ -833,7 +833,7 @@ func (em *Manager) Begin() {
 				Layer: grassSpriteZ,
 			})
 			spr := game.Sprite{
-				Texture: "embark-tiles.png",
+				Texture: "embark/village-tiles.png",
 
 				X: 0, Y: 0,
 				W: 20, H: 24,
@@ -896,7 +896,7 @@ func (em *Manager) repaint() {
 				Layer: uiSpritesZ,
 			})
 			em.mgr.AddComponent(e, &game.Sprite{
-				Texture: "embark-tiles.png",
+				Texture: "embark/village-tiles.png",
 
 				X: 0, Y: 244,
 				W: 16, H: 12,
@@ -929,7 +929,7 @@ func (em *Manager) repaint() {
 			})
 
 			em.mgr.AddComponent(e, &game.Sprite{
-				Texture: "embark-tiles.png",
+				Texture: "embark/village-tiles.png",
 
 				X: 0, Y: 244,
 				W: 16, H: 12,
