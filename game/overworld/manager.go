@@ -506,7 +506,7 @@ func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, recipe *
 
 		// Change this card to the selected card sprite.
 		m.mgr.AddComponent(e, &game.Sprite{
-			Texture: "overworld-cards.png",
+			Texture: "overworld/cards.png",
 
 			X: 128, Y: 0,
 			W: 128, H: 192,
@@ -623,7 +623,7 @@ func (m *Manager) Begin(seed int64) {
 					Y: 2,
 				})
 				m.mgr.AddComponent(e, &game.Sprite{
-					Texture: "overworld-cards.png",
+					Texture: "overworld/cards.png",
 
 					X: 0, Y: 0,
 					W: 128, H: 192,
@@ -661,7 +661,7 @@ func (m *Manager) Begin(seed int64) {
 				m.mgr.Tag(e, "overworld-pick-path")
 
 				m.mgr.AddComponent(e, &game.Sprite{
-					Texture: "overworld-cards.png",
+					Texture: "overworld/cards.png",
 
 					X: 0, Y: 384,
 					W: 96, H: 72,

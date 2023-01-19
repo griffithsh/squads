@@ -23,11 +23,11 @@ var Animations = map[string]Animation{
 		{"overworld-grass.png", 0, 384, 144, 96, 0, 0, 30 * time.Millisecond},
 	}},
 	"overworld-hide-card": {[]Frame{
-		{"overworld-cards.png", 256, 0, 128, 192, 0, 0, 30 * time.Millisecond},
-		{"overworld-cards.png", 384, 0, 128, 192, 0, 0, 30 * time.Millisecond},
-		{"overworld-cards.png", 0, 192, 128, 192, 0, 0, 40 * time.Millisecond},
-		{"overworld-cards.png", 128, 192, 128, 192, 0, 0, 50 * time.Millisecond},
-		{"overworld-cards.png", 256, 192, 128, 192, 0, 0, 60 * time.Millisecond},
-		{"overworld-cards.png", 384, 192, 128, 192, 0, 0, 70 * time.Millisecond},
+		{"overworld/cards.png", 256, 0, 128, 192, 0, 0, 30 * time.Millisecond},
+		{"overworld/cards.png", 384, 0, 128, 192, 0, 0, 30 * time.Millisecond},
+		{"overworld/cards.png", 0, 192, 128, 192, 0, 0, 40 * time.Millisecond},
+		{"overworld/cards.png", 128, 192, 128, 192, 0, 0, 50 * time.Millisecond},
+		{"overworld/cards.png", 256, 192, 128, 192, 0, 0, 60 * time.Millisecond},
+		{"overworld/cards.png", 384, 192, 128, 192, 0, 0, 70 * time.Millisecond},
 	}},
 }
