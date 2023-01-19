@@ -279,21 +279,21 @@ func (m *Manager) boot(d Map) {
 		switch tile {
 		case Grass:
 			m.mgr.AddComponent(e, &game.Sprite{
-				Texture: "overworld-grass.png",
+				Texture: "deprecated/overworld-grass.png",
 
 				X: 144, Y: 0,
 				W: 144, H: 96,
 			})
 		case Stone:
 			m.mgr.AddComponent(e, &game.Sprite{
-				Texture: "overworld-grass.png",
+				Texture: "deprecated/overworld-grass.png",
 
 				X: 144, Y: 96,
 				W: 144, H: 96,
 			})
 		case Trees:
 			m.mgr.AddComponent(e, &game.Sprite{
-				Texture: "overworld-grass.png",
+				Texture: "deprecated/overworld-grass.png",
 
 				X: 288, Y: 0,
 				W: 144, H: 96,
@@ -439,7 +439,7 @@ func (m *Manager) boot(d Map) {
 		x, y := f.Ktow(k)
 
 		m.mgr.AddComponent(e, &game.Sprite{
-			Texture: "overworld-grass.png",
+			Texture: "deprecated/overworld-grass.png",
 
 			X: 0, Y: 0,
 			W: 144, H: 96,

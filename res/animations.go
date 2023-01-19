@@ -17,10 +17,10 @@ type Animation struct {
 // Animations contains generic animations. Use one by calling game.NewFrameAnimation(res.Animations["..."]).
 var Animations = map[string]Animation{
 	"overworld-reveal-grass": {[]Frame{
-		{"overworld-grass.png", 0, 96, 144, 96, 0, 0, 30 * time.Millisecond},
-		{"overworld-grass.png", 0, 192, 144, 96, 0, 0, 30 * time.Millisecond},
-		{"overworld-grass.png", 0, 288, 144, 96, 0, 0, 30 * time.Millisecond},
-		{"overworld-grass.png", 0, 384, 144, 96, 0, 0, 30 * time.Millisecond},
+		{"deprecated/overworld-grass.png", 0, 96, 144, 96, 0, 0, 30 * time.Millisecond},
+		{"deprecated/overworld-grass.png", 0, 192, 144, 96, 0, 0, 30 * time.Millisecond},
+		{"deprecated/overworld-grass.png", 0, 288, 144, 96, 0, 0, 30 * time.Millisecond},
+		{"deprecated/overworld-grass.png", 0, 384, 144, 96, 0, 0, 30 * time.Millisecond},
 	}},
 	"overworld-hide-card": {[]Frame{
 		{"overworld/cards.png", 256, 0, 128, 192, 0, 0, 30 * time.Millisecond},
