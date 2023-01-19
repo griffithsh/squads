@@ -248,7 +248,7 @@ func (m *Manager) boot(d Map) {
 		n.e = e
 		m.mgr.Tag(e, "overworld")
 		m.mgr.AddComponent(e, &game.Sprite{
-			Texture: "overworld-nodes.png",
+			Texture: "overworld/nodes.png",
 
 			X: 0, Y: 0,
 			W: 24, H: 16,
@@ -479,7 +479,7 @@ func (m *Manager) boot(d Map) {
 				e := m.mgr.NewEntity()
 				m.mgr.Tag(e, "overworld")
 				m.mgr.AddComponent(e, &game.Sprite{
-					Texture: "overworld-nodes.png",
+					Texture: "overworld/nodes.png",
 
 					X: 24, Y: 0,
 					W: 8, H: 6,
