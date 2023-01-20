@@ -6,7 +6,6 @@ import (
 	"time"
 
 	"github.com/griffithsh/squads/ecs"
-	"github.com/griffithsh/squads/res"
 )
 
 // AnimationEndBehavior is an enum that describes what happens when a
@@ -35,24 +34,6 @@ type FrameAnimation struct {
 	// by default, loops forever
 	// on end - maybe another animation, maybe a single frame, maybe some behaviour like trigger event
 	EndBehavior AnimationEndBehavior
-}
-
-// NewFrameAnimation creates a new FrameAnimation Component from a res.Animation.
-func NewFrameAnimation(a res.Animation) FrameAnimation {
-	fa := FrameAnimation{}
-	for _, frame := range a.Frames {
-		fa.Frames = append(fa.Frames, Sprite{
-			Texture: frame.Texture,
-			X:       frame.X,
-			Y:       frame.Y,
-			W:       frame.W,
-			H:       frame.H,
-			OffsetX: frame.OffsetX,
-			OffsetY: frame.OffsetY,
-		})
-		fa.Timings = append(fa.Timings, frame.Duration)
-	}
-	return fa
 }
 
 // Duration of the entire Animation.

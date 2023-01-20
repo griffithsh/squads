@@ -9,7 +9,6 @@ import (
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/game"
-	"github.com/griffithsh/squads/res"
 	"github.com/griffithsh/squads/ui"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -220,14 +219,11 @@ func (r *Visualizer) picForTexture(filename string) (*ebiten.Image, error) {
 		return pic, nil
 	}
 
-	inline, ok := r.imageProvider.GetImage(filename)
+	raw, ok := r.imageProvider.GetImage(filename)
 	if !ok {
-		inline, ok = res.Images[filename]
-		if !ok {
-			return nil, fmt.Errorf("%s missing", filename)
-		}
+		return nil, fmt.Errorf("%q missing", filename)
 	}
-	img := ebiten.NewImageFromImage(inline)
+	img := ebiten.NewImageFromImage(raw)
 	r.textures[filename] = img
 	return img, nil
 }

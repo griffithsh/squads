@@ -11,13 +11,13 @@ import (
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/geom"
-	"github.com/griffithsh/squads/res"
 	"github.com/griffithsh/squads/ui"
 )
 
 type Archive interface {
 	PedestalAppearances(sinister bool) []int
 	GetRecipes() []*Recipe
+	GetAnimation(name string) game.FrameAnimation
 }
 
 // Manager is a game state that allows the player to pick which path to take,
@@ -184,7 +184,8 @@ func (m *Manager) newNodeClickHandler(n *Node) func(x, y float64) {
 						}
 
 						// Start the "fog-revealing" animation.
-						fa := game.NewFrameAnimation(res.Animations["overworld-reveal-grass"])
+						fa := m.archive.GetAnimation("overworld-reveal-grass")
+
 						fa.EndBehavior = game.DestroyEntity
 						m.mgr.AddComponent(e, &fa)
 						delete(m.fogged, key)
@@ -517,7 +518,7 @@ func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, recipe *
 			m.mgr.RemoveComponent(e, &ui.Interactive{})
 
 			// obscure others with fadeout animation
-			anim := game.NewFrameAnimation(res.Animations["overworld-hide-card"])
+			anim := m.archive.GetAnimation("overworld-hide-card")
 			anim.EndBehavior = game.HoldLastFrame
 
 			obscure := m.mgr.NewEntity()
