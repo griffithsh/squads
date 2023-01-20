@@ -353,7 +353,7 @@ func (m *Manager) boot(d Map) {
 	m.mgr.Tag(e, "overworld")
 	m.mgr.Tag(e, "gate")
 	m.mgr.AddComponent(e, &game.Sprite{
-		Texture: "overworld-tokens.png",
+		Texture: "overworld/tokens.png",
 
 		X: 0, Y: 0,
 		W: 64, H: 64,
@@ -402,7 +402,7 @@ func (m *Manager) boot(d Map) {
 		})
 
 		m.mgr.AddComponent(e, &game.Sprite{
-			Texture: "overworld-tokens.png",
+			Texture: "overworld/tokens.png",
 
 			X: 64, Y: 32,
 			W: 32, H: 32,
