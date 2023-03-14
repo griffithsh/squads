@@ -28,10 +28,10 @@ func main() {
 	newRecipe := func() *procedural.Generator {
 		recipes := []string{
 			// "recipes/atoll.json",
-			"recipes/dark-forest.json",
+			// "recipes/dark-forest.json",
 			// "recipes/desert.json",
 			// "recipes/edge-of-the-woods.json",
-			// "recipes/lakeside.json",
+			"recipes/lakeside.json",
 			// "recipes/shore.json",
 		}
 		i := 0
@@ -57,14 +57,14 @@ func main() {
 	// Create an instance of an ebiten "Game"
 	mgr := ecs.NewWorld()
 	bus := &event.Bus{}
-	var seed int64 = 5546037425800197631
+	// var seed int64 = 5546037425800197631
 	g := &overworldGenerator{
 		mgr:               mgr,
 		bus:               bus,
 		vis:               output.NewVisualizer(imageGetter{}),
 		generatorProvider: func() *procedural.Generator { return nil },
 		core:              newRecipe(),
-		forceSeed:         &seed,
+		// forceSeed:         &seed,
 	}
 
 	// Generate an overworld!
