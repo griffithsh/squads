@@ -10,35 +10,40 @@ import (
 	"image/png"
 	"io"
 	"os"
-	"path/filepath"
 	"strings"
 
 	"github.com/griffithsh/squads/embedded"
 	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/game/overworld"
+	"github.com/griffithsh/squads/game/overworld/hbg"
+	"github.com/griffithsh/squads/game/overworld/procedural"
 	"github.com/griffithsh/squads/skill"
 )
 
 // Archive is a store of game data.
 type Archive struct {
-	overworldRecipes []*overworld.Recipe
-	skills           skill.Map
-	appearances      map[AppearanceKey]*game.Appearance
-	hairColors       []string
-	skinColors       []string
-	names            map[string][]string
-	combatMaps       []game.CombatMapRecipe // eventually these would be keyed by their terrain in some way?
-	images           map[string]image.Image
+	overworldRecipes       []*overworld.Recipe
+	skills                 skill.Map
+	appearances            map[AppearanceKey]*game.Appearance
+	hairColors             []string
+	skinColors             []string
+	names                  map[string][]string
+	combatMaps             []game.CombatMapRecipe // eventually these would be keyed by their terrain in some way?
+	images                 map[string]image.Image
+	overworldBaseTiles     map[procedural.Code]hbg.BaseTile
+	overworldEncroachments hbg.EncroachmentsCollection
 }
 
 // NewArchive constructs a new Archive.
 func NewArchive() (*Archive, error) {
 	archive := Archive{
-		overworldRecipes: []*overworld.Recipe{},
-		skills:           skill.Map{},
-		appearances:      map[AppearanceKey]*game.Appearance{},
-		names:            map[string][]string{},
-		images:           map[string]image.Image{},
+		overworldRecipes:       []*overworld.Recipe{},
+		skills:                 skill.Map{},
+		appearances:            map[AppearanceKey]*game.Appearance{},
+		names:                  map[string][]string{},
+		images:                 map[string]image.Image{},
+		overworldBaseTiles:     map[procedural.Code]hbg.BaseTile{},
+		overworldEncroachments: hbg.EncroachmentsCollection{},
 	}
 	for _, sd := range internalSkills {
 		archive.skills[sd.ID] = sd
@@ -200,4 +205,12 @@ func (a *Archive) GetRecipes() []*overworld.Recipe {
 func (a *Archive) GetImage(name string) (val image.Image, ok bool) {
 	val, ok = a.images[name]
 	return val, ok
+}
+
+func (a *Archive) GetOverworldBaseTiles() map[procedural.Code]hbg.BaseTile {
+	return a.overworldBaseTiles
+}
+
+func (a *Archive) GetOverworldEncroachments() hbg.EncroachmentsCollection {
+	return a.overworldEncroachments
 }
