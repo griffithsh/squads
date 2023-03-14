@@ -105,7 +105,19 @@ func (a *Archive) Load(r io.Reader) error {
 }
 
 func (a *Archive) interpret(filename string, r io.Reader) error {
-	switch filepath.Ext(filename) {
+	// getExt determines the file extension with special rules - it includes the
+	// second level of extension too. Inputting sample.foo.txt would return
+	// ".foo.txt". Whereas sample.txt returns just ".txt".
+	getExt := func(filename string) string {
+		separated := strings.Split(filename, ".")
+		encoding := separated[len(separated)-1]
+		if len(separated) > 2 {
+			return fmt.Sprintf(".%s.%s", separated[len(separated)-2], encoding)
+		}
+		return "." + encoding
+	}
+
+	switch getExt(filename) {
 	case ".names":
 		// .names are a csv-like file that include names with tags for
 		// how they should be used, like M and F for sexes etc.
@@ -125,6 +137,8 @@ func (a *Archive) interpret(filename string, r io.Reader) error {
 		a.overworldRecipes = append(a.overworldRecipes, recipe)
 
 	case ".png":
+		fallthrough
+	case ".variations.png":
 		decoded, err := png.Decode(r)
 		if err != nil {
 			return fmt.Errorf("png.Decode %s: %s", filename, err)
@@ -138,8 +152,8 @@ func (a *Archive) interpret(filename string, r io.Reader) error {
 		}
 		for _, skill := range skills {
 			if _, ok := a.skills[skill.ID]; ok {
-				//duplicate - overwrites
-				fmt.Fprintf(os.Stderr, "skill in %s overwrites skill ID %v", filename, skill.ID)
+				// A duplicate skill ...
+				fmt.Fprintf(os.Stderr, "skill in %q overwrites skill ID %v\n", filename, skill.ID)
 			}
 			a.skills[skill.ID] = skill
 			fmt.Println("loaded skill", skill.ID)
@@ -150,13 +164,50 @@ func (a *Archive) interpret(filename string, r io.Reader) error {
 		var v game.CombatMapRecipe
 		err := dec.Decode(&v)
 		if err != nil {
-			return fmt.Errorf("parse %s: %v", filename, err)
+			return fmt.Errorf("parse: %v", err)
 		}
 		a.combatMaps = append(a.combatMaps, v)
-	}
 
-	switch {
-	case strings.HasSuffix(filename, ".appearance"):
+	case ".obt.json": // Overworld Base Tile, JSON-encoded
+		dec := json.NewDecoder(r)
+		var v hbg.BaseTile
+		err := dec.Decode(&v)
+		if err != nil {
+			return fmt.Errorf("parse: %v", err)
+		}
+
+		// Logical errors - is it able to be used?
+		if v.Texture == "" {
+			return fmt.Errorf("configuration error: no texture")
+		}
+		if len(v.Variations) == 0 {
+			return fmt.Errorf("configuration error: no variations")
+		}
+
+		if _, ok := a.overworldBaseTiles[v.Code]; ok {
+			fmt.Printf("overwriting overworld base tile for %q with %q\n", v.Code, filename)
+		} else {
+			fmt.Printf("loading overworld base tile for %q from %q\n", v.Code, filename)
+		}
+		a.overworldBaseTiles[v.Code] = v
+
+	case ".ote.json": // Overworld Tile Encroachment, JSON-encoded
+		dec := json.NewDecoder(r)
+		var v hbg.Encroachment
+		err := dec.Decode(&v)
+		if err != nil {
+			return fmt.Errorf("parse: %v", err)
+		}
+
+		if (len(v.Corners.Corners) > 0 && v.Corners.Texture == "") || (len(v.Edges.Options) > 0 && v.Edges.Texture == "") {
+			return fmt.Errorf("configuration error: no texture")
+		}
+		if a.overworldEncroachments.Get(procedural.Code(v.Over), procedural.Code(v.Adjacent)) != nil {
+			fmt.Printf("overwriting overworld tile encroachments for %q encroaching %q with %q\n", v.Adjacent, v.Over, filename)
+		}
+		a.overworldEncroachments.Put(v)
+
+	case ".appearance":
 		dec := json.NewDecoder(r)
 		var v struct {
 			game.Appearance
@@ -191,6 +242,8 @@ func (a *Archive) interpret(filename string, r io.Reader) error {
 			return fmt.Errorf("duplicate appearance %v %s, %s-hair, %s skin", sex, v.Profession, v.HairColor, v.SkinColor)
 		}
 		a.appearances[key] = &v.Appearance
+	default:
+		fmt.Fprintf(os.Stderr, "WARNING: no handler configured for %q, detected extension was %q\n", filename, getExt(filename))
 	}
 
 	return nil
