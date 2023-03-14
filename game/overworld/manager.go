@@ -240,7 +240,6 @@ func (m *Manager) playerTeam() *game.Team {
 }
 
 func (m *Manager) boot(d Map) {
-
 	f := geom.NewField(50, 47, 96)
 	// Add a Sprite for every Node.
 	positions := map[geom.Key]game.Center{}
@@ -311,12 +310,6 @@ func (m *Manager) boot(d Map) {
 			},
 			Layer: 5,
 		})
-	}
-
-	// Add squads to the nodes.
-	keys := make([]geom.Key, 0, len(d.Nodes))
-	for k := range d.Nodes {
-		keys = append(keys, k)
 	}
 
 	// Add a Token to mark where the player's squad is.

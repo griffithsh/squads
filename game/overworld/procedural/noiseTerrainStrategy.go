@@ -25,6 +25,7 @@ func (tc TerrainChances) roll(prng *rand.Rand) Code {
 		running += chance.Chance
 	}
 
+	// FIXME: [0]? Why roll chances then?
 	return tc[0].Value
 }
 
