@@ -4,7 +4,7 @@ go 1.18
 
 require github.com/dmarkham/enumer v1.5.5
 
-require github.com/hajimehoshi/ebiten/v2 v2.4.15
+require github.com/hajimehoshi/ebiten/v2 v2.4.18
 
 require (
 	github.com/ebitengine/purego v0.0.0-20220905075623-aeed57cda744 // indirect
