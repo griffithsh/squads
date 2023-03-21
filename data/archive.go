@@ -130,6 +130,7 @@ func (a *Archive) interpret(filename string, r io.Reader) error {
 		}
 
 	case ".overworld-recipe":
+		fmt.Fprintf(os.Stderr, "WARNING: loading deprecated .overworld-recipe %q\n", filename)
 		recipe, err := overworld.ParseRecipe(r)
 		if err != nil {
 			return fmt.Errorf("parse %s: %v", filename, err)
