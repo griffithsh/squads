@@ -1,0 +1,10 @@
+{
+  "code": "SAND",
+  "texture": "overworld/tiles/sand.png",
+  "variations": [
+    {
+      "chance": 1,
+      "frames": [{ "left": 0, "top": 0 }]
+    }
+  ]
+}

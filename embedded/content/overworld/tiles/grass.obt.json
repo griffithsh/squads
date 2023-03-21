@@ -1,0 +1,10 @@
+{
+  "code": "GRASS",
+  "texture": "overworld/tiles/grass.png",
+  "variations": [
+    {
+      "chance": 1,
+      "frames": [{ "duration": 1000, "left": 0, "top": 0 }]
+    }
+  ]
+}
