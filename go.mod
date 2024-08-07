@@ -1,21 +1,21 @@
 module github.com/griffithsh/squads
 
-go 1.18
+go 1.21
 
-require github.com/dmarkham/enumer v1.5.9
+toolchain go1.22.5
 
-require github.com/hajimehoshi/ebiten/v2 v2.5.0
+require github.com/dmarkham/enumer v1.5.10
+
+require github.com/hajimehoshi/ebiten/v2 v2.7.8
 
 require (
-	github.com/ebitengine/purego v0.3.0 // indirect
-	github.com/go-gl/glfw/v3.3/glfw v0.0.0-20221017161538-93cebf72946b // indirect
-	github.com/jezek/xgb v1.1.0 // indirect
+	github.com/ebitengine/gomobile v0.0.0-20240518074828-e86332849895 // indirect
+	github.com/ebitengine/hideconsole v1.0.0 // indirect
+	github.com/ebitengine/purego v0.7.0 // indirect
+	github.com/jezek/xgb v1.1.1 // indirect
 	github.com/pascaldekloe/name v1.0.0 // indirect
-	golang.org/x/exp/shiny v0.0.0-20221227203929-1b447090c38c // indirect
-	golang.org/x/image v0.10.0 // indirect
-	golang.org/x/mobile v0.0.0-20230301163155-e0f57694e12c // indirect
-	golang.org/x/mod v0.13.0 // indirect
-	golang.org/x/sync v0.4.0 // indirect
-	golang.org/x/sys v0.13.0 // indirect
-	golang.org/x/tools v0.14.0 // indirect
+	golang.org/x/mod v0.20.0 // indirect
+	golang.org/x/sync v0.8.0 // indirect
+	golang.org/x/sys v0.23.0 // indirect
+	golang.org/x/tools v0.24.0 // indirect
 )
