@@ -3,7 +3,7 @@ package game
 // BigPortrait is the dimensions of the big portraits in the game.
 var BigPortrait = 52
 
-//SmallPortrait is the dimensions of the small portraits in the game.
+// SmallPortrait is the dimensions of the small portraits in the game.
 var SmallPortrait = BigPortrait / 2
 
 // PortraitBGBig stores a list of portrait backgrounds for large icons.

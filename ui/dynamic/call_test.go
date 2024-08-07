@@ -23,7 +23,7 @@ func TestCall(t *testing.T) {
 			t.Error("original was not changed")
 		}
 		if x != "modified" {
-			t.Errorf("want %q, got %q","modified",x)
+			t.Errorf("want %q, got %q", "modified", x)
 		}
 	})
 	t.Run("WithStruct", func(t *testing.T) {
