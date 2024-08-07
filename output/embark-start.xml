@@ -1,5 +1,5 @@
 <UI valign="bottom" align="center">
   <Padding bottom="3">
-    <Button label="Begin Journey" width="84" onclick="HandleStart"/>
+    <Button label="Begin Journey" id="embark-begin-button" width="84" onclick="HandleStart"/>
   </Padding>
 </UI>

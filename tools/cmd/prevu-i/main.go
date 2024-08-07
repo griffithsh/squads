@@ -38,9 +38,13 @@ type prevUI struct {
 	archive *data.Archive
 	vis     *output.Visualizer
 	ui      *ui.UISystem
+	last    time.Time
 }
 
 func (p *prevUI) Update() error {
+	elapsed := time.Since(p.last)
+	p.last = time.Now()
+
 	if ebiten.IsKeyPressed(ebiten.KeyEscape) {
 		return errExitGame
 	}
@@ -55,7 +59,7 @@ func (p *prevUI) Update() error {
 			AbsoluteY: float64(y),
 		})
 	}
-	return p.ui.Update()
+	return p.ui.Update(elapsed)
 }
 
 func (p *prevUI) Draw(screen *ebiten.Image) {
@@ -121,6 +125,7 @@ func main() {
 		archive: archive,
 		vis:     output.NewVisualizer(archive),
 		ui:      ui.NewUISystem(mgr, bus),
+		last:    time.Now(),
 	}
 
 	// Set up first lot of test data

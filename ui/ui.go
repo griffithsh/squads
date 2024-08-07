@@ -5,6 +5,8 @@ import (
 	"image"
 	"io"
 	"math"
+	"slices"
+	"time"
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
@@ -35,9 +37,9 @@ type PanelRenderInstruction struct {
 	Bounds image.Rectangle
 }
 type ButtonRenderInstruction struct {
-	Active bool
-	Bounds image.Rectangle
-	Label  string
+	Pressed bool
+	Bounds  image.Rectangle
+	Label   string
 }
 
 // UI is a Component that represents a UI. The stutter is unfortunate ...
@@ -85,10 +87,17 @@ func NewUI(r io.Reader) *UI {
 	}
 }
 
+type delay struct {
+	remainingMS int64
+	handler     func()
+}
 type UISystem struct {
 	mgr              *ecs.World
 	bus              *event.Bus
 	screenW, screenH int
+
+	delays []*delay
+	state  map[string]bool
 }
 
 func NewUISystem(mgr *ecs.World, bus *event.Bus) *UISystem {
@@ -96,6 +105,7 @@ func NewUISystem(mgr *ecs.World, bus *event.Bus) *UISystem {
 		mgr:     mgr,
 		bus:     bus,
 		screenW: 0, screenH: 0,
+		state: map[string]bool{},
 	}
 
 	bus.Subscribe(UIInteract{}.Type(), func(t event.Typer) {
@@ -110,7 +120,7 @@ func NewUISystem(mgr *ecs.World, bus *event.Bus) *UISystem {
 	return &uis
 }
 
-func (sys *UISystem) Update() error {
+func (sys *UISystem) Update(elapsed time.Duration) error {
 	uiScale := 2.0 // FIXME!
 	screen := image.Rect(0, 0, int(float64(sys.screenW)/uiScale), int(float64(sys.screenH)/uiScale))
 	for _, e := range sys.mgr.Get([]string{"UI"}) {
@@ -119,9 +129,25 @@ func (sys *UISystem) Update() error {
 		uic.interactives = uic.interactives[:0]
 		uic.renderinstructions = uic.renderinstructions[:0]
 
-		// NB, uic.Doc.Type == UIElement
+		// decrement all delays, and execute ripe ones
+		sys.delays = slices.DeleteFunc(sys.delays, func(d *delay) bool {
+			d.remainingMS -= elapsed.Milliseconds()
+			if d.remainingMS > 0 {
+				return false
+			}
+			d.handler()
+			return true
+		})
 
-		err := calculateChildren(uic, uic.Doc.Children, uic.Data, screen, uic.Doc.Attributes.Align(), uic.Doc.Attributes.Valign(), 0)
+		// NB, uic.Doc.Type == UIElement
+		delayer := func(handler func(), delayMS int64) {
+			sys.delays = append(sys.delays, &delay{
+				remainingMS: delayMS,
+				handler:     handler,
+			})
+		}
+
+		err := calculateChildren(uic, uic.Doc.Children, uic.Data, screen, uic.Doc.Attributes.Align(), uic.Doc.Attributes.Valign(), 0, delayer, sys.state)
 		if err != nil {
 			return err
 		}
@@ -277,10 +303,8 @@ func alignmentOf(child *Element, data interface{}, available image.Rectangle, al
 	return x, y
 }
 
-// calculateChildren dispatches to either calculateColumnChildren or
-// calculateNonColumnChildren depending on if the first child is a ColumnElement
-// or not.
-func calculateChildren(root *UI, children []*Element, data interface{}, available image.Rectangle, align, valign string, depth int) error {
+// calculateChildren recurses to each of its children.
+func calculateChildren(root *UI, children []*Element, data interface{}, available image.Rectangle, align, valign string, depth int, delayer func(func(), int64), state map[string]bool) error {
 	realChildren, datas := realiseChildren(children, data)
 
 	maxHeight := 0
@@ -311,7 +335,7 @@ func calculateChildren(root *UI, children []*Element, data interface{}, availabl
 				})
 			}
 
-			err := calculateChildren(root, child.Children, data, bounds, child.Attributes.Align(), child.Attributes.Valign(), depth+1)
+			err := calculateChildren(root, child.Children, data, bounds, child.Attributes.Align(), child.Attributes.Valign(), depth+1, delayer, state)
 			if err != nil {
 				return fmt.Errorf("<%s>: %v", child.Type, err)
 			}
@@ -323,7 +347,7 @@ func calculateChildren(root *UI, children []*Element, data interface{}, availabl
 			paddedBounds.Max.X -= child.Attributes.RightPadding()
 			paddedBounds.Max.Y -= child.Attributes.BottomPadding()
 
-			err := calculateChildren(root, child.Children, data, paddedBounds, child.Attributes.Align(), child.Attributes.Valign(), depth+1)
+			err := calculateChildren(root, child.Children, data, paddedBounds, child.Attributes.Align(), child.Attributes.Valign(), depth+1, delayer, state)
 			if err != nil {
 				return fmt.Errorf("<%s>: %v", child.Type, err)
 			}
@@ -335,7 +359,7 @@ func calculateChildren(root *UI, children []*Element, data interface{}, availabl
 			w := int(math.Round(float64(width) * float64(twelfths) / 12))
 			columnBounds.Max.X = columnBounds.Min.X + w
 
-			err := calculateChildren(root, child.Children, data, columnBounds, child.Attributes.Align(), child.Attributes.Valign(), depth+1)
+			err := calculateChildren(root, child.Children, data, columnBounds, child.Attributes.Align(), child.Attributes.Valign(), depth+1, delayer, state)
 			if err != nil {
 				return fmt.Errorf("<%s>: %v", child.Type, err)
 			}
@@ -416,18 +440,32 @@ func calculateChildren(root *UI, children []*Element, data interface{}, availabl
 			if err != nil {
 				return fmt.Errorf("Resolve %s: %v", child.Attributes["id"], err)
 			}
+
+			// Ideally we would trigger an animation of the button here which, on end, triggers the configured onclick.
+			hook := (func(onclick func(), id string) func() {
+				return func() {
+					state[fmt.Sprintf("button|%s|pressed", id)] = true
+
+					delayer(func() {
+						onclick()
+						delete(state, fmt.Sprintf("button|%s|pressed", id))
+					}, 75)
+				}
+			})(func() {
+				if err := dynamic.Call(child.Attributes["onclick"], data, id); err != nil {
+					panic(fmt.Sprintf("dynamic call: %v", err))
+				}
+			}, id)
+
 			root.interactives = append(root.interactives, InteractiveRegion{
-				Bounds: buttonDimensions,
-				Handler: func() {
-					if err := dynamic.Call(child.Attributes["onclick"], data, id); err != nil {
-						panic(fmt.Sprintf("dynamic call: %v", err))
-					}
-				},
+				Bounds:  buttonDimensions,
+				Handler: hook,
 			})
+			pressed := state[fmt.Sprintf("button|%s|pressed", id)]
 			root.renderinstructions = append(root.renderinstructions, ButtonRenderInstruction{
-				Active: false,
-				Bounds: buttonDimensions,
-				Label:  label,
+				Pressed: pressed,
+				Bounds:  buttonDimensions,
+				Label:   label,
 			})
 		}
 

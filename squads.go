@@ -272,7 +272,7 @@ func (s *squads) Update() error {
 	s.wipes.Update(s.mgr, elapsed)
 	s.hierarchy.Update()
 	s.camera.Update(elapsed)
-	s.uiSystem.Update()
+	s.uiSystem.Update(elapsed)
 
 	select {
 	case <-second:

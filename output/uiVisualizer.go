@@ -38,7 +38,7 @@ func (uv *uiVisualizer) Render(screen *ebiten.Image, uic *ui.UI) error {
 			}
 
 		case ui.ButtonRenderInstruction:
-			if err := uv.drawButton(screen, false, t.Bounds); err != nil {
+			if err := uv.drawButton(screen, t.Pressed, t.Bounds); err != nil {
 				return err
 			}
 			txtBounds := t.Bounds

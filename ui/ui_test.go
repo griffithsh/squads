@@ -4,6 +4,7 @@ import (
 	"image"
 	"strings"
 	"testing"
+	"time"
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
@@ -27,7 +28,7 @@ func TestUpdate(t *testing.T) {
 				NewW: int(800 * uiScale),
 				NewH: int(600 * uiScale),
 			})
-			err := sys.Update()
+			err := sys.Update(time.Duration(0))
 
 			// Checking
 			if err != nil {
