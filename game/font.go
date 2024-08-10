@@ -16,9 +16,8 @@ type Font struct {
 	// Align string // Align should be (left|wrap|center|right)
 	// Width int // Width is relevant to wrap, center, and right Alignments
 
-	// N.B. Don't add Color here! A Color tint would need to be applied to a
-	// sprite anyway in order to tint the underlying Sprite-base Entities, so it
-	// should be it's one Component that could also be applied to Sprite directly.
+	// N.B. The color of text can be set with a Tint component. Don't be tempted
+	// to add coloring here.
 }
 
 // Type of this Component.
@@ -370,9 +369,9 @@ func switchRuneNormal(r rune) (w, h, x, y int) {
 func (s *FontSystem) construct(parent ecs.Entity) {
 	font := s.mgr.Component(parent, "Font").(*Font)
 	position := s.mgr.Component(parent, "Position").(*Position)
-	scale, ok := s.mgr.Component(parent, "Scale").(*Scale)
+	tint, _ := s.mgr.Component(parent, "Tint").(*Tint)
 	offset, _ := s.mgr.Component(parent, "RenderOffset").(*RenderOffset)
-
+	scale, ok := s.mgr.Component(parent, "Scale").(*Scale)
 	if !ok {
 		scale = &Scale{
 			X: 1,
@@ -416,6 +415,11 @@ func (s *FontSystem) construct(parent ecs.Entity) {
 			s.mgr.AddComponent(e, &Scale{
 				X: scale.X,
 				Y: scale.Y,
+			})
+		}
+		if tint != nil {
+			s.mgr.AddComponent(e, &Tint{
+				R: tint.R, G: tint.G, B: tint.B,
 			})
 		}
 		s.mgr.AddComponent(e, &Position{

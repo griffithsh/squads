@@ -183,7 +183,6 @@ func (em *Manager) addRoadwayEntity(key geom.Key, dir geom.DirectionType) {
 		X: sx, Y: sy,
 		W: 20, H: 12,
 	})
-
 }
 
 func (em *Manager) addFeatureEntity(feat Feature, m, n, layer int) {

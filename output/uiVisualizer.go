@@ -4,6 +4,7 @@ import (
 	"fmt"
 	"image"
 
+	"github.com/griffithsh/squads/game"
 	"github.com/griffithsh/squads/ui"
 	"github.com/hajimehoshi/ebiten/v2"
 )
@@ -229,6 +230,7 @@ func (uv *uiVisualizer) drawText(screen *ebiten.Image, value string, size ui.Tex
 				img := img.SubImage(image.Rect(char.X, char.Y, char.X+char.Width, char.Y+char.Height)).(*ebiten.Image)
 				op := ebiten.DrawImageOptions{}
 				op.GeoM.Translate(x, y)
+				op.ColorScale.Scale(float32(game.TintPseudoWhite.R)/255, float32(game.TintPseudoWhite.G)/255, float32(game.TintPseudoWhite.B)/255, 1)
 				screen.DrawImage(img, &op)
 				x += float64(char.Width)
 

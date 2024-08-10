@@ -63,6 +63,7 @@ type entity struct {
 	p      *game.Position
 	offset *game.RenderOffset
 	scale  *game.Scale
+	tint   *game.Tint
 	repeat *game.SpriteRepeat
 	alpha  *game.Alpha
 }
@@ -150,6 +151,9 @@ func (r *Visualizer) getEntities(mgr *ecs.World) []entity {
 		}
 		if scale, ok := mgr.Component(e, "Scale").(*game.Scale); ok {
 			ent.scale = scale
+		}
+		if tint, ok := mgr.Component(e, "Tint").(*game.Tint); ok {
+			ent.tint = tint
 		}
 		if repeat, ok := mgr.Component(e, "SpriteRepeat").(*game.SpriteRepeat); ok {
 			ent.repeat = repeat
@@ -329,13 +333,20 @@ func (r *Visualizer) renderEntity(e entity, focusX, focusY, zoom, screenW, scree
 				offX, offY := float64(x), float64(y)
 
 				op := e.drawImageOptions(focusX, focusY, screenW/zoom, screenH/zoom, offX, offY)
+				if e.tint != nil {
+					op.ColorScale.Scale(float32(e.tint.R)/255, float32(e.tint.G)/255, float32(e.tint.B)/255, 1)
+				}
 				target.DrawImage(tile, op)
+
 			}
 		}
 		return nil
 	}
 
 	op := e.drawImageOptions(focusX, focusY, screenW/zoom, screenH/zoom, 0, 0)
+	if e.tint != nil {
+		op.ColorScale.Scale(float32(e.tint.R)/255, float32(e.tint.G)/255, float32(e.tint.B)/255, 1)
+	}
 	target.DrawImage(img, op)
 
 	return nil

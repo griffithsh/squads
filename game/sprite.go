@@ -17,11 +17,7 @@ type Sprite struct {
 	OffsetX int `json:"offsetX"`
 	OffsetY int `json:"offsetY"`
 
-	// This could include a color, but does not for now, as there are no uses for it.
-	// Color *color.RGBA
-	// NB It might make more sense to keep Color/Tint as a separate Component
-	// so that it can be applied to non-sprite renderable things, like solid-
-	// color or bordered shapes.
+	// FYI, you can alter a Sprite's color with the Tint component.
 }
 
 // Type of this Component.
