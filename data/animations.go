@@ -10,10 +10,10 @@ import (
 var animations = map[string]game.FrameAnimation{
 	"overworld-reveal-grass": {
 		Frames: []game.Sprite{
-			{Texture: "deprecated/overworld-grass.png", X: 0, Y: 96, W: 144, H: 96},
-			{Texture: "deprecated/overworld-grass.png", X: 0, Y: 192, W: 144, H: 96},
-			{Texture: "deprecated/overworld-grass.png", X: 0, Y: 288, W: 144, H: 96},
-			{Texture: "deprecated/overworld-grass.png", X: 0, Y: 384, W: 144, H: 96},
+			{Texture: "overworld/fog-of-war.png", X: 0, Y: 80, W: 160, H: 80},
+			{Texture: "overworld/fog-of-war.png", X: 0, Y: 160, W: 160, H: 80},
+			{Texture: "overworld/fog-of-war.png", X: 0, Y: 240, W: 160, H: 80},
+			{Texture: "overworld/fog-of-war.png", X: 0, Y: 320, W: 160, H: 80},
 		},
 		Timings: []time.Duration{
 			30 * time.Millisecond,

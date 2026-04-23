@@ -10,14 +10,17 @@ import (
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/event"
 	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/game/overworld/hbg"
+	"github.com/griffithsh/squads/game/overworld/procedural"
 	"github.com/griffithsh/squads/geom"
 	"github.com/griffithsh/squads/ui"
 )
 
 type Archive interface {
 	PedestalAppearances(sinister bool) []int
-	GetRecipes() []*Recipe
+	GetRecipes() []*procedural.Generator
 	GetAnimation(name string) game.FrameAnimation
+	GetOverworldBaseTiles() map[procedural.Code]hbg.BaseTile
 }
 
 // Manager is a game state that allows the player to pick which path to take,
@@ -25,7 +28,7 @@ type Archive interface {
 type Manager struct {
 	mgr     *ecs.World
 	bus     *event.Bus
-	recipes []*Recipe
+	recipes []*procedural.Generator
 	archive Archive
 
 	screenW, screenH int
@@ -124,7 +127,7 @@ func randInHex() (float64, float64) {
 	rad := rand.Float64() * math.Pi * 2
 	sin, cos := math.Sincos(rad)
 
-	w, h := 144.0, 96.0
+	w, h := 128.0, 64.0
 	factor := 0.2
 	return w * factor * sin, h * factor * cos
 }
@@ -240,7 +243,7 @@ func (m *Manager) playerTeam() *game.Team {
 }
 
 func (m *Manager) boot(d Map) {
-	f := geom.NewField(50, 47, 96)
+	f := geom.NewField(66, 31, 64)
 	// Add a Sprite for every Node.
 	positions := map[geom.Key]game.Center{}
 	for _, n := range d.Nodes {
@@ -263,6 +266,7 @@ func (m *Manager) boot(d Map) {
 		rx, ry := randInHex()
 		x = rx + x
 		y = ry + y
+
 		m.mgr.AddComponent(e, &game.Position{
 			Center: game.Center{
 				X: x, Y: y,
@@ -276,37 +280,27 @@ func (m *Manager) boot(d Map) {
 	for k, tile := range d.Terrain {
 		e := m.mgr.NewEntity()
 		m.mgr.Tag(e, "overworld")
-		switch tile {
-		case Grass:
-			m.mgr.AddComponent(e, &game.Sprite{
-				Texture: "deprecated/overworld-grass.png",
+		obt := m.archive.GetOverworldBaseTiles()[tile]
+		option := obt.Variations.Roll(rand.Intn)
 
-				X: 144, Y: 0,
-				W: 144, H: 96,
-			})
-		case Stone:
-			m.mgr.AddComponent(e, &game.Sprite{
-				Texture: "deprecated/overworld-grass.png",
+		hexHeight := f.HexHeight()
+		hexWidth := f.HexWidth()
+		w := hexWidth
+		h := hexHeight + option.ExtraHeight + option.ExtraDepth
 
-				X: 144, Y: 96,
-				W: 144, H: 96,
-			})
-		case Trees:
-			m.mgr.AddComponent(e, &game.Sprite{
-				Texture: "deprecated/overworld-grass.png",
+		m.mgr.AddComponent(e, &game.Sprite{
+			Texture: obt.Texture,
+			X:       option.Frames[0].Left, Y: option.Frames[0].Top,
+			W: w, H: h,
+		})
 
-				X: 288, Y: 0,
-				W: 144, H: 96,
-			})
-		default:
-			fmt.Printf("unknown tile %d at %v\n", tile, k)
-		}
-
-		x, y := f.Ktow(k)
+		keyX, keyY := f.Ktow(k)
+		x := int(keyX)
+		y := int(keyY) - option.ExtraHeight/2 + option.ExtraDepth/2
 
 		m.mgr.AddComponent(e, &game.Position{
 			Center: game.Center{
-				X: x, Y: y,
+				X: float64(x), Y: float64(y),
 			},
 			Layer: 5,
 		})
@@ -324,6 +318,7 @@ func (m *Manager) boot(d Map) {
 		W: 24, H: 48,
 		OffsetY: -16,
 	})
+	fmt.Printf("%v, %v\n", d.Nodes, d.Start)
 	position := m.mgr.Component(d.Nodes[d.Start].e, "Position").(*game.Position)
 	m.mgr.AddComponent(e, &game.Position{
 		Center: game.Center{
@@ -432,11 +427,12 @@ func (m *Manager) boot(d Map) {
 	for k, e := range m.fogged {
 		x, y := f.Ktow(k)
 
+		// FIXME: use a new embedded fog of war sprite here - this one is too big!
 		m.mgr.AddComponent(e, &game.Sprite{
-			Texture: "deprecated/overworld-grass.png",
+			Texture: "overworld/fog-of-war.png",
 
 			X: 0, Y: 0,
-			W: 144, H: 96,
+			W: 160, H: 80,
 		})
 		m.mgr.AddComponent(e, &game.Position{
 			Center: game.Center{
@@ -492,7 +488,7 @@ func (m *Manager) boot(d Map) {
 	}
 }
 
-func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, recipe *Recipe, lvl int) func(x, y float64) {
+func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, recipe *procedural.Generator, lvl int) func(x, y float64) {
 	return func(float64, float64) {
 		// Remove the interactive we just clicked on so that we cannot
 		// double-click by access.
@@ -546,7 +542,7 @@ func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, recipe *
 					},
 					OnInitialised: func() {
 						// and boot from the recipe.
-						d := generate(m.rng, recipe, lvl)
+						d := generateProcedural(m.rng, recipe, lvl)
 						m.boot(d)
 					},
 				})
@@ -556,10 +552,10 @@ func (m *Manager) handleCardSelected(e ecs.Entity, others []ecs.Entity, recipe *
 }
 
 // randomRecipes returns three randomly selected recipes.
-func (m *Manager) randomRecipes() []*Recipe {
+func (m *Manager) randomRecipes() []*procedural.Generator {
 	max := len(m.recipes)
 
-	result := make([]*Recipe, 3)
+	result := make([]*procedural.Generator, 3)
 	for i := 0; i < 3; i++ {
 		ri := m.rng.Intn(max)
 		result[i] = m.recipes[ri]
@@ -633,7 +629,7 @@ func (m *Manager) Begin(seed int64) {
 				m.mgr.Tag(e, "overworld-pick-path")
 
 				m.mgr.AddComponent(e, &game.Font{
-					Text: recipe.Label,
+					Text: recipe.RecipeName,
 				})
 				m.mgr.AddComponent(e, &game.Position{
 					Center: game.Center{

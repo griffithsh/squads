@@ -1,0 +1,49 @@
+{
+    "name": "Lakeside",
+    "pathGeneration": "Vine",
+    "terrainBuilder": {
+        "type": "LinearGradientTerrainStrategy",
+        "targetFilter": "Narrowest",
+        "underflows": "WATER",
+        "overflows": "GRASS",
+        "pathOverrides": {
+            "WATER": "SAND"
+        },
+        "gradients": [
+            {
+                "portions": 1,
+                "value": "WATER",
+                "blend": {
+                    "value": "SAND",
+                    "type": "Smooth"
+                }
+            },
+            {
+                "portions": 3,
+                "value": "SAND",
+                "blend": {
+                    "value": "GRASS",
+                    "type": "Spiky"
+                }
+            },
+            {
+                "portions": 1,
+                "value": "GRASS"
+            }
+        ]
+    },
+    "baddies": [
+        {
+            "id": 2,
+            "chance": 1
+        },
+        {
+            "id": 1,
+            "chance": 8
+        },
+        {
+            "id": 3,
+            "chance": 1
+        }
+    ]
+}

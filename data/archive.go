@@ -14,7 +14,6 @@ import (
 
 	"github.com/griffithsh/squads/embedded"
 	"github.com/griffithsh/squads/game"
-	"github.com/griffithsh/squads/game/overworld"
 	"github.com/griffithsh/squads/game/overworld/hbg"
 	"github.com/griffithsh/squads/game/overworld/procedural"
 	"github.com/griffithsh/squads/skill"
@@ -22,7 +21,7 @@ import (
 
 // Archive is a store of game data.
 type Archive struct {
-	overworldRecipes       []*overworld.Recipe
+	overworldRecipes       []*procedural.Generator
 	skills                 skill.Map
 	appearances            map[AppearanceKey]*game.Appearance
 	hairColors             []string
@@ -37,7 +36,7 @@ type Archive struct {
 // NewArchive constructs a new Archive.
 func NewArchive() (*Archive, error) {
 	archive := Archive{
-		overworldRecipes:       []*overworld.Recipe{},
+		overworldRecipes:       []*procedural.Generator{},
 		skills:                 skill.Map{},
 		appearances:            map[AppearanceKey]*game.Appearance{},
 		names:                  map[string][]string{},
@@ -129,13 +128,14 @@ func (a *Archive) interpret(filename string, r io.Reader) error {
 			a.names[k] = v
 		}
 
-	case ".overworld-recipe":
-		fmt.Fprintf(os.Stderr, "WARNING: loading deprecated .overworld-recipe %q\n", filename)
-		recipe, err := overworld.ParseRecipe(r)
+	case ".overworld-recipe.json":
+		dec := json.NewDecoder(r)
+		var recipe procedural.Generator
+		err := dec.Decode(&recipe)
 		if err != nil {
 			return fmt.Errorf("parse %s: %v", filename, err)
 		}
-		a.overworldRecipes = append(a.overworldRecipes, recipe)
+		a.overworldRecipes = append(a.overworldRecipes, &recipe)
 
 	case ".png":
 		fallthrough
@@ -251,7 +251,7 @@ func (a *Archive) interpret(filename string, r io.Reader) error {
 }
 
 // GetRecipes returns overworld recipes.
-func (a *Archive) GetRecipes() []*overworld.Recipe {
+func (a *Archive) GetRecipes() []*procedural.Generator {
 	return a.overworldRecipes
 }
 

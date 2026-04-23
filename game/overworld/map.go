@@ -5,6 +5,7 @@ import (
 
 	"github.com/griffithsh/squads/ecs"
 	"github.com/griffithsh/squads/game"
+	"github.com/griffithsh/squads/game/overworld/procedural"
 	"github.com/griffithsh/squads/geom"
 )
 
@@ -22,7 +23,7 @@ type Node struct {
 // Map of an overworld.
 type Map struct {
 	// Terrain stores the visible tiles of an overworld.
-	Terrain map[geom.Key]TileID
+	Terrain map[geom.Key]procedural.Code
 
 	// Nodes stores the stops on the overworld, and the traversable paths
 	// between them.
